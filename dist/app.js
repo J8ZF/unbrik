@@ -1,4 +1,4 @@
-import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,tick,effectText,validateSave} from './data.js';
+import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,tick,effectText,validateSave} from './data.js?v=1.1.0';
 const $=id=>document.getElementById(id);
 const KEY='axiom-save-v1',BACKUP=KEY+'-backup';
 let loadNotice='',storageOK=true;

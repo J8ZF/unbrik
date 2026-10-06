@@ -10,7 +10,7 @@ export const CHAPTERS = [
 ];
 // [name, symbol, effect type, magnitude, max level]
 const catalog = [
- [ ['START','⏻','mul',2], ['INCREMENT','+1','add',2,20], ['MULTIPLY','×2','mul',1.6,15], ['ACCUMULATOR','Σ','count',.035], ['BOOTSTRAP','λ','mul',2.2] ],
+ [ ['START','⏻','mul',2], ['INCREMENT','+1','add',2,20], ['MULTIPLY','×','mul',1.6,15], ['ACCUMULATOR','Σ','count',.035], ['BOOTSTRAP','λ','mul',2.2] ],
  [ ['ADDITION','+','add',12,20], ['PRODUCT','×','mul',1.7,15], ['SERIES','∑n','levels',.012], ['FACTORIAL','n!','mul',2.1], ['DISTRIBUTIVE','a(b+c)','addBoost',1.7], ['RATIO','a:b','discount',.92], ['GEOMETRIC','rⁿ','mul',1.24,20], ['REMAINDER','mod','burst',1.2], ['CONVERGENCE','lim','mul',2.2], ['ARITHMETIC CORE','ℝ','mul',2.8] ],
  [ ['VARIABLE','x','add',120,20], ['LINEAR','ax+b','addBoost',1.8], ['LOGARITHM','ln x','balance',.065], ['POLYNOMIAL','x²','mul',1.23,20], ['MATRIX','[A]','count',.05], ['VECTOR','v̂','mul',1.9], ['EIGENVALUE','λI','mul',2.3], ['DERIVATIVE','d/dx','levels',.015], ['INTEGRAL','∫','burst',2], ['ALGEBRA CORE','∇','power',1.025] ],
  [ ['BOOLEAN','01','mul',2], ['AND GATE','∧','count',.04], ['OR GATE','∨','mul',1.3,20], ['NEGATION','¬','discount',.92], ['XOR','⊕','mul',2.4], ['TRUTH TABLE','T/F','levels',.016], ['BITSHIFT','≪','mul',1.35,20], ['MUX','2:1','burst',2], ['SAT SOLVER','⊨','mul',3], ['LOGIC CORE','⊢','power',1.025] ],
@@ -31,7 +31,7 @@ catalog.forEach((items,chapter)=>{
  const [x,y,parents]=pattern[i];
  const req=parents.length?parents.map(p=>({id:start+p+1,level:1})):start?[{id:start,level:1}]:[];
  const id=NODES.length+1;
- const n={id,name,symbol,type,value,max,chapter,x,y:yBase+y,req,any:false,gate:i===items.length-1,currency:'money',baseCost:0,scaling:1.75,permanent:false};
+ const n={id,name,symbol,type,value,max,chapter,x,y:yBase+y,req,any:false,gate:i===items.length-1,currency:'money',baseCost:0,costs:[],permanent:false};
  if(name==='OR GATE') {n.req=[{id:26,level:1},{id:27,level:1}];n.any=true;}
  if(name==='EIGENVALUE') n.req.push({id:9,level:1});
  if(name==='MEMOIZATION') n.req.push({id:37,level:1});
@@ -42,7 +42,7 @@ catalog.forEach((items,chapter)=>{
 });
 export const byId=new Map(NODES.map(n=>[n.id,n]));
 export const MAX_VALUE=1e280;
-export function defaultState(){return {version:1,contentVersion:1,currencies:{money:0},levels:{},stats:{earned:0,spent:0,purchases:0,seconds:0,peak:1},timers:{cache:0,auto:0},settings:{motion:true,touch:true,haptic:true,format:'short',auto:false},camera:null,savedAt:Date.now()};}
+export function defaultState(){return {version:1,contentVersion:2,currencies:{money:0},levels:{},stats:{earned:0,spent:0,purchases:0,seconds:0,peak:1},timers:{cache:0,auto:0},settings:{motion:true,touch:true,haptic:true,format:'short',auto:false},camera:null,savedAt:Date.now()};}
 export const level=(s,n)=>s.levels[typeof n==='number'?n:n.id]||0;
 export function unlocked(s,n){return n.req.length===0||(n.any?n.req.some(r=>level(s,r.id)>=r.level):n.req.every(r=>level(s,r.id)>=r.level));}
 export function economy(s){
@@ -50,7 +50,7 @@ export function economy(s){
  const count=Object.values(s.levels).filter(v=>v>0).length,total=Object.values(s.levels).reduce((a,b)=>a+b,0);
  for(const n of NODES){const l=level(s,n);if(!l)continue;const v=n.value;
  switch(n.type){
- case 'add':add+=v*l;break;case 'mul':mul*=v**l;break;case 'addBoost':addBoost*=v**l;break;
+ case 'add':add+=v*l;mul*=1.05**l;break;case 'mul':mul*=v**l;break;case 'addBoost':addBoost*=v**l;break;
  case 'count':mul*=1+count*v*l;break;case 'levels':mul*=1+total*v*l;break;
  case 'balance':mul*=1+Math.log10(1+s.currencies.money)*v*l;break;
  case 'power':power+=((v-1)*l);break;case 'discount':discount*=v**l;break;
@@ -62,7 +62,7 @@ export function economy(s){
  const rate=Math.min(MAX_VALUE,(add*addBoost*mul)**power);
  return {rate,discount,scaling,burst:burst*burstBoost,interval,auto,count,total};
 }
-export function cost(s,n,e=economy(s)){return Math.min(MAX_VALUE,Math.max(1,n.baseCost*e.discount*Math.max(1.15,n.scaling*e.scaling)**level(s,n)));}
+export function cost(s,n,e=economy(s)){return Math.min(MAX_VALUE,Math.max(1,(n.costs?.[level(s,n)]??n.baseCost)*e.discount*e.scaling**level(s,n)));}
 export function purchase(s,n){
  const e=economy(s),p=cost(s,n,e);
  if(!unlocked(s,n)||level(s,n)>=n.max||s.currencies.money+Math.max(1,p)*1e-12<p)return false;
@@ -78,21 +78,35 @@ export function tick(s,dt){
  if(e.auto&&s.settings.auto){s.timers.auto+=dt;if(s.timers.auto>=5){s.timers.auto%=5;const candidates=NODES.filter(n=>n.max>1&&level(s,n)>0&&level(s,n)<n.max&&unlocked(s,n)).sort((a,b)=>cost(s,a,e)-cost(s,b,e));if(candidates[0]&&purchase(s,candidates[0]))events.push({type:'auto',id:candidates[0].id});}}
  return events;
 }
-// Fixed release prices account for progressively developed repeatable research.
-// Early convergence stays quick; later sectors reward improving older branches.
+// Price each level at its intended position along the research graph.
 const reference=defaultState();
+const events=[];
+const waits=[5,6,9,13,17,22,26,30];
+// Each research has fixed prices. Later repeatable levels target the region
+// two steps after acquisition; buying a new node never requires MAX levels.
+// This timeline is only used to author prices, never to lock purchases.
 for(const n of NODES){
- const completion=n.id<6?.65:n.id<16?.85:n.id<36?.9:.95;
- for(const prev of NODES){if(prev.id>=n.id)break;if(prev.max>1)reference.levels[prev.id]=Math.ceil(prev.max*completion);}
- const e=economy(reference);const wait=n.id===1?10:n.id<6?14+(n.id-2)*8:n.id<16?45+(n.id-6)*8:140+Math.pow(n.id-15,1.65)*3.8;
- const rough=e.rate*wait/e.discount;
- const exponent=Math.floor(Math.log10(rough));
- n.baseCost=Math.ceil(rough/10**Math.max(0,exponent-1))*10**Math.max(0,exponent-1);
- reference.levels[n.id]=1;reference.stats.earned+=rough;reference.currencies.money=0;
+ n.costs=[];
+ const own=NODES.filter(p=>p.chapter===n.chapter),target=NODES.filter(p=>p.chapter===Math.min(7,n.chapter+2));
+ const progress=(n.id-own[0].id)/Math.max(1,own.length-1);
+ const finish=Math.max(n.id+.15,Math.min(79.8,target[0].id+(target.length-1)*(.3+.6*progress)));
+ for(let l=0;l<n.max;l++)events.push({n,l,at:l===0?n.id:n.id+(finish-n.id)*l/(n.max-1)});
+}
+events.sort((a,b)=>a.at-b.at||a.n.id-b.n.id);
+for(const {n,l,at} of events){
+ const chapter=NODES[Math.min(79,Math.floor(at)-1)].chapter;
+ const wait=n.id===1?10:waits[chapter]*(n.max===1?1.5:1);
+ const before=economy(reference);reference.currencies.money=before.rate*wait*.5;
+ const e=economy(reference);const effective=e.rate*(1+e.burst/e.interval);
+ const raw=effective*wait/(e.discount*e.scaling**l);
+ const unit=10**Math.max(0,Math.floor(Math.log10(raw))-2);
+ const price=Math.ceil(raw/unit)*unit;
+ n.costs[l]=Math.max(l>0?n.costs[l-1]*1.12:1,price);
+ n.baseCost=n.costs[0];reference.levels[n.id]=l+1;
 }
 export function effectText(n){const v=n.value;
  switch(n.type){
- case 'add':return `기본 생산 +${v.toLocaleString()} $/s / Lv.`;
+ case 'add':return `기본 생산 +${v.toLocaleString()} $/s · 생산 ×1.05 / Lv.`;
  case 'mul':return `생산 ×${v}${n.max>1?' / Lv.':''}`;
  case 'addBoost':return `기본 생산 합계 ×${v}`;
  case 'count':return `구매한 노드마다 생산 +${+(v*100).toFixed(1)}%`;
