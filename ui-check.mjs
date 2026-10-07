@@ -263,20 +263,23 @@ console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',
  const ui3=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,iconSvg,setIcon},get,doc);
  ui3.reduced(true);ui3.applyMapTheme();ui3.render();
  assert(get('tokenCard').hidden&&get('compactTokenCard').hidden,'No token card before the first prestige');
- ui3.selectNode(1);assert(get('prestigeRow').hidden,'The prestige row belongs to the center panel');
- ui3.selectCenter();assert(!get('prestigeRow').hidden);assert(get('prestigeHint').innerHTML.includes('환생'));assert(get('mapJump').hidden&&get('prestigeButton').hidden);
+ ui3.selectNode(1);assert(get('prestigeButton').hidden,'The prestige button belongs to the center panel');
+ ui3.selectCenter();assert(get('prestigeButton').hidden,'No prestige button before the tree is complete');assert(get('hubBadge').hidden);assert(!ui3.state.prestige.noticed);
  assert.equal(get('tokenNote').textContent,'환생 0회');
  // Map dialog: the flower is locked until the first prestige.
  ui3.openMaps();assert.equal(get('mapMenu').children.length,2);assert(get('mapMenu').children[1].disabled);assert(!get('mapMenu').children[0].disabled);
  assert.equal(ui3.switchMap('prestige'),false,'Locked map cannot be entered');
  // Finish the tree and clear the threshold: the button appears, the note changes.
- for(const n of data.NODES)ui3.state.levels[n.id]=n.max;ui3.state.currencies.money=data.PRESTIGE_THRESHOLD*4;ui3.state.currencies.coin=50;
- ui3.selectCenter();assert(!get('prestigeButton').hidden);assert.equal(get('tokenNote').textContent,'환생 가능');assert(get('prestigeHint').innerHTML.includes('20'),'Four times the threshold doubles the tokens');
+ for(const n of data.NODES)ui3.state.levels[n.id]=n.max;ui3.state.currencies.money=data.PRESTIGE_THRESHOLD/2;
+ ui3.selectCenter();assert(!get('prestigeButton').hidden&&get('prestigeButton').disabled,'Tree complete but short: the button waits');assert(get('prestigeDetail').innerHTML.includes('더'));assert(get('hubBadge').hidden);
+ ui3.state.currencies.money=data.PRESTIGE_THRESHOLD*4;ui3.state.currencies.coin=50;
+ ui3.selectCenter();assert(!get('prestigeButton').hidden&&!get('prestigeButton').disabled);assert.equal(get('tokenNote').textContent,'환생 가능');assert(get('prestigeDetail').innerHTML.includes('20'),'Four times the threshold doubles the tokens');
+ assert(!get('hubBadge').hidden,'Center badge while prestige is available');assert(ui3.state.prestige.noticed,'One availability notice per run');
  get('prestigeButton').onclick();assert(get('prestigeDialog').open);assert(get('prestigeSummary').innerHTML.includes('1번째'));
  get('confirmPrestige').onclick();assert(!get('prestigeDialog').open);assert(!get('prestigeOverlay').hidden);
  assert.equal(ui3.state.map,'prestige','Reduced motion commits at once');assert.equal(ui3.state.currencies.token,20);assert.deepEqual(ui3.state.levels,{});assert.equal(ui3.state.currencies.money,0);assert.equal(ui3.state.currencies.coin,0);
  assert(doc.body.classList.contains('theme-bloom'));assert(!get('prestigeLayer').hidden);assert(get('nodes').hidden&&get('centerNode').hidden);
- assert.equal(get('wordmarkSub').textContent,'BLOOM TREE');assert.equal(ui3.selected,-1);assert(get('pCenter').classList.contains('selected'));
+ assert.equal(get('wordmarkSub').textContent,'BLOOM TREE');assert.equal(ui3.selected,-1);assert(get('pCenter').classList.contains('selected'));assert(get('prestigeButton').hidden,'No prestige button on the flower');assert(get('hubBadge').hidden);assert(!ui3.state.prestige.noticed,'The notice flag resets with the run');
  ui3.advance(1000);assert(get('prestigeOverlay').hidden,'Overlay lifts after the hold');
  assert(!get('tokenCard').hidden);assert.equal(get('token').textContent,'20');assert.equal(get('tokenNote').textContent,'환생 1회');
  assert(get('moneyCard').hidden,'The flower page shows only tokens');

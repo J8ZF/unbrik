@@ -45,19 +45,19 @@ const DEF=[
  ['AUTOPILOT VII','Microchip',1,[10],{type:'auto',value:6},'7섹터 ARCHITECTURE 자동 연구'],
  ['AUTOPILOT VIII','Aperture',1,[13],{type:'auto',value:7},'8섹터 COMPUTATION 자동 연구'],
  // 3 EXPANSION — reserved for studies that are not designed yet
- ['TRANSFER','GitBranch',1,[5],{type:'reserved'},'예약 · 새 연구와 함께 열립니다'],
- ['RETRIEVAL','Search',1,[6],{type:'reserved'},'예약 · 새 연구와 함께 열립니다'],
- ['TOOL USE','Component',1,[6],{type:'reserved'},'예약 · 새 연구와 함께 열립니다'],
- ['MULTIMODAL','Waves',1,[8],{type:'reserved'},'예약 · 새 연구와 함께 열립니다'],
- ['WORLD MODEL','Globe2',1,[8],{type:'reserved'},'예약 · 새 연구와 함께 열립니다'],
- ['ALIGNMENT','Waypoints',1,[11],{type:'reserved'},'예약 · 새 연구와 함께 열립니다'],
+ ['TRANSFER','GitBranch',1,[5],{type:'reserved'},'예약 · 설계 전'],
+ ['RETRIEVAL','Search',1,[6],{type:'reserved'},'예약 · 설계 전'],
+ ['TOOL USE','Component',1,[6],{type:'reserved'},'예약 · 설계 전'],
+ ['MULTIMODAL','Waves',1,[8],{type:'reserved'},'예약 · 설계 전'],
+ ['WORLD MODEL','Globe2',1,[8],{type:'reserved'},'예약 · 설계 전'],
+ ['ALIGNMENT','Waypoints',1,[11],{type:'reserved'},'예약 · 설계 전'],
  // 4 REWARD — tokens; the rest reserved until the branch is designed
  ['REWARD MODEL','Infinity',4,[3,5,7,10],{type:'tokenMul',value:.25},'환생 토큰 +25% / Lv'],
  ['DISTILLATION','ListFilter',5,[3,4,5,6,7],{type:'tokenAdd',value:1},'환생마다 토큰 +1 / Lv'],
- ['SELF-PLAY','Shuffle',1,[6],{type:'reserved'},'예약 · 이 갈래의 설계와 함께 열립니다'],
- ['CURRICULUM','ListOrdered',1,[6],{type:'reserved'},'예약 · 이 갈래의 설계와 함께 열립니다'],
- ['RLHF','BrainCircuit',1,[8],{type:'reserved'},'예약 · 이 갈래의 설계와 함께 열립니다'],
- ['EMERGENCE','Activity',1,[11],{type:'reserved'},'예약 · 이 갈래의 설계와 함께 열립니다'],
+ ['SELF-PLAY','Shuffle',1,[6],{type:'reserved'},'예약 · 설계 전'],
+ ['CURRICULUM','ListOrdered',1,[6],{type:'reserved'},'예약 · 설계 전'],
+ ['RLHF','BrainCircuit',1,[8],{type:'reserved'},'예약 · 설계 전'],
+ ['EMERGENCE','Activity',1,[11],{type:'reserved'},'예약 · 설계 전'],
 ];
 const ROW_PITCH=190,COLUMN_PITCH=252,FIRST_RADIUS=430;
 const upstream=(j,width,previousWidth)=>{const lo=j/width,hi=(j+1)/width,parents=[];for(let i=0;i<previousWidth;i++){const a=i/previousWidth,b=(i+1)/previousWidth;if(Math.min(hi,b)-Math.max(lo,a)>1e-9)parents.push(i);}return parents;};

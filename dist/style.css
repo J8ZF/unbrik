@@ -437,15 +437,24 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 .bloom-hub.selected .hub-shell{stroke:#f7f8fc;fill:#1a1f36}
 .node.bloom.reserved{border-style:dotted;opacity:.7}
 .node.bloom.reserved .node-name{color:#aab3cc}
-/* Center panel: the prestige row */
-.prestige-row{margin:12px 0 2px;padding:12px 14px;border:1px solid color-mix(in srgb,var(--token) 32%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--token) 6%,transparent);display:flex;flex-direction:column;gap:10px}
-.prestige-row p{margin:0;font:12px/1.55 var(--mono);color:#c9d3dc;overflow-wrap:anywhere}
-.prestige-actions{display:flex;gap:8px;flex-wrap:wrap}
-.prestige-actions:empty{display:none}
-.prestige-actions button{min-height:38px;padding:7px 14px;border:1px solid #3a4c58;border-radius:8px;background:#172129;color:#e6edf1;font-size:13px;font-weight:600;transition:background .18s,transform .15s}
-.prestige-actions button:active{transform:scale(.96)}
-#prestigeButton{background:var(--token);border-color:var(--token);color:#3a1226}
-.prestige-row:has(#mapJump[hidden]):has(#prestigeButton[hidden]) .prestige-actions{display:none}
+/* Center panel: the prestige button sits left of the navigator. Both are
+   dark, framed buttons with bright text — pink for prestige, white for the
+   navigator. */
+#prestigeButton{position:relative;width:104px;min-width:104px;min-height:58px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 8px;border:1px solid #f3a1c8;border-radius:8px;background:#3a2436;color:#ffd9ea;font-size:15px;font-weight:700;transition:background .18s,color .18s,border-color .18s,transform .15s}
+#prestigeButton:active{transform:scale(.96)}
+#prestigeButton:disabled{background:#2a2029;border-color:#73506a;color:#b494a6;opacity:1}
+#prestigeText{display:block;min-height:20px;line-height:20px;white-space:nowrap}
+#prestigeDetail{display:block;min-height:14px;line-height:14px;white-space:nowrap;font:11px var(--mono);font-weight:400}
+#prestigeButton .sym{color:#ffb8d6}#prestigeButton:disabled .sym{color:#b494a6}
+#buy.navigator{background:#20252d;border-color:#cfd4dc;color:#f2f4f7}
+#buy.navigator:active{background:#2b313a}
+.buy-row:has(#prestigeButton:not([hidden])){gap:10px}
+@media(max-width:360px){#prestigeButton{width:92px;min-width:92px}}
+/* Center node badge: prestige is available */
+.hub-badge{position:absolute;right:38px;top:34px;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:#f3a1c8;color:#3a1226;font:700 15px/1 var(--mono);box-shadow:0 0 0 3px #0b1017,0 0 18px #f3a1c880;animation:badgePulse 2.4s ease-in-out infinite;z-index:2}
+#world.overview .hub-badge{transform:scale(2.1);transform-origin:center;right:30px;top:26px}
+@keyframes badgePulse{50%{box-shadow:0 0 0 3px #0b1017,0 0 30px #f3a1c8c0}}
+.reduced-motion .hub-badge{animation:none}
 /* Navigator: map jump */
 #petalMenu{display:grid;gap:10px;padding-bottom:2px}
 .nav-maps{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;min-height:52px;margin-top:12px;padding:12px 14px;border:1px dashed #4a515c;border-radius:9px;background:transparent;color:#d6d9df;font-size:14px;text-align:left}
@@ -506,13 +515,10 @@ body.theme-bloom{--bg:#0e111c;--panel:#141a28;--line:#2a3348;--accent:#f3a1c8;--
 .theme-bloom #buy{border-color:#f3a1c8;background:var(--accent);color:#3a1226}
 .theme-bloom #buy.waiting{background:#34243a;color:#d9adc5;border-color:#6d4b60}
 .theme-bloom #buy.blocked,.theme-bloom #buy.completed{background:#1b2135;border-color:#3b4661;color:#97a3c2}
-.theme-bloom #buy.navigator{background:#e9ecf5;border-color:#f7f8fc;color:#1b1e30}
+.theme-bloom #buy.navigator{background:#232a40;border-color:#d3d8ee;color:#f5f6fb}
 .theme-bloom #buy.pending{background:#272d44;border-color:#4d5676;color:#d8dcef}
 .theme-bloom .req{border-color:#374266;color:#98a4c6;background:#121a2c}
 .theme-bloom .req.done{color:#f3a1c8;border-color:#6d4a62}
-.theme-bloom .prestige-row{border-color:color-mix(in srgb,var(--token) 36%,#2a3348);background:color-mix(in srgb,var(--token) 7%,transparent)}
-.theme-bloom .prestige-row p{color:#d0d7ea}
-.theme-bloom .prestige-actions button{background:#1b2135;border-color:#3b4661;color:#e9ecf5}
 .theme-bloom footer{background:#0f1322;border-top-color:#262e45;color:#7d88a8}
 .theme-bloom #saveState i{background:#d98bb2}
 .theme-bloom .icon-button,.theme-bloom .disclosure-button{background:#141a2a;border-color:#2c3550}

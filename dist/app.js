@@ -318,7 +318,7 @@ function mainGraph(){
  });
  for(const {el,root}of spokeEls){const found=visibility.get(root.id)>1;el.classList.toggle('discovered',found);el.style.display=found?'':'none';}
  if($('sectorDialog').open)updateNavigatorScroll();
- setText($('navigatorHint'),finished===8?'섹터로 이동':'남은 연구로 이동');setText($('centerProgress'),`${econ.count} / ${NODES.length} 연구`);$('centerResearchProgress').style.width=(econ.count/NODES.length*100)+'%';$('centerNode').setAttribute('aria-label',`UNBRIK 센터. ${econ.count}/${NODES.length} 연구, ${finished}개 섹터 완료. 선택하여 내비게이터 열기`);
+ setText($('navigatorHint'),finished===8?'섹터로 이동':'남은 연구로 이동');setText($('centerProgress'),`${econ.count} / ${NODES.length} 연구`);$('centerResearchProgress').style.width=(econ.count/NODES.length*100)+'%';$('centerNode').setAttribute('aria-label',`UNBRIK 센터. ${econ.count}/${NODES.length} 연구, ${finished}개 섹터 완료.${prestigeReady(state)?' 환생 가능.':''} 선택하여 내비게이터 열기`);
 }
 function setBuyState(kind,label,detail,disabled){
  const button=$('buy');if(button.dataset.state!==kind){button.dataset.state=kind;button.className=kind;}
@@ -332,7 +332,7 @@ function renderPanel(){
  setText($('collapsedName'),n.name);$('collapsedName').hidden=!collapsed;setIcon($('panelToggleIcon'),collapsed?'ChevronUp':'ChevronDown');
  if(collapsed)return;
  $('requirements').hidden=center;$('purchaseTrack').hidden=center;$('panelEffect').hidden=center;
- renderPrestigeRow(center);
+ renderPrestigeButton(center);
  if(center){setIcon($('panelSymbol'),'brand');$('panelSymbol').style.color='#f2f4f7';$('panelSymbol').style.setProperty('--sector-color','#f2f4f7');setText($('panelName'),'UNBRIK');
   if(onPrestige()){const complete=PRESTIGE_BRANCHES.filter((_,i)=>petalProgress(state,i).complete).length;setText($('panelMeta'),'BLOOM / 00');setText($('costLabel'),'완성한 꽃잎');setHtml($('panelCost'),`${complete} / 5`);}
   else{const complete=CHAPTERS.filter((_,i)=>sectorProgress(state,i).complete).length;setText($('panelMeta'),'CENTER / 00');setText($('costLabel'),'완료한 섹터');setHtml($('panelCost'),`${complete} / 8`);}
@@ -364,19 +364,24 @@ function renderPrestigeNode(n){
  else setBuyState(max?'completed':!can?'blocked':afford?'':'waiting',max?'개화 완료':!can?'잠김':n.max>1&&l>0?'레벨 업':'개화',max?'MAX':!can?'조건 미충족':state.settings.purchaseCheat?'무료 개화':afford?l?`Lv.${l+1}`:'구매 가능':`✿${tokenFormat(Math.max(0,p.token-state.currencies.token))} 더 필요`,max||!can);
  $('purchaseProgress').style.width=(max||n.reserved?100:Math.min(100,state.currencies.token/p.token*100))+'%';
 }
-// The center panel's prestige row: progress toward the next prestige on the
-// mainland, the way back on the flower.
-function renderPrestigeRow(center){
- const row=$('prestigeRow');row.hidden=!center;if(!center)return;
- const hint=$('prestigeHint'),jump=$('mapJump'),button=$('prestigeButton');
- if(onPrestige()){setHtml(hint,symbolMarkup(`보유 ✿${tokenFormat(state.currencies.token)} · 환생 ${state.prestige.count}회`));jump.hidden=false;setText(jump,'본섬으로 →');button.hidden=true;return;}
- const complete=treeComplete(state),ready=prestigeReady(state),left=PRESTIGE_THRESHOLD-state.currencies.money,perSecond=econ.rate*(1+(econ.interval?econ.burst/econ.interval:0));
- const text=ready?`환생 준비 완료 · 지금 환생하면 ✿${tokenFormat(tokensFor(state))}`:complete?`환생까지 $${format(left)} 더 · ${time(perSecond>0?left/perSecond:Infinity)}`:`환생 · ${NODES.length}개 연구 완료 후 $${format(PRESTIGE_THRESHOLD)} 보유 시`;
- setHtml(hint,symbolMarkup(text));jump.hidden=!state.prestige.count;setText(jump,'환생 지도 →');button.hidden=!ready;
+// The center panel's prestige button, left of the navigator: shown once the
+// tree is complete, enabled when the balance clears the threshold.
+function renderPrestigeButton(center){
+ const button=$('prestigeButton');
+ if(!center||onPrestige()||!treeComplete(state)){button.hidden=true;return;}
+ const ready=prestigeReady(state),left=PRESTIGE_THRESHOLD-state.currencies.money;
+ button.hidden=false;button.disabled=!ready;
+ setHtml($('prestigeDetail'),symbolMarkup(ready?`✿${tokenFormat(tokensFor(state))}`:`$${compactFormat(left)} 더`));
+ button.setAttribute('aria-label',ready?`환생. 지금 환생하면 토큰 ${tokenFormat(tokensFor(state))}`:`환생까지 $${format(left)} 더 필요`);
+}
+// Prestige availability: a badge on the center node and one notice per run.
+function syncPrestigeReady(){
+ const ready=!onPrestige()&&prestigeReady(state);$('hubBadge').hidden=!ready;
+ if(ready&&!state.prestige.noticed){state.prestige.noticed=true;toast('환생 가능 · UNBRIK 센터에서 환생',0,'important');}
 }
 function render(){
  econ=economy(state);setText($('money'),format(state.currencies.money));setHtml($('rate'),`+${format(econ.rate)}<span> /s</span>`);
- setText($('token'),tokenFormat(state.currencies.token));setText($('tokenNote'),tokenNote());
+ setText($('token'),tokenFormat(state.currencies.token));setText($('tokenNote'),tokenNote());syncPrestigeReady();
  setText($('coin'),format(state.currencies.coin));setHtml($('coinRate'),`+${format(econ.coinRate)}<span> /s</span>`);
  renderChrome();if(!cameraMoving){graph();renderPanel();}if($('settingsDialog').open&&!$('pane-stats').hidden)renderStats();
 }
@@ -438,12 +443,12 @@ function buySelected(){if(selectionPending)return false;if(selected===CENTER_SEL
 }
 function buyPrestige(n){
  const petalBefore=petalProgress(state,n.branch).complete;
- if(!prestigePurchase(state,n)){if(state.settings.motion){$('buy').classList.remove('shake');void $('buy').offsetWidth;$('buy').classList.add('shake');}if(n.reserved)toast('예약 노드입니다. 새 연구 설계와 함께 열립니다.');else if(prestigeUnlocked(state,n)&&prestigeLevel(state,n)<n.max)toast(`✿${tokenFormat(Math.max(0,prestigeCost(state,n).token-state.currencies.token))} 더 필요합니다.`);return false;}
+ if(!prestigePurchase(state,n)){if(state.settings.motion){$('buy').classList.remove('shake');void $('buy').offsetWidth;$('buy').classList.add('shake');}if(n.reserved)toast('예약 노드 · 설계 전');else if(prestigeUnlocked(state,n)&&prestigeLevel(state,n)<n.max)toast(`✿${tokenFormat(Math.max(0,prestigeCost(state,n).token-state.currencies.token))} 더 필요합니다.`);return false;}
  if(state.settings.haptic&&navigator.vibrate)navigator.vibrate(14);
  const el=pNodeEls.get(n.id);if(state.settings.motion){el.classList.add('pop');setTimeout(()=>el.classList.remove('pop'),550);for(const edge of pEdgeEls.filter(e=>e.from.id===n.id)){edge.el.classList.add('flashing');setTimeout(()=>edge.el.classList.remove('flashing'),1250);}}
  render();save();
- if(n.effect.type==='auto'&&prestigeLevel(state,n)===1)toast(`${CHAPTERS[n.effect.value].name} 섹터 자동 연구 해금 · 본섬의 섹터 이름 옆 AUTO 체크로 켭니다.`,7000);
- if(!petalBefore&&petalProgress(state,n.branch).complete)toast(`${PRESTIGE_BRANCHES[n.branch].name} 꽃잎이 완성되었습니다.`,6000);
+ if(n.effect.type==='auto'&&prestigeLevel(state,n)===1)toast(`${CHAPTERS[n.effect.value].name} 자동 연구 해금 · 본섬 섹터 이름 옆 AUTO 체크`,7000);
+ if(!petalBefore&&petalProgress(state,n.branch).complete)toast(`${PRESTIGE_BRANCHES[n.branch].name} 꽃잎 완성`,6000);
  return true;
 }
 // Pointer-up handles captured taps. Native clicks are a fallback, with no duplicate
@@ -540,7 +545,7 @@ function runAutomation(){
  const before=econ.count,sectorsBefore=CHAPTERS.map((_,i)=>sectorProgress(state,i).complete),bought=autoResearch(state,6);if(!bought.length)return;
  econ=economy(state);
  if(!onPrestige()&&state.settings.motion)for(const n of bought){const el=nodeEls.get(n.id);el.classList.add('pop');setTimeout(()=>el.classList.remove('pop'),550);}
- CHAPTERS.forEach((c,i)=>{if(!sectorsBefore[i]&&sectorProgress(state,i).complete)toast(`AUTO · ${c.name} 섹터 자동 연구 완료.`,6000);});
+ CHAPTERS.forEach((c,i)=>{if(!sectorsBefore[i]&&sectorProgress(state,i).complete)toast(`AUTO · ${c.name} 섹터 완료`,6000);});
  if(econ.count===NODES.length&&before<NODES.length)toast(`${NODES.length}개 노드 연구 완료. AXIOM에 도달했습니다.`,0,'important');
  render();
 }
@@ -576,7 +581,7 @@ function renderMapMenu(){
 function openMaps(){renderMapMenu();if(!$('mapDialog').open)$('mapDialog').showModal();}
 function closeMaps(){if($('mapDialog').open)$('mapDialog').close();}
 $('maps').onclick=openMaps;$('closeMaps').onclick=closeMaps;$('mapDialog').addEventListener('cancel',e=>{e.preventDefault();closeMaps();});$('mapDialog').addEventListener('click',e=>{if(e.target===$('mapDialog')){const r=e.target.getBoundingClientRect();if(e.clientY<r.top||e.clientX<r.left||e.clientX>r.right)closeMaps();}});
-$('navMaps').onclick=()=>{closeNavigator();openMaps();};$('mapJump').onclick=()=>switchMap(onPrestige()?'main':'prestige');
+$('navMaps').onclick=()=>{closeNavigator();openMaps();};
 // Prestige: confirm, then a blackout with the spinning UNBRIK polyhedron
 // while the mainland resets underneath; the flower is shown when it lifts.
 function openPrestigeDialog(){if(!prestigeReady(state))return;setHtml($('prestigeSummary'),symbolMarkup(`보유 $${format(state.currencies.money)} → ✿${tokenFormat(tokensFor(state))} 토큰 · ${state.prestige.count+1}번째 환생`));$('prestigeDialog').showModal();}
@@ -593,7 +598,7 @@ function runPrestige(){
  const spin=now=>{const p=wireframePaths((now-t0)/1000*2.4);$('oWireBack').setAttribute('d',p.back);$('oWireFront').setAttribute('d',p.front);$('oWireOutline').setAttribute('d',p.outline);raf=requestAnimationFrame(spin);};
  if(reduced)spin(t0+400);else raf=requestAnimationFrame(spin);if(reduced)cancelAnimationFrame(raf);
  const commit=()=>{cacheReward={money:0,coin:0,until:0};for(const k of Object.keys(selectionByMap))delete selectionByMap[k];granted=prestige(state);presentMap();save();};
- const finish=()=>{cancelAnimationFrame(raf);overlay.classList.remove('is-in');overlay.classList.add('is-out');setTimeout(()=>{overlay.hidden=true;overlay.classList.remove('is-out');},reduced?0:700);prestigeRunning=false;toast(`${run}번째 환생 · ✿${tokenFormat(granted)} 토큰 획득. 꽃잎을 피워 보세요.`,0,'important');};
+ const finish=()=>{cancelAnimationFrame(raf);overlay.classList.remove('is-in');overlay.classList.add('is-out');setTimeout(()=>{overlay.hidden=true;overlay.classList.remove('is-out');},reduced?0:700);prestigeRunning=false;toast(`${run}번째 환생 · ✿${tokenFormat(granted)} 토큰 획득`,0,'important');};
  if(reduced){commit();setTimeout(finish,900);}else{setTimeout(commit,1700);setTimeout(finish,2900);}
  return true;
 }

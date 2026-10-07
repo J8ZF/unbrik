@@ -29,7 +29,7 @@ export const MAPS=[
  {id:'main',name:'본섬',ko:'본섬',currencies:['money','coin'],theme:'engine'},
  {id:'prestige',name:'환생',ko:'환생 지도',currencies:['token'],theme:'bloom',locked:s=>(s.prestige?.count||0)===0},
 ];
-export const defaultPrestige=()=>({count:0,tokensEarned:0,tokensSpent:0,purchases:0,levels:{},auto:{},last:null});
+export const defaultPrestige=()=>({count:0,tokensEarned:0,tokensSpent:0,purchases:0,levels:{},auto:{},last:null,noticed:false});
 // Ready when every study is at its cap and the balance clears the threshold.
 export const treeComplete=s=>NODES.every(n=>level(s,n)>=n.max);
 export const prestigeReady=s=>treeComplete(s)&&s.currencies.money>=PRESTIGE_THRESHOLD;
@@ -40,7 +40,7 @@ export function prestige(s,now=Date.now()){
  if(!prestigeReady(s))return 0;
  const tokens=tokensFor(s);
  s.prestige=s.prestige||defaultPrestige();
- s.prestige.count++;s.prestige.tokensEarned=Math.round((s.prestige.tokensEarned+tokens)*100)/100;s.prestige.last={tokens,money:s.currencies.money,at:now};s.prestige.auto={};
+ s.prestige.count++;s.prestige.tokensEarned=Math.round((s.prestige.tokensEarned+tokens)*100)/100;s.prestige.last={tokens,money:s.currencies.money,at:now};s.prestige.auto={};s.prestige.noticed=false;
  s.currencies.token=Math.round(((s.currencies.token||0)+tokens)*100)/100;s.currencies.money=0;s.currencies.coin=0;
  s.levels={};s.timers.cache=0;s.camera=null;s.map='prestige';
  s.stats.prestigeRuns=(s.stats.prestigeRuns||0)+1;s.stats.lastRunSeconds=s.stats.seconds-(s.stats.runStart||0);s.stats.runStart=s.stats.seconds;
@@ -207,6 +207,7 @@ export function validateSave(input,now=Date.now()){
   if(p.levels&&typeof p.levels==='object'&&!Array.isArray(p.levels))for(const [key,value]of Object.entries(p.levels)){const n=prestigeById.get(Number(key));if(!n||String(n.id)!==key||!Number.isInteger(value)||value<0||value>n.max)throw Error('환생 연구 레벨이 올바르지 않습니다.');if(value)pr.levels[key]=value;}
   for(const n of PRESTIGE_NODES)if(prestigeLevel({prestige:pr},n)&&!n.req.every(r=>prestigeLevel({prestige:pr},r.id)>=r.level))throw Error('환생 선행 연구가 누락되었습니다.');
   if(p.auto&&typeof p.auto==='object')for(const [key,value]of Object.entries(p.auto))if(/^[0-7]$/.test(key)&&value===true)pr.auto[key]=true;
+  if(p.noticed===true)pr.noticed=true;
   if(p.last&&typeof p.last==='object'&&num(p.last.tokens)&&num(p.last.money)&&num(p.last.at,now))pr.last={tokens:p.last.tokens,money:p.last.money,at:p.last.at};
   s.prestige=pr;
  }
