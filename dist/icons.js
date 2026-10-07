@@ -5,5 +5,7 @@ const PATHS={"1":[["path",{"d":"M12 2v10"}],["path",{"d":"M18.4 6.6a9 9 0 1 1-12
 for(const [index,name] of ICON_NAMES.entries())PATHS[name]??=PATHS[index+1];
 PATHS.ChevronUp=[['path',{d:'m18 15-6-6-6 6'}]];
 PATHS.ChevronDown=[['path',{d:'m6 9 6 6 6-6'}]];
-export function iconSvg(id){const shapes=PATHS[id]||PATHS.LockKeyhole;return '<svg class="glyph" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'+shapes.map(([tag,attrs])=>'<'+tag+' '+Object.entries(attrs).map(([k,v])=>k+'="'+String(v).replaceAll('&','&amp;').replaceAll('"','&quot;')+'"').join(' ')+'/>').join('')+'</svg>';}
+PATHS.ChevronLeft=[['path',{d:'m15 18-6-6 6-6'}]];
+PATHS.ChevronRight=[['path',{d:'m9 18 6-6-6-6'}]];
+export function iconSvg(id){if(id==='brand')return '<span class="unbrik-mark" aria-hidden="true">⟁</span>';const shapes=PATHS[id]||PATHS.LockKeyhole;return '<svg class="glyph" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'+shapes.map(([tag,attrs])=>'<'+tag+' '+Object.entries(attrs).map(([k,v])=>k+'="'+String(v).replaceAll('&','&amp;').replaceAll('"','&quot;')+'"').join(' ')+'/>').join('')+'</svg>';}
 export function setIcon(el,id){const key=String(id);if(el.dataset.icon===key)return;el.innerHTML=iconSvg(id);el.dataset.icon=key;}

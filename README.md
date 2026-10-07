@@ -1,4 +1,4 @@
-# UNBRIK · Upgrade Tree — v1.4.0
+# UNBRIK · Upgrade Tree — v1.5.0
 
 Portrait incremental game with 80 math/computer-science nodes, 19 repeatable studies and 261 total research levels.
 
@@ -8,18 +8,28 @@ Static files are in `dist/`; serve over HTTP (ES modules are not intended for `f
 
 - `layout.js`: radial coordinates, sector hulls and edge paths.
 - `data.js`: graph, fixed level-price tables, income, guarded purchases and save migration.
-- `icons.js`: 80 distinct Lucide SVG path icons and interface icons, embedded locally. No icon font or SVG text elements. License in `icons-license.txt`.
+- `icons.js`: 80 distinct Lucide SVG path icons and interface icons, embedded locally. License in `icons-license.txt`. The UNBRIK logo is Unicode U+27C1 with an original, embedded single-glyph font (`unbrik-symbol.woff`); its three nested triangles do not depend on device fonts.
+- `hub.js`: regular dodecahedron projection and center SVG geometry; `camera.js`: cancellable camera tween helpers.
+- `updates.js`: version history and two-entry pagination.
 - `offline.js`: departure-income snapshot, integrated exponential decay and settlement cursor.
 - `app.js`: game UI, map gestures, visibility/focus lifecycle and local saves.
 - `index.html`, `style.css`: portrait interface and bounded SVG containers.
 
-Checks: `node check.mjs`, `node balance-check.mjs`, `node offline-check.mjs`, `node ui-check.mjs`, `node layout-check.mjs`.
+Checks: `node check.mjs`, `node balance-check.mjs`, `node offline-check.mjs`, `node ui-check.mjs`, `node layout-check.mjs`, `node motion-check.mjs`. Regenerate the original logo font with `python scripts/build-symbol-font.py` (requires FontTools).
+
+## Center and interface 1.5
+
+The center uses an octagonal enclosure, three translucent orbits, a rotating 24-sided outline and a projected regular dodecahedron (20 vertices, 30 edges). Each of the eight border segments lights in its sector color only when every research level in that sector is complete. The wireframe updates at most 30 times per second, pauses offscreen/during camera tweens, and respects reduced motion. Geometry was rendered at three rotation/completion states for inspection.
+
+Selecting the center now uses the existing bottom selection panel. Its primary button opens a compact navigator with a common highlight color and each sector's first research icon. Settings' update history starts collapsed and uses two entries per numbered page.
+
+Full-tree camera movements cancel previous tweens, preserve one detail mode during the movement, and defer graph/panel refresh until it finishes. Unchanged node content is cached, SVG layers have explicit bounds, and permanent world-layer promotion was removed. Controlled tests verify interruption, overlapping requests, detail-mode hysteresis, center selection, completion indicators and pagination. The reported mobile flicker could not be reproduced on a physical device here; this is not browser compositor verification.
 
 ## Radial map 1.4
 
 UNBRIK is the site and central navigation node; AXIOM remains research 80. The center is not an extra purchasable research. Five radial arms contain sectors 1–2, 3, 4–5, 6, and 7–8. `layout.js` supplies node coordinates, convex sector outlines, center spokes and directional links. Research conditions, prices and bonuses are unchanged. Links between different arms appear when an endpoint is selected; the existing prerequisite chips remain available.
 
-The center and the map’s center button open an eight-sector navigator. Discovered sectors jump to an unfinished eligible research, or the sector’s first node when finished. Completing every level of every node, including long-term repeatables, displays that sector’s translucent colored enclosure. Node and sector enclosures are checked for overlap, and actual geometry was rendered for inspection.
+The center and the map’s center button select UNBRIK; the bottom panel opens its eight-sector navigator. Discovered sectors jump to an unfinished eligible research, or the sector’s first node when finished. Completing every level of every node, including long-term repeatables, displays that sector’s translucent colored enclosure. Node and sector enclosures are checked for overlap, and actual geometry was rendered for inspection.
 
 Layout revision 1 discards legacy vertical-map camera coordinates while retaining money, levels, timers and settings. Legacy saves open the top HUD once on migration; subsequent collapsed/expanded preferences are preserved. The original save key and hosted URL remain in use to retain browser-local progress.
 
