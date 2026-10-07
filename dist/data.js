@@ -1,3 +1,4 @@
+import {createRadialLayout} from './layout.js?v=1.4.0';
 export const CHAPTERS = [
  {name:'INITIALIZATION',ko:'초기화',color:'#b9f36d'},
  {name:'ARITHMETIC',ko:'산술',color:'#65e2cc'},
@@ -31,7 +32,7 @@ catalog.forEach((items,chapter)=>{
  const [x,y,parents]=pattern[i];
  const req=parents.length?parents.map(p=>({id:start+p+1,level:1})):start?[{id:start,level:1}]:[];
  const id=NODES.length+1;
- const n={id,name,symbol,type,value,max,chapter,x,y:yBase+y,req,any:false,gate:i===items.length-1,currency:'money',baseCost:0,costs:[],permanent:false};
+ const n={id,name,symbol,type,value,max,chapter,x,y:yBase+y,localX:x,localY:y,req,any:false,gate:i===items.length-1,currency:'money',baseCost:0,costs:[],permanent:false};
  if(name==='OR GATE') {n.req=[{id:26,level:1},{id:27,level:1}];n.any=true;}
  if(name==='EIGENVALUE') n.req.push({id:9,level:1});
  if(name==='MEMOIZATION') n.req.push({id:37,level:1});
@@ -40,6 +41,8 @@ catalog.forEach((items,chapter)=>{
  });
  yBase+=pattern.at(-1)[1]+310;
 });
+export const MAP_LAYOUT=createRadialLayout(NODES);
+export function sectorProgress(s,chapter){const nodes=MAP_LAYOUT.sectors[chapter].members;const total=nodes.reduce((sum,n)=>sum+n.max,0),done=nodes.reduce((sum,n)=>sum+(s.levels[n.id]||0),0);return {done,total,complete:nodes.every(n=>(s.levels[n.id]||0)>=n.max)};}
 // Finite local research finishes in the following region. Two late studies
 // are intentionally long-term. Legacy maxima also define save migration.
 export const LEGACY_MAX = {2:20,3:15,6:20,7:15,12:20,16:20,19:20,28:20,32:20,36:25,38:25,49:25,52:20,56:30,64:25,71:30,72:20};
@@ -55,7 +58,7 @@ for(const n of NODES){
 }
 export const byId=new Map(NODES.map(n=>[n.id,n]));
 export const MAX_VALUE=1e280;
-export function defaultState(){const now=Date.now();return {version:1,contentVersion:3,currencies:{money:0},levels:{},stats:{earned:0,spent:0,purchases:0,seconds:0,peak:1,offlineSeconds:0,offlineEarned:0,offlineEffectiveSeconds:0},timers:{cache:0,auto:0},settings:{motion:true,touch:true,haptic:true,format:'short',auto:false,purchaseCheat:false,hudCollapsed:true,panelCollapsed:false},camera:null,offline:{since:now,through:now,rate:1},savedAt:now};}
+export function defaultState(){const now=Date.now();return {version:1,contentVersion:3,layoutVersion:1,currencies:{money:0},levels:{},stats:{earned:0,spent:0,purchases:0,seconds:0,peak:1,offlineSeconds:0,offlineEarned:0,offlineEffectiveSeconds:0},timers:{cache:0,auto:0},settings:{motion:true,touch:true,haptic:true,format:'short',auto:false,purchaseCheat:false,hudCollapsed:false,panelCollapsed:false},camera:null,offline:{since:now,through:now,rate:1},savedAt:now};}
 export const level=(s,n)=>s.levels[typeof n==='number'?n:n.id]||0;
 export function unlocked(s,n){return n.req.length===0||(n.any?n.req.some(r=>level(s,r.id)>=r.level):n.req.every(r=>level(s,r.id)>=r.level));}
 export function economy(s){
@@ -160,7 +163,8 @@ export function validateSave(input,now=Date.now()){
  for(const k of ['cache','auto'])if(num(input.timers?.[k],30))s.timers[k]=input.timers[k];
  for(const k of ['motion','touch','haptic','auto','purchaseCheat','hudCollapsed','panelCollapsed'])if(typeof input.settings?.[k]==='boolean')s.settings[k]=input.settings[k];
  if(['short','scientific','engineering'].includes(input.settings?.format))s.settings.format=input.settings.format;
- if(input.camera&&['x','y','scale'].every(k=>Number.isFinite(input.camera[k]))&&input.camera.scale>=.035&&input.camera.scale<=1.7&&Math.abs(input.camera.x)<1e6&&Math.abs(input.camera.y)<1e6)s.camera={...input.camera};
+ if(input.layoutVersion===1&&input.camera&&['x','y','scale'].every(k=>Number.isFinite(input.camera[k]))&&input.camera.scale>=.035&&input.camera.scale<=1.7&&Math.abs(input.camera.x)<1e6&&Math.abs(input.camera.y)<1e6)s.camera={...input.camera};
+ if(input.layoutVersion!==1)s.settings.hudCollapsed=false;
  const stamp=v=>typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=now;
  s.savedAt=stamp(input.savedAt)?input.savedAt:now;
  const e=economy(s);s.offline={since:s.savedAt,through:s.savedAt,rate:Math.min(MAX_VALUE,e.rate*(1+e.burst/e.interval))};

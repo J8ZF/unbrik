@@ -1,4 +1,4 @@
-# AXIOM · Upgrade Tree — v1.3.1
+# UNBRIK · Upgrade Tree — v1.4.0
 
 Portrait incremental game with 80 math/computer-science nodes, 19 repeatable studies and 261 total research levels.
 
@@ -6,17 +6,26 @@ Portrait incremental game with 80 math/computer-science nodes, 19 repeatable stu
 
 Static files are in `dist/`; serve over HTTP (ES modules are not intended for `file://`). No build or third-party runtime request is required.
 
+- `layout.js`: radial coordinates, sector hulls and edge paths.
 - `data.js`: graph, fixed level-price tables, income, guarded purchases and save migration.
 - `icons.js`: 80 distinct Lucide SVG path icons and interface icons, embedded locally. No icon font or SVG text elements. License in `icons-license.txt`.
 - `offline.js`: departure-income snapshot, integrated exponential decay and settlement cursor.
 - `app.js`: game UI, map gestures, visibility/focus lifecycle and local saves.
 - `index.html`, `style.css`: portrait interface and bounded SVG containers.
 
-Checks: `node check.mjs`, `node balance-check.mjs`, `node offline-check.mjs`, `node ui-check.mjs`.
+Checks: `node check.mjs`, `node balance-check.mjs`, `node offline-check.mjs`, `node ui-check.mjs`, `node layout-check.mjs`.
 
-## Interface and test mode 1.3.1
+## Radial map 1.4
 
-The top HUD starts compact, showing money, production, settings and an icon-only expansion control with an accessible label. The same SVG chevron rotates 180 degrees over 240 ms when expanded, respecting reduced-motion preferences. Expanding restores the original full resource and research summary. Its state is saved. The lower research panel also has a labeled collapse/expand control, retains the selected node while collapsed, and opens when a research node is selected. Its collapsed state is saved as well. Named SVG aliases now resolve both research and interface requests, including the formerly missing X and Plus icons.
+UNBRIK is the site and central navigation node; AXIOM remains research 80. The center is not an extra purchasable research. Five radial arms contain sectors 1–2, 3, 4–5, 6, and 7–8. `layout.js` supplies node coordinates, convex sector outlines, center spokes and directional links. Research conditions, prices and bonuses are unchanged. Links between different arms appear when an endpoint is selected; the existing prerequisite chips remain available.
+
+The center and the map’s center button open an eight-sector navigator. Discovered sectors jump to an unfinished eligible research, or the sector’s first node when finished. Completing every level of every node, including long-term repeatables, displays that sector’s translucent colored enclosure. Node and sector enclosures are checked for overlap, and actual geometry was rendered for inspection.
+
+Layout revision 1 discards legacy vertical-map camera coordinates while retaining money, levels, timers and settings. Legacy saves open the top HUD once on migration; subsequent collapsed/expanded preferences are preserved. The original save key and hosted URL remain in use to retain browser-local progress.
+
+## Interface and test mode
+
+The top HUD starts expanded. It can collapse to money, production, settings and an icon-only expansion control with an accessible label. The same SVG chevron rotates 180 degrees over 240 ms when expanded, respecting reduced-motion preferences. Expanding restores the original full resource and research summary. Its state is saved. The lower research panel also has a labeled collapse/expand control, retains the selected node while collapsed, and opens when a research node is selected. Its collapsed state is saved as well. Named SVG aliases now resolve both research and interface requests, including the formerly missing X and Plus icons.
 
 Settings includes an opt-in free research cheat, off by default. With it on, manual and automatic purchases require no money and do not change the balance or earned/spent statistics. Displayed prices remain the normal research prices. Prerequisites and maximum levels still apply. Turning it off restores normal charging without rolling back research or altering money. An on-screen badge and the purchase button indicate free research. Saves/imports preserve the toggle; older saves default to off. The existing RESET confirmation and deletion controls are unchanged.
 
