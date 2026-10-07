@@ -1,6 +1,6 @@
-import {createRadialLayout} from './layout.js?v=2.0-rework';
-import {RESEARCH} from './research.js?v=2.0-rework';
-import {PRICES} from './prices.js?v=2.0-rework';
+import {createRadialLayout} from './layout.js?v=2.0-menu-islands';
+import {RESEARCH} from './research.js?v=2.0-menu-islands';
+import {PRICES} from './prices.js?v=2.0-menu-islands';
 export const CHAPTERS = [
  {name:'INITIALIZATION',ko:'초기화',color:'#b9f36d'},
  {name:'ARITHMETIC',ko:'산술',color:'#65e2cc'},
@@ -34,7 +34,7 @@ export const MAP_LAYOUT=createRadialLayout(NODES);
 export const level=(s,n)=>s.levels[typeof n==='number'?n:n.id]||0;
 export function unlocked(s,n){return n.req.length===0||(n.any?n.req.some(r=>level(s,r.id)>=r.level):n.req.every(r=>level(s,r.id)>=r.level));}
 export function sectorProgress(s,chapter){const nodes=MAP_LAYOUT.sectors[chapter].members;const total=nodes.reduce((a,n)=>a+n.max,0),done=nodes.reduce((a,n)=>a+level(s,n),0);return {done,total,complete:done===total};}
-export function defaultState(){const now=Date.now();return {version:2,economyEpoch:ECONOMY_EPOCH,contentVersion:4,layoutVersion:2,currencies:{money:0,coin:0},levels:{},stats:{earned:0,spent:0,coinEarned:0,coinSpent:0,purchases:0,seconds:0,peak:1,coinPeak:0,offlineSeconds:0,offlineEarned:0,offlineCoinEarned:0,offlineEffectiveSeconds:0},timers:{cache:0},settings:{motion:true,touch:true,haptic:true,format:'short',purchaseCheat:false,mapControls:false,hudCollapsed:false,panelCollapsed:false},camera:null,offline:{since:now,through:now,rate:1,coinRate:0},savedAt:now};}
+export function defaultState(){const now=Date.now();return {version:2,economyEpoch:ECONOMY_EPOCH,contentVersion:4,layoutVersion:5,currencies:{money:0,coin:0},levels:{},stats:{earned:0,spent:0,coinEarned:0,coinSpent:0,purchases:0,seconds:0,peak:1,coinPeak:0,offlineSeconds:0,offlineEarned:0,offlineCoinEarned:0,offlineEffectiveSeconds:0},timers:{cache:0},settings:{motion:true,touch:true,haptic:true,format:'short',purchaseCheat:false,mapControls:false,hudCollapsed:false,panelCollapsed:false},camera:null,offline:{since:now,through:now,rate:1,coinRate:0},savedAt:now};}
 export function economy(s){
  const owned=NODES.filter(n=>level(s,n)>0),count=owned.length,total=owned.reduce((a,n)=>a+level(s,n),0),coinUnlocked=level(s,22)>0;
  const v={money:{base:1,mul:1,baseMul:1,discount:1,scaling:1,cache:0,cacheMul:1},coin:{base:0,mul:1,baseMul:1,discount:1,scaling:1,cache:0,cacheMul:1}};
@@ -114,7 +114,7 @@ export function validateSave(input,now=Date.now()){
  if(!input.stats||!Object.keys(s.stats).every(k=>num(input.stats[k])))throw Error('통계가 올바르지 않습니다.');
  for(const k of Object.keys(s.stats))s.stats[k]=input.stats[k];
  if(num(input.timers?.cache,30))s.timers.cache=input.timers.cache;
- if(input.layoutVersion===2&&input.camera&&['x','y','scale'].every(k=>Number.isFinite(input.camera[k]))&&input.camera.scale>=.035&&input.camera.scale<=1.7&&Math.abs(input.camera.x)<1e6&&Math.abs(input.camera.y)<1e6)s.camera={...input.camera};
+ if(input.layoutVersion===5&&input.camera&&['x','y','scale'].every(k=>Number.isFinite(input.camera[k]))&&input.camera.scale>=.035&&input.camera.scale<=1.7&&Math.abs(input.camera.x)<1e6&&Math.abs(input.camera.y)<1e6)s.camera={...input.camera};
  const stamp=v=>num(v,now);s.savedAt=stamp(input.savedAt)?input.savedAt:now;
  const e=economy(s);s.offline={since:s.savedAt,through:s.savedAt,rate:e.rate*(1+e.burst/e.interval),coinRate:e.coinRate*(1+e.coinBurst/e.interval)};
  const o=input.offline;if(o&&stamp(o.since)&&stamp(o.through)&&o.through>=o.since&&num(o.rate)&&num(o.coinRate))s.offline={since:o.since,through:o.through,rate:o.rate,coinRate:e.coinUnlocked?o.coinRate:0};

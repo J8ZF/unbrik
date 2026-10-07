@@ -36,11 +36,11 @@ Measured simulations, ordinary play with no cheat or offline boost:
 
 These are controlled strategies, not guaranteed human play times. Dollar figures are balances immediately before the relevant purchases. Maximum simulated gap between purchases is 70 seconds. Sector 1 finite repeats finish during sector 2. Machine-readable baseline: `scripts/balance-report.json`.
 
-## Header and accepted design
+## Header and visual requirements
 
 The original engineering-style palette remains: background #0b1017, panels #111922, separators #29343e, white #e6edf1, muted #8b9da9, green #b9f36d. Coin highlights use #d4ae68 and literal `¢`, not SVG.
 
-Expanded header: original brand/action frame, currency columns separated by a thin vertical rule, balance and production with transient cache awards below. Collapsed header: currencies side by side, awards next to balances, controls to the right. Coins appear on unlock. The old chapter/count/progress strip is removed. A single cache strip occupies that boundary and remains visible while collapsed. Research count and progress are under the center wordmark; outer center segments still indicate fully maxed sectors.
+Expanded header: one menu frame with inset currency windows, balance above production and transient cache awards. RUNNING remains in the production block, not a separate menu heading. Currency symbols are gray; production and cache gains use their own currency accent. Collapsed header: currencies side by side, awards next to balances, controls to the right. Coins appear on unlock. The old chapter/count/progress strip is removed. A single cache strip occupies that boundary and remains visible while collapsed. Research count and progress are under the center wordmark; outer center segments still indicate fully maxed sectors.
 
 Preserve the accepted non-header design: green research execution button; white affordable map nodes; original selected rings; no “가능” badge or corner marks. Sector 7 yellow, sector 8 white. Only purchased sector-8 borders have smoothly blended, clockwise opal colors. Their interiors stay gray/white. Animation settings, OS reduced motion, offscreen and suspended states continue to control movement. CHEAT is small yellow text under RESEARCH NETWORK. Main map tools remain two vertical buttons, with three additional tools behind the existing setting. Toasts retain X dismissal and a deadline bar.
 
@@ -69,3 +69,7 @@ Run `npm run check`, `node balance-check.mjs`, `node ui-check.mjs`, `node offlin
 Checks cover reachable prerequisites; finite costs and distinct icons; exact initial coin production; both-currency shortages with no partial debit; cheat guards; cache snapshot consistency; split, duplicate and reloaded offline settlements; save epoch rejection; all 105 map nodes and non-overlapping sector hulls; hidden-sector boundaries; complete-card re-selection; gesture cancellation; navigator state; settings and reduced-motion combinations; original color/opal constraints.
 
 The current managed environment does not provide browser preview for plain static Sites. Controlled real-handler tests and geometry checks are not a claim of Android Chrome or visual browser QA. Physical-device typography, compositing and browser touch behavior require device validation.
+
+Current map presentation uses individually authored research-layer paths and a concave coast derived from the padded layers. The five branch memberships and all prerequisites remain unchanged. Layout version 5 invalidates only old camera positions, preserving research, balances and preferences. Geometry verification includes concave island containment, sector/card separation and edge/card clearance.
+
+Visual references consulted for the currency menu: Clash Royale main menu (https://interfaceingame.com/screenshots/clash-royale-main-menu/), Arknights home screen (https://arknights.wiki.gg/wiki/Home_Screen), and AFK Journey gameplay screenshots. These informed compact currency grouping, not the project palette, controls or gameplay. No reference image assets are shipped.

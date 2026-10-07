@@ -281,3 +281,26 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 #world.overview .hub-research-track{display:none}
 
 @media(max-width:350px){.currency-card .currency-rate{font-size:12px}.currency-card .currency-rate>span{font-size:10px}.currency-secondary .cache-gain{font-size:10px}}
+
+/* One HUD menu surface, with inset currency windows. The production status
+   belongs to its production block; it is not a separate header row. */
+.hud{background:linear-gradient(180deg,#101922,#0b1219);border-bottom:1px solid #33414b;box-shadow:inset 0 1px #ffffff06,0 3px 12px #0002}
+.hud .topbar{min-height:58px;padding:7px 14px;background:#0c1219;border-bottom-color:#28333d}
+.hud .resources{grid-auto-flow:column;grid-auto-columns:minmax(150px,1fr);grid-template-columns:none;gap:8px;padding:8px 10px;overflow-x:auto;scrollbar-width:thin;touch-action:pan-x;scrollbar-color:#46545e transparent}
+.hud.has-coin .resources{grid-template-columns:none}
+.currency-card,.currency-card.currency-coin{padding:9px 10px 8px;border:1px solid #35424c;border-radius:7px;background:linear-gradient(160deg,#1b2731,#111b23);box-shadow:inset 0 1px #ffffff07,0 1px 2px #0005;min-width:0}
+.currency-card .balance,.hud:not(.has-coin) .balance{font-size:clamp(21px,5.9vw,29px);gap:6px;line-height:1.1;letter-spacing:-.05em}
+.currency-coin .currency-symbol,.coin-symbol{color:var(--muted)}
+.currency-secondary{margin-top:7px;align-items:flex-end;gap:5px;min-height:29px}
+.currency-production{display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-end;min-width:0;margin-left:auto;min-height:29px;gap:3px}
+.currency-production .running{font-size:9px;line-height:1;letter-spacing:.08em;gap:4px}
+.currency-production .running i{height:4px;width:4px;box-shadow:0 0 5px #b9f36d40}
+.currency-card .currency-rate{font-size:12px;line-height:1.2;font-weight:400}
+.currency-card .currency-rate>span{font-size:10px}
+.cache-gain{color:var(--currency-color,var(--accent))}
+.currency-secondary .cache-gain{font-size:10px;line-height:1.4;letter-spacing:-.04em;flex-shrink:0;max-width:45%;overflow:hidden}
+.cache-meter{height:26px;border-top-color:#2c3943;background:#0e171f;border-bottom:0}
+.cache-meter-meta{height:24px;padding-inline:14px;font-size:10px}
+.cache-label svg{width:12px;height:12px}
+.hud.is-collapsed .topbar{background:transparent}
+@media(max-width:350px){.hud .resources{gap:6px;padding:7px 8px;grid-auto-columns:minmax(143px,1fr)}.currency-card,.currency-card.currency-coin{padding-inline:8px}.currency-card .currency-rate{font-size:11px}.currency-secondary{gap:3px}.currency-secondary .cache-gain{font-size:9px}}
