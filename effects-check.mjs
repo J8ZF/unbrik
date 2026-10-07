@@ -14,7 +14,6 @@ class Observer{
 }
 function element(){const classes=new Set();return {dataset:{},style:{setProperty(k,v){this[k]=v;}},classList:{toggle(k,v){v?classes.add(k):classes.delete(k);},contains:k=>classes.has(k)}};}
 const elements=new Map(),$=id=>{if(!elements.has(id))elements.set(id,element());return elements.get(id);};
-const icon=element();$('sectorMenu').children=Array.from({length:8},()=>({querySelector:()=>icon}));
 const app=readFileSync('dist/app.js','utf8');
 const actual=app.slice(app.indexOf('function syncOpalMotion(){'),app.indexOf('function renderChrome(){'));
 const setup=new Function('createOpalMotion','NODES','defaultState','$','element',`
@@ -28,8 +27,8 @@ const setup=new Function('createOpalMotion','NODES','defaultState','$','element'
  hidden(v){document.hidden=v;syncOpalMotion();},suspend(v){suspended=v;syncOpalMotion();}};
 `);
 const ui=setup((groups,enabled)=>createOpalMotion(groups,enabled,Observer),NODES,defaultState,$,element);
-assert.equal(observers.length,2);assert.equal(observers[0].options.root,ui.viewport);assert.equal(observers[1].options.root,null);
-assert.equal(observers[0].targets.length,NODES.filter(n=>n.chapter===7).length+2);
+assert.equal(observers.length,1);assert.equal(observers[0].options.root,ui.viewport);
+assert.equal(observers[0].targets.length,NODES.filter(n=>n.chapter===7).length);
 const node=ui.nodeEls.get(71),offscreen=ui.nodeEls.get(72),status=el=>el.style['--opal-play-state'];
 assert.equal(status(node),'paused');observers[0].emit(node,true);assert.equal(status(node),'running');assert.equal(status(offscreen),'paused');
 ui.setting('touch',false);assert.equal(status(node),'running','Touch toggle must remain independent of ambient motion');
@@ -38,7 +37,6 @@ ui.setting('motion',true);assert.equal(status(node),'running');ui.osReduce(true)
 ui.hidden(true);assert.equal(status(node),'paused');assert(ui.body.classList.contains('effects-paused'));ui.hidden(false);assert.equal(status(node),'running');
 ui.suspend(true);assert.equal(status(node),'paused');ui.suspend(false);assert.equal(status(node),'running');
 observers[0].emit(node,false);assert.equal(status(node),'paused');ui.setting('motion',false);ui.setting('motion',true);assert.equal(status(node),'paused','Restoring motion must not restart offscreen effects');
-observers[1].emit(icon,true);assert.equal(status(icon),'running');observers[1].emit(icon,false);assert.equal(status(icon),'paused');
 ui.controller.disconnect();assert(observers.every(o=>o.disconnected));assert.equal(status(node),'paused');
 const staticTarget=element();createOpalMotion([{root:null,elements:[staticTarget]}],()=>true,null);assert.equal(status(staticTarget),'paused');
 
@@ -51,4 +49,12 @@ for(const type of ['selectstart','contextmenu']){
  }
  let prevented=false;preventGameSelection({type,target:{closest:()=>null},preventDefault(){prevented=true;}});assert(!prevented);
 }
-console.log(JSON.stringify({opalVisibility:'passed',motionAndOSSettings:'passed',independentTouchPreference:'passed',backgroundPause:'passed',staticFallback:'passed',selectionProtection:'passed',saveInputsAndLinks:'preserved'}));
+// Four independently positioned fields must form four distinct, tweenable arrangements.
+const css=readFileSync('dist/style.css','utf8'),positions=[...css.matchAll(/background-position:([^;}]+)/g)].map(m=>m[1]);
+assert.equal(positions.length,5);
+for(const arrangement of positions){
+ const fields=arrangement.split(',');assert.equal(fields.length,4);assert.equal(new Set(fields).size,4);
+ for(const field of fields){assert(/^-?\d+% -?\d+%$/.test(field),field);for(const value of field.split(' ')){const center=.4+.2*parseFloat(value)/100;assert(center>=.19&&center<=.81);}}
+}
+assert.equal(new Set(positions).size,4);
+console.log(JSON.stringify({opalVisibility:'passed',fourColorArrangements:'passed',motionAndOSSettings:'passed',independentTouchPreference:'passed',backgroundPause:'passed',staticFallback:'passed',selectionProtection:'passed',saveInputsAndLinks:'preserved'}));

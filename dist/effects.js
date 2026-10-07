@@ -13,5 +13,3 @@ export function preventGameSelection(event){
  if(target.closest('input,textarea,select,[contenteditable="true"],a'))return;
  if(target.closest('#hud,#viewport,#nodePanel,#sectorDialog,button'))event.preventDefault();
 }
-
-export function opalDefinitions(){return `<defs><linearGradient id="opal-region-wash" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2f4f7"/><stop offset=".3" stop-color="#bee9ed"/><stop offset=".52" stop-color="#ead0ef"/><stop offset=".75" stop-color="#f5e7c8"/><stop offset="1" stop-color="#f2f4f7"/></linearGradient><linearGradient id="opal-region-edge" x1="0" y1="0" x2="1" y2=".6"><stop offset="0" stop-color="#f2f4f7"/><stop offset=".25" stop-color="#bee9ed"/><stop offset=".5" stop-color="#ead0ef"/><stop offset=".75" stop-color="#f5e7c8"/><stop offset="1" stop-color="#f2f4f7"/></linearGradient></defs>`;}
