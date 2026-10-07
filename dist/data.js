@@ -1,4 +1,4 @@
-import {createRadialLayout} from './layout.js?v=1.5.0';
+import {createRadialLayout} from './layout.js?v=1.6.0';
 export const CHAPTERS = [
  {name:'INITIALIZATION',ko:'초기화',color:'#b9f36d'},
  {name:'ARITHMETIC',ko:'산술',color:'#65e2cc'},
@@ -6,8 +6,8 @@ export const CHAPTERS = [
  {name:'LOGIC',ko:'논리',color:'#bba1ff'},
  {name:'MEMORY',ko:'메모리',color:'#f5be72'},
  {name:'ALGORITHMS',ko:'알고리즘',color:'#fa93bd'},
- {name:'ARCHITECTURE',ko:'아키텍처',color:'#79e6ef'},
- {name:'COMPUTATION',ko:'연산',color:'#c0f57c'},
+ {name:'ARCHITECTURE',ko:'아키텍처',color:'#F2DA5B'},
+ {name:'COMPUTATION',ko:'연산',color:'#F2F4F7'},
 ];
 // [name, symbol, effect type, magnitude, max level]
 const catalog = [

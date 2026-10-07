@@ -1,4 +1,4 @@
-# UNBRIK · Upgrade Tree — v1.5.0
+# UNBRIK · Upgrade Tree — v1.6.0
 
 Portrait incremental game with 80 math/computer-science nodes, 19 repeatable studies and 261 total research levels.
 
@@ -8,22 +8,26 @@ Static files are in `dist/`; serve over HTTP (ES modules are not intended for `f
 
 - `layout.js`: radial coordinates, sector hulls and edge paths.
 - `data.js`: graph, fixed level-price tables, income, guarded purchases and save migration.
-- `icons.js`: 80 distinct Lucide SVG path icons and interface icons, embedded locally. License in `icons-license.txt`. The UNBRIK logo is Unicode U+27C1 with an original, embedded single-glyph font (`unbrik-symbol.woff`); its three nested triangles do not depend on device fonts.
+- `icons.js`: 80 distinct Lucide SVG path icons and interface icons, embedded locally. License in `icons-license.txt`. `brand.js` supplies the shared original three-triangle SVG mark; no font asset is required.
 - `hub.js`: regular dodecahedron projection and center SVG geometry; `camera.js`: cancellable camera tween helpers.
 - `updates.js`: version history and two-entry pagination.
 - `offline.js`: departure-income snapshot, integrated exponential decay and settlement cursor.
 - `app.js`: game UI, map gestures, visibility/focus lifecycle and local saves.
 - `index.html`, `style.css`: portrait interface and bounded SVG containers.
 
-Checks: `node check.mjs`, `node balance-check.mjs`, `node offline-check.mjs`, `node ui-check.mjs`, `node layout-check.mjs`, `node motion-check.mjs`. Regenerate the original logo font with `python scripts/build-symbol-font.py` (requires FontTools).
+Checks: `node check.mjs`, `node balance-check.mjs`, `node offline-check.mjs`, `node ui-check.mjs`, `node layout-check.mjs`, `node motion-check.mjs`.
 
-## Center and interface 1.5
+## Center and interface 1.6
 
-The center uses an octagonal enclosure, three translucent orbits, a rotating 24-sided outline and a projected regular dodecahedron (20 vertices, 30 edges). Each of the eight border segments lights in its sector color only when every research level in that sector is complete. The wireframe updates at most 30 times per second, pauses offscreen/during camera tweens, and respects reduced motion. Geometry was rendered at three rotation/completion states for inspection.
+The shared nested-triangle logo is now an inline SVG with a square viewBox and bounded geometry, including the narrow-phone header. Sector 7 is yellow (#F2DA5B), sector 8 white (#F2F4F7). Center, navigator surfaces and center actions use neutral gray/white; navigation icons and current-row accents retain their own sector colors.
 
-Selecting the center now uses the existing bottom selection panel. Its primary button opens a compact navigator with a common highlight color and each sector's first research icon. Settings' update history starts collapsed and uses two entries per numbered page.
+The center uses an octagonal enclosure, a background triangle and a separately centered UNBRIK wordmark. Highlights travel along a stationary octagonal path; the eight completion segments remain fixed. Dodecahedron face normals and edge adjacency classify silhouette, front edges and dashed hidden edges. The silhouette matches the convex hull of projected vertices across 480 sampled frames, and artwork was rendered at six rotation angles for inspection. Animation respects reduced-motion preferences and the existing 30 fps/offscreen limits.
 
-Full-tree camera movements cancel previous tweens, preserve one detail mode during the movement, and defer graph/panel refresh until it finishes. Unchanged node content is cached, SVG layers have explicit bounds, and permanent world-layer promotion was removed. Controlled tests verify interruption, overlapping requests, detail-mode hysteresis, center selection, completion indicators and pagination. The reported mobile flicker could not be reproduced on a physical device here; this is not browser compositor verification.
+Navigator selection reserves the bottom panel immediately with a disabled gray ellipsis button. Menu close, single panel reveal and camera movement are coordinated; the final purchase state commits from current game data when movement completes. Later selections invalidate earlier callbacks, manual gestures settle the selected research, and viewport resizing retargets movement without dropping completion. Button dimensions remain stable across states. Controlled actual-handler tests exercise money changes during movement, normal/free/complete states, rapid retargeting, gesture interruption and viewport changes. Navigation hints reflect whether any sector remains unfinished, and scrollable lists show a continuation hint.
+
+Center, research focus and full-tree fitting use unobstructed rectangles beside or above map controls. Width and height changes both reframe the current focus. Existing full-tree optimizations and save migration remain in place. No research balance, prices, prerequisites, reset behavior or save schema changed.
+
+Browser layout/compositing and Android hardware rendering were not directly available; mathematical projection tests, SVG renders and the controlled DOM/animation adapter are not a physical browser QA claim.
 
 ## Radial map 1.4
 
