@@ -17,7 +17,7 @@ const elements=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,el
 const $=id=>{assert(elements.has(id),`Missing element ${id}`);return elements.get(id);};
 const slice=(start,end)=>{const a=app.indexOf(start),b=app.indexOf(end,a);assert(a>=0&&b>a);return app.slice(a,b);};
 const source=[slice('const CENTER_SELECTION','const KEY='),slice('function syncOpalMotion(){','function save('),slice('function sectorUnlocked(','const visibility='),slice('function createGraph(){','function animatePanel('),slice('function animatePanel(','function ripple('),slice('function buySelected(){','const pointers='),slice('let previousWidth=','new ResizeObserver(reframeViewport)'),slice('function renderUpdates(','function suspend('),
- slice("$('toggleHud').onclick=", "$('settings').onclick="),slice("$('purchaseCheat').onchange=", "$('saveNow').onclick=")].join('\n');
+ slice("$('toggleHud').onclick=", "$('settings').onclick="),slice("for(const k of ['motion','touch','haptic','auto','mapControls'])", "$('format').onchange="),slice("$('purchaseCheat').onchange=", "$('saveNow').onclick=")].join('\n');
 const createUI=new Function('deps','$','document',`
  const {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,effectText,validateSave,MAP_LAYOUT,sectorProgress,BRANCHES,CENTER,boundsOf,connectionPath,centerPath,iconSvg,setIcon,UPDATES,updatePage,interpolateCamera,overviewMode,mapFrames,fitCamera}=deps;
  let sessionSeconds=0;let state=defaultState(),selected=1,econ=economy(state),saved=null,camera={x:0,y:0,scale:1},cameraMoving=false,updatesPage=1;
@@ -27,18 +27,23 @@ const createUI=new Function('deps','$','document',`
  const requestAnimationFrame=fn=>{frames.set(++seed,fn);return seed},cancelAnimationFrame=id=>frames.delete(id);
  const setTimeout=(fn,ms)=>{timers.set(++seed,{fn,at:clock+ms});return seed},clearTimeout=id=>timers.delete(id);
  const nodeEls=new Map(),edgeEls=[],chapterEls=[],sectorEls=[],spokeEls=[],visibility=new Map(),viewport=$('viewport'),world=$('world');
- viewport.clientWidth=390;viewport.clientHeight=440;viewport.querySelector('.map-tools').offsetLeft=296;viewport.querySelector('.map-tools').offsetTop=270;
+ viewport.clientWidth=390;viewport.clientHeight=440;const originalQuery=viewport.querySelector;viewport.querySelector=k=>k==='.map-tools'?$('mapTools'):originalQuery(k);Object.defineProperties($('mapTools'),{offsetLeft:{get:()=>viewport.clientWidth-($('mapTools').classList.contains('is-compact')?50:94)},offsetTop:{get:()=>viewport.clientHeight-($('mapTools').classList.contains('is-compact')?110:170)}});
  const format=String,time=String,toast=()=>{};
  function save(){saved=validateSave(JSON.parse(JSON.stringify(state)));}
  ${source}
  createGraph();renderUpdates();
  return {sectorUnlocked,renderStats,fit,render,selectNode,selectCenter,buySelected,openCenter,openNavigator,jumpToSector,interruptMapMotion,renderUpdates,sectorEls,chapterEls,nodeEls,edgeEls,spokeEls,visibility,applySettings,osReduce(value){motionPreference.matches=value;applySettings();},
  advance(now){clock=now;for(const [id,timer]of timers){if(timer.at<=clock){timers.delete(id);timer.fn();}}const pending=[...frames.values()];frames.clear();for(const frame of pending)frame(now);},
- resize(width,height){viewport.clientWidth=width;viewport.clientHeight=height;viewport.querySelector('.map-tools').offsetLeft=width-94;viewport.querySelector('.map-tools').offsetTop=height-170;reframeViewport();},reduced(value){document.body.classList.toggle('reduced-motion',value)},get moving(){return cameraMoving},get pending(){return selectionPending},get state(){return state},get selected(){return selected},get saved(){return saved}};
+ resize(width,height){viewport.clientWidth=width;viewport.clientHeight=height;reframeViewport();},reduced(value){document.body.classList.toggle('reduced-motion',value)},get moving(){return cameraMoving},get pending(){return selectionPending},get state(){return state},get selected(){return selected},get saved(){return saved}};
 `);
 const ui=createUI({...data,...layout,...updates,...cameraHelpers,iconSvg,setIcon},$,{createElement:element,createElementNS:element,body:element()});
 let now=0;function finishNavigation(){ui.advance(now+=16);ui.advance(now+=500);}
-ui.render();
+ui.applySettings();ui.render();
+assert($('mapTools').classList.contains('is-compact'));assert(!$('mapControls').checked);
+for(const id of ['fit','zoomOut','zoomIn'])assert($(id).hidden);
+$('mapControls').checked=true;$('mapControls').onchange();assert(ui.saved.settings.mapControls);assert(!$('mapTools').classList.contains('is-compact'));
+for(const id of ['fit','zoomOut','zoomIn'])assert(!$(id).hidden);
+$('mapControls').checked=false;$('mapControls').onchange();assert(!ui.saved.settings.mapControls);
 assert(ui.edgeEls.every(({el})=>el.style.display==='none'),'Fresh game must not show paths to undiscovered research');
 assert(ui.spokeEls.every(({el,root})=>el.style.display===(root.id===1?'':'none')),'Fresh game shows only its discovered center arm');
 assert(!app.includes('node-ready'));assert(!app.includes('node-meta'));assert(!html.includes('hubOpalLight'));
@@ -71,6 +76,10 @@ for(const n of data.NODES)ui.state.levels[n.id]=n.max;ui.state.levels[31]--;ui.r
 ui.reduced(false);ui.state.settings.motion=true;ui.jumpToSector(3);ui.advance(now+=16);assert(ui.pending&&ui.moving);
 ui.state.settings.motion=false;ui.applySettings();assert(!ui.pending&&!ui.moving);assert.equal($('buyDetail').textContent,'무료 연구');assert(!$('motion').checked);
 ui.state.settings.motion=true;ui.applySettings();ui.jumpToSector(3);ui.advance(now+=16);assert(ui.moving);ui.osReduce(true);assert(!ui.pending&&!ui.moving);assert($('motion').checked,'System reduce motion must not overwrite the saved preference');ui.osReduce(false);
+// Changing toolbar dimensions must retain the pending navigation and final button state.
+ui.jumpToSector(3);ui.advance(now+=16);assert(ui.pending&&ui.moving);
+$('mapControls').checked=true;$('mapControls').onchange();assert(ui.pending&&ui.moving);ui.advance(now+=500);assert(!ui.pending&&!ui.moving);assert.equal($('buyDetail').textContent,'무료 연구');
+for(const {el,to}of ui.edgeEls)assert.equal(el.style['--edge-color'],data.CHAPTERS[to.chapter].color);
 // Original detail panel/center interfaces have no added opal decorations.
 ui.selectNode(80);assert(!app.includes('opal-surface'));ui.selectCenter();
 ui.state.levels[80]=0;ui.render();assert.equal(ui.sectorEls[7].style.display,'none');

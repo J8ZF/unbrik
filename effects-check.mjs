@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createOpalMotion,preventGameSelection} from './dist/effects.js';
+import {createOpalMotion,preventGameSelection,clearGameSelection,installGameSelectionGuard} from './dist/effects.js';
 import {NODES,defaultState} from './dist/data.js';
 
 // Actual application settings/setup, with controlled intersection and lifecycle signals.
@@ -40,17 +40,37 @@ observers[0].emit(node,false);assert.equal(status(node),'paused');ui.setting('mo
 ui.controller.disconnect();assert(observers.every(o=>o.disconnected));assert.equal(status(node),'paused');
 const staticTarget=element();createOpalMotion([{root:null,elements:[staticTarget]}],()=>true,null);assert.equal(status(staticTarget),'paused');
 
-for(const type of ['selectstart','contextmenu']){
- for(const scope of ['#hud','#viewport','#nodePanel','#sectorDialog','button']){
-  let prevented=false;preventGameSelection({type,target:{closest:s=>s.split(',').includes(scope)?{}:null},preventDefault(){prevented=true;}});assert(prevented,scope);
- }
- for(const scope of ['input','textarea','select','[contenteditable="true"]','a']){
-  let prevented=false;preventGameSelection({type,target:{closest:s=>s.split(',').includes(scope)||s.includes('#hud')?{}:null},preventDefault(){prevented=true;}});assert(!prevented,scope);
- }
- let prevented=false;preventGameSelection({type,target:{closest:()=>null},preventDefault(){prevented=true;}});assert(!prevented);
+// Lightweight nodes reproduce the selection targets from the Android report.
+function domNode(tag,parent=null,id=''){
+ const el={nodeType:1,tag,parentElement:parent,id,editable:false};
+ el.closest=selector=>{for(let p=el;p;p=p.parentElement){if(selector.split(',').some(s=>s==='#game'?p.id==='game':s.startsWith('[contenteditable]')?p.editable:s===p.tag))return p;}return null;};return el;
 }
+const game=domNode('main',null,'game'),toastCopy=domNode('div',game,'toastMessage'),footer=domNode('footer',game),settingCopy=domNode('p',game),button=domNode('button',game),link=domNode('a',game),textarea=domNode('textarea',game),input=domNode('input',game),select=domNode('select',game),editable=domNode('div',game);editable.editable=true;
+const editChild=domNode('span',editable),text=el=>({nodeType:3,parentElement:el});
+for(const type of ['selectstart','contextmenu','dblclick']){
+ for(const target of [toastCopy,footer,settingCopy,button,text(toastCopy),link]){
+  let prevented=false;preventGameSelection({type,target,preventDefault(){prevented=true;}});
+  assert.equal(prevented,!(type==='contextmenu'&&target===link));
+ }
+ for(const target of [textarea,input,select,editable,editChild,text(editChild),domNode('div')]){
+  let prevented=false;preventGameSelection({type,target,preventDefault(){prevented=true;}});assert(!prevented);
+ }
+}
+let clears=0;
+const selection={isCollapsed:false,anchorNode:text(toastCopy),focusNode:text(toastCopy),removeAllRanges(){clears++;this.isCollapsed=true;}};
+const listeners=new Map(),doc={activeElement:button,getSelection:()=>selection,addEventListener(type,fn,capture){listeners.set(type,{fn,capture});}};
+installGameSelectionGuard(doc);assert.equal(clears,1,'Stray offline-notification selection is removed at installation');
+for(const type of ['selectstart','contextmenu','dblclick','pointerdown'])assert(listeners.get(type).capture);
+selection.isCollapsed=false;listeners.get('selectionchange').fn();assert.equal(clears,2);
+selection.isCollapsed=false;listeners.get('pointerdown').fn({target:button});assert.equal(clears,3);
+for(const field of [textarea,input,editChild]){
+ selection.isCollapsed=false;selection.anchorNode=selection.focusNode=text(field);doc.activeElement=field;clearGameSelection(doc);assert.equal(clears,3,'Save and editable selections are preserved');
+}
+selection.anchorNode=text(toastCopy);selection.focusNode=text(footer);selection.isCollapsed=false;clearGameSelection(doc);assert.equal(clears,4,'A field retaining focus must not protect a stray game selection');
+selection.anchorNode=selection.focusNode=domNode('body');selection.isCollapsed=false;doc.activeElement=textarea;clearGameSelection(doc);assert.equal(clears,4,'Native textarea selection reported at body remains available for copying');
 // Four independently positioned fields must form four distinct, tweenable arrangements.
 const css=readFileSync('dist/style.css','utf8'),positions=[...css.matchAll(/background-position:([^;}]+)/g)].map(m=>m[1]);
+assert(css.includes('html,body,#game,#game *{-webkit-user-select:none;user-select:none;'));assert(css.includes('#game textarea'));
 assert.equal(positions.length,5);
 for(const arrangement of positions){
  const fields=arrangement.split(',');assert.equal(fields.length,4);assert.equal(new Set(fields).size,4);

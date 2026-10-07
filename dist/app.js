@@ -1,11 +1,12 @@
-import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress} from './data.js?v=1.7.0-r2';
-import {iconSvg,setIcon} from './icons.js?v=1.7.0-r2';
-import {checkpointOffline,settleOffline} from './offline.js?v=1.7.0-r2';
-import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=1.7.0-r2';
-import {wireframePaths} from './hub.js?v=1.7.0-r2';
-import {UPDATES,updatePage} from './updates.js?v=1.7.0-r2';
-import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=1.7.0-r2';
-import {createOpalMotion,preventGameSelection} from './effects.js?v=1.7.0-r2';
+import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress} from './data.js?v=1.7.1';
+import {iconSvg,setIcon} from './icons.js?v=1.7.1';
+import {checkpointOffline,settleOffline} from './offline.js?v=1.7.1';
+import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=1.7.1';
+import {wireframePaths} from './hub.js?v=1.7.1';
+import {UPDATES,updatePage} from './updates.js?v=1.7.1';
+import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=1.7.1';
+import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=1.7.1';
+import {createNotification} from './notifications.js?v=1.7.1';
 const $=id=>document.getElementById(id);
 const CENTER_SELECTION=-1;
 const setText=(el,value)=>{const next=String(value);if(el.textContent!==next)el.textContent=next;};
@@ -20,7 +21,7 @@ let state=load(),selected=NODES.filter(n=>level(state,n)).at(-1)?.id||1,econ=eco
 const viewport=$('viewport'),world=$('world'),nodeEls=new Map(),edgeEls=[],chapterEls=[],sectorEls=[],spokeEls=[];
 function initialCamera(){const n=byId.get(selected)||NODES[0];if(econ.count)return {x:viewport.clientWidth/2-n.x*.78,y:viewport.clientHeight*.4-n.y*.78,scale:.78};const scale=Math.max(.22,Math.min(.55,(viewport.clientHeight-65)/600));return {x:viewport.clientWidth/2,y:viewport.clientHeight*.78,scale};}
 let camera=state.camera||initialCamera();
-let toastTimer,burstTimer,gestureUsed=false,suspended=true,cameraMoving=false,lastHubFrame=0,updatesPage=1;
+let burstTimer,gestureUsed=false,suspended=true,cameraMoving=false,lastHubFrame=0,updatesPage=1;
 const motionPreference=matchMedia('(prefers-reduced-motion: reduce)');
 let opalMotion=null;
 let selectionPending=false,selectionEpoch=0,navigationFrame=0,panelAnimation=null,navigatorCloseTimer=0,cameraIntent=null;
@@ -34,11 +35,16 @@ function format(n,decimals=2){
  const k=Math.floor(Math.log10(n)/3);return k<units.length?`${(n/1000**k).toFixed(2).replace(/\.00$/,'')}${units[k]}`:n.toExponential(2).replace('+','');
 }
 function time(n){if(n<1)return '곧';if(n<60)return `${Math.ceil(n)}초`;if(n<3600)return `${Math.floor(n/60)}분 ${Math.floor(n%60)}초`;if(n<86400)return `${(n/3600).toFixed(1)}시간`;return `${(n/86400).toFixed(1)}일`;}
-function toast(message,duration=4000){setText($('toast'),message);$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),duration);}
+const notification=createNotification({element:$('toast'),message:$('toastMessage'),bar:$('toastProgress'),closeButton:$('closeToast')},()=>state.settings.motion&&!motionPreference.matches);
+function toast(message,duration=4000){notification.show(message,duration);}
 function syncOpalMotion(){document.body.classList.toggle('effects-paused',document.hidden||suspended);opalMotion?.refresh();}
 function applySettings(){
  const reduced=!state.settings.motion||motionPreference.matches;document.body.classList.toggle('reduced-motion',reduced);
- for(const k of ['motion','touch','haptic','auto','purchaseCheat'])$(k).checked=state.settings[k];$('format').value=state.settings.format;
+ for(const k of ['motion','touch','haptic','auto','purchaseCheat','mapControls'])$(k).checked=state.settings[k];$('format').value=state.settings.format;
+ const controls=$('mapTools'),expanded=state.settings.mapControls,changed=controls.dataset.expanded!==String(expanded);
+ controls.dataset.expanded=String(expanded);controls.classList.toggle('is-compact',!expanded);
+ for(const id of ['fit','zoomOut','zoomIn'])$(id).hidden=!expanded;
+ if(changed&&cameraIntent)moveCamera(cameraForIntent(),cameraComplete);
  if(reduced){panelAnimation?.cancel();panelAnimation=null;if(cameraMoving&&cameraIntent)moveCamera(cameraForIntent(),cameraComplete);}
  syncOpalMotion();
 }
@@ -163,7 +169,7 @@ function moveCamera(target,onComplete=null){
  function step(now){if(epoch!==cameraEpoch)return;const t=Math.min(1,(now-t0)/380);camera=t===1?{...target}:interpolateCamera(start,target,t);transform();if(t<1)cameraAnim=requestAnimationFrame(step);else finish();}
  cameraAnim=requestAnimationFrame(step);
 }
-function freeMapFrames(){const controls=viewport.querySelector('.map-tools');return mapFrames(viewport.clientWidth,viewport.clientHeight,{left:controls.offsetLeft,top:controls.offsetTop},state.settings.purchaseCheat?68:32);}
+function freeMapFrames(){const controls=viewport.querySelector('.map-tools');return mapFrames(viewport.clientWidth,viewport.clientHeight,{left:controls.offsetLeft,top:controls.offsetTop},state.settings.purchaseCheat?52:32);}
 function cameraForIntent(){
  if(cameraIntent?.type==='center')return fitCamera({minX:-184,maxX:184,minY:-184,maxY:184},freeMapFrames(),.82);
  if(cameraIntent?.type==='node'){const n=byId.get(cameraIntent.id);return fitCamera(boundsOf([n],86,66),freeMapFrames(),.88);}
@@ -207,7 +213,7 @@ $('togglePanel').onclick=()=>{state.settings.panelCollapsed=!state.settings.pane
 $('settings').onclick=()=>{applySettings();renderStats();$('settingsDialog').showModal();};$('closeSettings').onclick=()=>$('settingsDialog').close();
 $('settingsDialog').addEventListener('click',e=>{if(e.target===$('settingsDialog')){const r=e.target.getBoundingClientRect();if(e.clientY<r.top||e.clientX<r.left||e.clientX>r.right)$('settingsDialog').close();}});
 for(const button of document.querySelectorAll('[data-tab]')){button.onclick=()=>{for(const b of document.querySelectorAll('[data-tab]')){const active=b===button;b.setAttribute('aria-selected',String(active));$('pane-'+b.dataset.tab).hidden=!active;}if(button.dataset.tab==='stats')renderStats();};}
-for(const k of ['motion','touch','haptic','auto'])$(k).onchange=()=>{state.settings[k]=$(k).checked;applySettings();save();};$('format').onchange=()=>{state.settings.format=$('format').value;render();save();};
+for(const k of ['motion','touch','haptic','auto','mapControls'])$(k).onchange=()=>{state.settings[k]=$(k).checked;applySettings();save();};$('format').onchange=()=>{state.settings.format=$('format').value;render();save();};
 $('purchaseCheat').onchange=()=>{state.settings.purchaseCheat=$('purchaseCheat').checked;render();save();toast(state.settings.purchaseCheat?'테스트 치트 ON · 자금 소모 없이 연구합니다.':'테스트 치트 OFF · 구매 시 정상 차감됩니다.');};
 $('saveNow').onclick=()=>save(true);
 function exportText(){save();$('transfer').hidden=false;$('saveText').value=JSON.stringify(state);setText($('transferStatus'),'파일을 저장하거나 위 데이터를 복사해 보관하세요.');return $('saveText').value;}
@@ -252,7 +258,7 @@ function frame(now){animateHub(now);const dt=Math.max(0,Math.min(1,(now-lastFram
  requestAnimationFrame(frame);
 }
 motionPreference.addEventListener?.('change',applySettings);
-for(const type of ['selectstart','contextmenu'])$('game').addEventListener(type,preventGameSelection);
+installGameSelectionGuard();
 for(const el of document.querySelectorAll('[data-ui-icon]'))setIcon(el,el.dataset.uiIcon);
 createGraph();setupOpalMotion();renderUpdates();applySettings();render();if(!state.camera)camera=initialCamera();transform();resume();requestAnimationFrame(frame);if(loadNotice)setTimeout(()=>toast(loadNotice),500);if(!storageOK)setText($('saveState'),'저장 불가 · 설정에서 내보내기');
 // Optional browser agent tools use exactly the same state and purchase guard as the UI.
