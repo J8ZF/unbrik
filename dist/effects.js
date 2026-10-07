@@ -1,4 +1,4 @@
-// Only intersecting opal surfaces animate. No independent timers or SMIL.
+// Only intersecting opal borders animate. No independent timers or SMIL.
 export function createOpalMotion(groups,isEnabled,Observer=globalThis.IntersectionObserver){
  const targets=groups.flatMap(g=>g.elements),visible=new Set(),observers=[];
  function update(el){const value=isEnabled()&&visible.has(el)?'running':'paused';if(el.dataset.opalMotion!==value){el.dataset.opalMotion=value;el.style.setProperty('--opal-play-state',value);}}

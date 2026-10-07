@@ -1,4 +1,4 @@
-import {createRadialLayout} from './layout.js?v=1.7.1';
+import {createRadialLayout} from './layout.js?v=1.7.2';
 export const CHAPTERS = [
  {name:'INITIALIZATION',ko:'초기화',color:'#b9f36d'},
  {name:'ARITHMETIC',ko:'산술',color:'#65e2cc'},

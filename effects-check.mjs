@@ -68,13 +68,22 @@ for(const field of [textarea,input,editChild]){
 }
 selection.anchorNode=text(toastCopy);selection.focusNode=text(footer);selection.isCollapsed=false;clearGameSelection(doc);assert.equal(clears,4,'A field retaining focus must not protect a stray game selection');
 selection.anchorNode=selection.focusNode=domNode('body');selection.isCollapsed=false;doc.activeElement=textarea;clearGameSelection(doc);assert.equal(clears,4,'Native textarea selection reported at body remains available for copying');
-// Four independently positioned fields must form four distinct, tweenable arrangements.
-const css=readFileSync('dist/style.css','utf8'),positions=[...css.matchAll(/background-position:([^;}]+)/g)].map(m=>m[1]);
+// Only a purchased node gets the masked border; the old colored surface is absent.
+const css=readFileSync('dist/style.css','utf8'),html=readFileSync('dist/index.html','utf8');
 assert(css.includes('html,body,#game,#game *{-webkit-user-select:none;user-select:none;'));assert(css.includes('#game textarea'));
-assert.equal(positions.length,5);
-for(const arrangement of positions){
- const fields=arrangement.split(',');assert.equal(fields.length,4);assert.equal(new Set(fields).size,4);
- for(const field of fields){assert(/^-?\d+% -?\d+%$/.test(field),field);for(const value of field.split(' ')){const center=.4+.2*parseFloat(value)/100;assert(center>=.19&&center<=.81);}}
-}
-assert.equal(new Set(positions).size,4);
-console.log(JSON.stringify({opalVisibility:'passed',fourColorArrangements:'passed',motionAndOSSettings:'passed',independentTouchPreference:'passed',backgroundPause:'passed',staticFallback:'passed',selectionProtection:'passed',saveInputsAndLinks:'preserved'}));
+assert(!css.includes('opalFields'));assert(!css.includes('.node.opal:not(.ghost):not(.locked):before'));
+const ring=css.match(/\.node\.opal\.bought>\.opal-border\{([^}]+)\}/)[1];
+assert(ring.includes('mask-composite:exclude'));assert(ring.includes('-webkit-mask-composite:xor'));
+assert(ring.includes('content-box'));assert(ring.includes('animation:opalBorderFlow 14s linear infinite'));
+assert(ring.includes('animation-play-state:var(--opal-play-state,paused)'));
+const stops=[...ring.matchAll(/(#[0-9a-f]{6}) (\d+)deg/g)].map(m=>({color:m[1],angle:Number(m[2])}));
+assert(new Set(stops.map(s=>s.color)).size>=4);
+assert.equal(stops[0].color,stops.at(-1).color,'The loop seam must blend back into the same color');
+assert.equal(stops[0].angle,0);assert.equal(stops.at(-1).angle,360);
+for(let i=1;i<stops.length;i++)assert(stops[i].angle-stops[i-1].angle>=45,'Broad transitions, no hard color steps');
+assert(css.includes("@property --opal-angle{syntax:'<angle>';inherits:false;initial-value:0deg}"));
+assert(css.includes('@keyframes opalBorderFlow{from{--opal-angle:0deg}to{--opal-angle:360deg}}'),'One positive turn, with no dwell keyframes');
+const buy=css.match(/#buy\{([^}]+)\}/)[1];assert(buy.includes('background:var(--accent)'));assert(buy.includes('border:1px solid #b9f36d'));assert(buy.includes('color:#1c2b10'));
+assert(css.includes('.cheat-badge{color:#f5d58b;font:inherit;letter-spacing:inherit}'));
+assert(html.includes('<span class="network-meta"><span>RESEARCH NETWORK</span><span id="cheatBadge" class="cheat-badge" hidden>CHEAT</span></span>'));
+console.log(JSON.stringify({opalVisibility:'passed',borderOnly:'passed',continuousClockwiseSpectrum:'passed',originalResearchButton:'passed',cheatMetadataAlignment:'passed',motionAndOSSettings:'passed',independentTouchPreference:'passed',backgroundPause:'passed',staticFallback:'passed',selectionProtection:'passed',saveInputsAndLinks:'preserved'}));

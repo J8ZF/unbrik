@@ -80,6 +80,13 @@ ui.state.settings.motion=true;ui.applySettings();ui.jumpToSector(3);ui.advance(n
 ui.jumpToSector(3);ui.advance(now+=16);assert(ui.pending&&ui.moving);
 $('mapControls').checked=true;$('mapControls').onchange();assert(ui.pending&&ui.moving);ui.advance(now+=500);assert(!ui.pending&&!ui.moving);assert.equal($('buyDetail').textContent,'무료 연구');
 for(const {el,to}of ui.edgeEls)assert.equal(el.style['--edge-color'],data.CHAPTERS[to.chapter].color);
+// Border decoration belongs only to sector 8 and becomes eligible after purchase.
+for(const n of data.NODES){const border=ui.nodeEls.get(n.id).children.find(el=>el.className==='opal-border');assert.equal(!!border,n.chapter===7);if(border)assert.equal(border.attributes['aria-hidden'],'true');}
+for(const n of data.NODES)ui.state.levels[n.id]=n.id<69?n.max:0;
+ui.state.settings.purchaseCheat=false;ui.state.currencies.money=0;ui.selectNode(69);ui.render();assert(!ui.nodeEls.get(69).className.includes('bought'));assert(!ui.nodeEls.get(69).className.includes('available'));
+ui.state.settings.purchaseCheat=true;ui.render();assert(ui.nodeEls.get(69).className.includes('available'));assert(!ui.nodeEls.get(69).className.includes('bought'));
+assert(data.purchase(ui.state,data.byId.get(69)));ui.render();assert(ui.nodeEls.get(69).className.includes('bought'));assert(!ui.nodeEls.get(69).className.includes('available'));
+for(const n of data.NODES)ui.state.levels[n.id]=n.max;
 // Original detail panel/center interfaces have no added opal decorations.
 ui.selectNode(80);assert(!app.includes('opal-surface'));ui.selectCenter();
 ui.state.levels[80]=0;ui.render();assert.equal(ui.sectorEls[7].style.display,'none');

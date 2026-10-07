@@ -1,12 +1,12 @@
-import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress} from './data.js?v=1.7.1';
-import {iconSvg,setIcon} from './icons.js?v=1.7.1';
-import {checkpointOffline,settleOffline} from './offline.js?v=1.7.1';
-import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=1.7.1';
-import {wireframePaths} from './hub.js?v=1.7.1';
-import {UPDATES,updatePage} from './updates.js?v=1.7.1';
-import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=1.7.1';
-import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=1.7.1';
-import {createNotification} from './notifications.js?v=1.7.1';
+import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress} from './data.js?v=1.7.2';
+import {iconSvg,setIcon} from './icons.js?v=1.7.2';
+import {checkpointOffline,settleOffline} from './offline.js?v=1.7.2';
+import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=1.7.2';
+import {wireframePaths} from './hub.js?v=1.7.2';
+import {UPDATES,updatePage} from './updates.js?v=1.7.2';
+import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=1.7.2';
+import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=1.7.2';
+import {createNotification} from './notifications.js?v=1.7.2';
 const $=id=>document.getElementById(id);
 const CENTER_SELECTION=-1;
 const setText=(el,value)=>{const next=String(value);if(el.textContent!==next)el.textContent=next;};
@@ -72,6 +72,7 @@ function createGraph(){
  for(const n of NODES){
  const el=document.createElement('button');el.className='node';el.hidden=true;el.id=`node-${n.id}`;el.dataset.id=n.id;el.style.left=n.x+'px';el.style.top=n.y+'px';el.style.setProperty('--node-color',CHAPTERS[n.chapter].color);
  el.innerHTML='<div class="node-top"><span class="symbol"></span><span class="node-id"></span></div><span class="node-name"></span><span class="node-price"><span></span><span class="node-status"></span></span><i class="level-dots"></i>';
+ if(n.chapter===7){const border=document.createElement('span');border.className='opal-border';border.setAttribute('aria-hidden','true');el.append(border);}
  el.addEventListener('click',ev=>{if(ev.detail===0)selectNode(n.id);});
  $('nodes').append(el);nodeEls.set(n.id,el);
  for(const r of n.req){const p=byId.get(r.id),path=document.createElementNS('http://www.w3.org/2000/svg','path');
@@ -169,7 +170,7 @@ function moveCamera(target,onComplete=null){
  function step(now){if(epoch!==cameraEpoch)return;const t=Math.min(1,(now-t0)/380);camera=t===1?{...target}:interpolateCamera(start,target,t);transform();if(t<1)cameraAnim=requestAnimationFrame(step);else finish();}
  cameraAnim=requestAnimationFrame(step);
 }
-function freeMapFrames(){const controls=viewport.querySelector('.map-tools');return mapFrames(viewport.clientWidth,viewport.clientHeight,{left:controls.offsetLeft,top:controls.offsetTop},state.settings.purchaseCheat?52:32);}
+function freeMapFrames(){const controls=viewport.querySelector('.map-tools');return mapFrames(viewport.clientWidth,viewport.clientHeight,{left:controls.offsetLeft,top:controls.offsetTop},state.settings.purchaseCheat?44:32);}
 function cameraForIntent(){
  if(cameraIntent?.type==='center')return fitCamera({minX:-184,maxX:184,minY:-184,maxY:184},freeMapFrames(),.82);
  if(cameraIntent?.type==='node'){const n=byId.get(cameraIntent.id);return fitCamera(boundsOf([n],86,66),freeMapFrames(),.88);}
