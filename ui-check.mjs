@@ -36,13 +36,45 @@ const createUI=new Function('deps','$','document',`
  advance(now){clock=now;for(const [id,timer]of timers){if(timer.at<=clock){timers.delete(id);timer.fn();}}const pending=[...frames.values()];frames.clear();for(const frame of pending)frame(now);},
  resize(width,height){viewport.clientWidth=width;viewport.clientHeight=height;reframeViewport();},reduced(value){document.body.classList.toggle('reduced-motion',value)},get activePointers(){return pointers.size},get moving(){return cameraMoving},get pending(){return selectionPending},get state(){return state},get selected(){return selected},get saved(){return saved}};
 `);
-const ui=createUI({...data,...layout,...updates,...cameraHelpers,iconSvg,setIcon},$,{createElement:element,createElementNS:element,body:element()});
+const documentAdapter={...element(),createElement:element,createElementNS:element,body:element()};
+const ui=createUI({...data,...layout,...updates,...cameraHelpers,iconSvg,setIcon},$,documentAdapter);
 let now=0;function finishNavigation(){ui.advance(now+=16);ui.advance(now+=500);}
 ui.applySettings();ui.render();
 // Actual click and captured-pointer event paths, including reselecting the same node.
 function targetFor(id){const el=id===-1?$('centerNode'):ui.nodeEls.get(id);el.dataset.id=String(id);return {closest:selector=>selector==='.node,.hub-node'?el:null};}
-function pointer(type,id,node=1,x=100,y=100,pointerType='touch'){const event={pointerId:id,pointerType,button:0,clientX:x,clientY:y,target:targetFor(node),preventDefault(){}};$('viewport').emit(type,event);}
+function pointer(type,id,node=1,x=100,y=100,pointerType='touch'){const event={pointerId:id,pointerType,button:0,clientX:x,clientY:y,target:targetFor(node),preventDefault(){}};documentAdapter.emit(type,event);$('viewport').emit(type,event);}
 function closePanel(){if(!ui.state.settings.panelCollapsed)$('togglePanel').onclick();}
+function nativeClick(target,detail=1){
+ const event={target,detail,preventDefault(){this.defaultPrevented=true;},stopImmediatePropagation(){this.stopped=true;},stopPropagation(){this.stopped=true;}};
+ documentAdapter.emit('click',event);if(!event.stopped){target.emit?.('click',event);target.onclick?.(event);}return event;
+}
+// A lower tap can be followed by a compatibility click aimed at the newly raised panel.
+// The previous harness only sent the second click to the original node.
+closePanel();pointer('pointerdown',81,1,100,400);pointer('pointerup',81,1,100,400);
+ui.resize(390,260);nativeClick($('togglePanel'));const lowerTapStaysOpen=!$('panelDetails').hidden;
+ui.resize(390,440);
+// Interruption can replace a descendant SVG/text target before its ancestor is resolved.
+ui.state.levels[1]=1;ui.jumpToSector(0);assert(ui.pending);
+const replacedTarget={closest:selector=>selector==='.node,.hub-node'&&ui.pending?ui.nodeEls.get(1):null};
+const event={pointerId:82,pointerType:'touch',button:0,clientX:100,clientY:400,target:replacedTarget,preventDefault(){}};
+documentAdapter.emit('pointerdown',event);$('viewport').emit('pointerdown',event);pointer('pointerup',82);
+const originalTargetRetained=ui.selected===1;
+assert.deepEqual({lowerTapStaysOpen,originalTargetRetained},{lowerTapStaysOpen:true,originalTargetRetained:true});
+// A separate real press must work immediately, without a 500 ms dead period.
+let result=nativeClick($('togglePanel'),0);assert(!result.defaultPrevented,'Keyboard activation is never consumed');
+documentAdapter.emit('pointerdown',{target:$('togglePanel')});const before=ui.state.settings.panelCollapsed;
+result=nativeClick($('togglePanel'));assert(!result.defaultPrevented);assert.notEqual(ui.state.settings.panelCollapsed,before);
+// Initial/restored collapsed state, upper/lower taps, HUD state and motion settings.
+for(const motion of [true,false])for(const hudCollapsed of [true,false])for(const y of [80,400]){
+ Object.assign(ui.state.settings,{motion,hudCollapsed,panelCollapsed:true});ui.applySettings();ui.render();ui.resize(390,440);
+ pointer('pointerdown',90,1,100,y);pointer('pointerup',90,1,100,y);ui.resize(390,260);
+ const click=nativeClick(y===400?$('togglePanel'):$('viewport'));
+ assert(click.defaultPrevented);assert(!$('panelDetails').hidden);assert(!ui.state.settings.panelCollapsed);
+ documentAdapter.emit('pointerdown',{target:$('togglePanel')});nativeClick($('togglePanel'));assert($('panelDetails').hidden);
+}
+ui.resize(390,440);Object.assign(ui.state.settings,{motion:true,hudCollapsed:false});ui.applySettings();
+ui.state.levels={};ui.selectNode(1);ui.advance(now+=600);
+
 closePanel();ui.nodeEls.get(1).emit('click',{detail:1});const nativeClickReopens=!$('panelDetails').hidden;
 ui.selectNode(1);closePanel();pointer('pointerdown',101);pointer('lostpointercapture',101);pointer('pointerdown',102);pointer('pointerup',102);const lostCaptureReopens=!$('panelDetails').hidden;
 assert.deepEqual({nativeClickReopens,lostCaptureReopens},{nativeClickReopens:true,lostCaptureReopens:true});
@@ -138,4 +170,19 @@ for(const through of [0,4,5,9,15,25,35,37,45,55,68,80]){
  }
  for(const {el,from,to}of ui.edgeEls)if(!ui.sectorUnlocked(from.chapter)||!ui.sectorUnlocked(to.chapter))assert.equal(el.style.display,'none');
 }
-console.log(JSON.stringify({uiControls:'passed',nativeClickReopens:'passed',lostCaptureRecovery:'passed',dragPinchCancellation:'passed',inputSettingsCombinations:24,saveCompatibility:'passed',originalNodeMarkup:'restored',sectorBoundaryCases:12,lockedSectorMenuAndStats:'hidden',crossPrerequisiteLeaks:'blocked',invalidNavigation:'blocked',atomicFinalButton:'passed',motionToggleDuringNavigation:'passed'}));
+// Fresh application instances: the very first map tap after loading saved UI preferences.
+for(const restoredCollapsed of [true,false]){
+ const freshElements=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,element()])),get=id=>freshElements.get(id);
+ const doc={...element(),createElement:element,createElementNS:element,body:element()};
+ const fresh=createUI({...data,...layout,...updates,...cameraHelpers,iconSvg,setIcon},get,doc);
+ const saved=data.defaultState();saved.settings.panelCollapsed=restoredCollapsed;
+ Object.assign(fresh.state,data.validateSave(JSON.parse(JSON.stringify(saved))));fresh.applySettings();fresh.render();
+ if(!restoredCollapsed)get('togglePanel').onclick();
+ const target={closest:selector=>selector==='.node,.hub-node'?fresh.nodeEls.get(1):null};
+ const down={pointerId:1,pointerType:'touch',button:0,clientX:140,clientY:410,target,preventDefault(){}};
+ doc.emit('pointerdown',down);get('viewport').emit('pointerdown',down);get('viewport').emit('pointerup',down);fresh.resize(390,260);
+ const click={detail:1,target:get('togglePanel'),preventDefault(){this.defaultPrevented=true;},stopImmediatePropagation(){this.stopped=true;}};
+ doc.emit('click',click);if(!click.stopped)get('togglePanel').onclick();
+ assert(click.defaultPrevented);assert(!get('panelDetails').hidden);assert.equal(fresh.selected,1);
+}
+console.log(JSON.stringify({uiControls:'passed',nativeClickReopens:'passed',lowerTapClickThrough:'blocked',targetBeforeRepaint:'passed',initialPanelLayoutCases:8,freshSessionCases:2,lostCaptureRecovery:'passed',dragPinchCancellation:'passed',inputSettingsCombinations:24,saveCompatibility:'passed',originalNodeMarkup:'restored',sectorBoundaryCases:12,lockedSectorMenuAndStats:'hidden',crossPrerequisiteLeaks:'blocked',invalidNavigation:'blocked',atomicFinalButton:'passed',motionToggleDuringNavigation:'passed'}));

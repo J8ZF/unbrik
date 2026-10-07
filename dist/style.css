@@ -203,3 +203,6 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 #closeToast .glyph{width:18px;height:18px}
 .toast-track{position:absolute;left:0;right:0;bottom:0;height:2px;background:#0003;pointer-events:none}
 #toastProgress{display:block;width:100%;height:100%;background:#c3e5a8;transform-origin:left;transform:scaleX(0)}
+
+/* Every part of a card hits the stable button, not a changing price/SVG child. */
+.node>*,.hub-node>*{pointer-events:none}

@@ -1,12 +1,12 @@
-import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress} from './data.js?v=1.7.3';
-import {iconSvg,setIcon} from './icons.js?v=1.7.3';
-import {checkpointOffline,settleOffline} from './offline.js?v=1.7.3';
-import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=1.7.3';
-import {wireframePaths} from './hub.js?v=1.7.3';
-import {UPDATES,updatePage} from './updates.js?v=1.7.3';
-import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=1.7.3';
-import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=1.7.3';
-import {createNotification} from './notifications.js?v=1.7.3';
+import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress} from './data.js?v=1.7.3-r2';
+import {iconSvg,setIcon} from './icons.js?v=1.7.3-r2';
+import {checkpointOffline,settleOffline} from './offline.js?v=1.7.3-r2';
+import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=1.7.3-r2';
+import {wireframePaths} from './hub.js?v=1.7.3-r2';
+import {UPDATES,updatePage} from './updates.js?v=1.7.3-r2';
+import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=1.7.3-r2';
+import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=1.7.3-r2';
+import {createNotification} from './notifications.js?v=1.7.3-r2';
 const $=id=>document.getElementById(id);
 const CENTER_SELECTION=-1;
 const setText=(el,value)=>{const next=String(value);if(el.textContent!==next)el.textContent=next;};
@@ -204,9 +204,17 @@ function handleMapClick(event,id){
  if(id===CENTER_SELECTION)selectCenter();else selectNode(id);
 }
 const pointers=new Map();let gesture=null,suppressMapClickUntil=0;
+// A map pointer-up may open a panel under the finger. Consume its follow-up
+// click before ANY newly positioned control sees it, not just node buttons.
+// A real new press (including a quick panel/toolbar press) starts a fresh action.
+document.addEventListener('pointerdown',()=>{suppressMapClickUntil=0;},true);
+document.addEventListener('click',event=>{
+ if(event.detail===0||performance.now()>=suppressMapClickUntil)return;
+ event.preventDefault();event.stopImmediatePropagation();
+},true);
 function point(ev){const rect=viewport.getBoundingClientRect();return {x:ev.clientX-rect.left,y:ev.clientY-rect.top};}
 function resetGesture(pinched=false){const p=[...pointers.values()];if(p.length>=2){const mid={x:(p[0].x+p[1].x)/2,y:(p[0].y+p[1].y)/2};gesture={pinched:true,moved:true,distance:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y),scale:camera.scale,anchor:{x:(mid.x-camera.x)/camera.scale,y:(mid.y-camera.y)/camera.scale}};}else if(p.length){gesture={start:p[0],base:{...camera},moved:pinched,pinched,id:p[0].node,time:performance.now()};}}
-viewport.addEventListener('pointerdown',ev=>{if(ev.target.closest('.map-tools'))return;if(ev.pointerType==='mouse'&&ev.button!==0)return;suppressMapClickUntil=0;interruptMapMotion();const p={...point(ev),node:Number(ev.target.closest('.node,.hub-node')?.dataset.id)||null};pointers.set(ev.pointerId,p);viewport.setPointerCapture(ev.pointerId);resetGesture(pointers.size>1);ev.preventDefault();});
+viewport.addEventListener('pointerdown',ev=>{if(ev.target.closest('.map-tools'))return;if(ev.pointerType==='mouse'&&ev.button!==0)return;suppressMapClickUntil=0;const node=Number(ev.target.closest('.node,.hub-node')?.dataset.id)||null;interruptMapMotion();const p={...point(ev),node};pointers.set(ev.pointerId,p);viewport.setPointerCapture(ev.pointerId);resetGesture(pointers.size>1);ev.preventDefault();});
 viewport.addEventListener('pointermove',ev=>{if(!pointers.has(ev.pointerId))return;const prev=pointers.get(ev.pointerId);pointers.set(ev.pointerId,{...point(ev),node:prev.node});const ps=[...pointers.values()];if(ps.length>=2&&gesture){const a=ps[0],b=ps[1],mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};camera.scale=Math.max(.035,Math.min(1.7,gesture.scale*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,gesture.distance)));camera.x=mid.x-gesture.anchor.x*camera.scale;camera.y=mid.y-gesture.anchor.y*camera.scale;}else if(gesture){const p=ps[0],dx=p.x-gesture.start.x,dy=p.y-gesture.start.y;if(Math.hypot(dx,dy)>7)gesture.moved=true;if(gesture.moved){camera.x=gesture.base.x+dx;camera.y=gesture.base.y+dy;}}if(gesture?.moved){constrain();transform();$('hint').style.opacity='0';gestureUsed=true;}ev.preventDefault();});
 function endPointer(ev,cancelled=false){if(!pointers.has(ev.pointerId))return;suppressMapClickUntil=performance.now()+500;const p=pointers.get(ev.pointerId),tap=!cancelled&&pointers.size===1&&gesture&&!gesture.moved&&!gesture.pinched&&performance.now()-gesture.time<900,id=gesture?.id;pointers.delete(ev.pointerId);if(tap){ripple(p.x,p.y);if(id===CENTER_SELECTION)selectCenter();else if(id)selectNode(id);}if(pointers.size)resetGesture(true);else{gesture=null;state.camera={...camera};}if(viewport.hasPointerCapture(ev.pointerId))viewport.releasePointerCapture(ev.pointerId);}
 viewport.addEventListener('pointerup',e=>endPointer(e));viewport.addEventListener('pointercancel',e=>endPointer(e,true));

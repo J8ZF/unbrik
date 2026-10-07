@@ -1,4 +1,4 @@
-import {BRAND_PATH} from './brand.js?v=1.7.3';
+import {BRAND_PATH} from './brand.js?v=1.7.3-r2';
 // Regular dodecahedron. Face adjacency, not vertex depth, determines visibility.
 const phi=(1+Math.sqrt(5))/2,inv=1/phi;
 export const VERTICES=[];
