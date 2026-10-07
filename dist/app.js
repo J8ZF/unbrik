@@ -1,10 +1,11 @@
-import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress} from './data.js?v=1.6.0';
-import {iconSvg,setIcon} from './icons.js?v=1.6.0';
-import {checkpointOffline,settleOffline} from './offline.js?v=1.6.0';
-import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=1.6.0';
-import {wireframePaths} from './hub.js?v=1.6.0';
-import {UPDATES,updatePage} from './updates.js?v=1.6.0';
-import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=1.6.0';
+import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress} from './data.js?v=1.7.0';
+import {iconSvg,setIcon} from './icons.js?v=1.7.0';
+import {checkpointOffline,settleOffline} from './offline.js?v=1.7.0';
+import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=1.7.0';
+import {wireframePaths} from './hub.js?v=1.7.0';
+import {UPDATES,updatePage} from './updates.js?v=1.7.0';
+import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=1.7.0';
+import {createOpalMotion,preventGameSelection} from './effects.js?v=1.7.0';
 const $=id=>document.getElementById(id);
 const CENTER_SELECTION=-1;
 const setText=(el,value)=>{const next=String(value);if(el.textContent!==next)el.textContent=next;};
@@ -20,6 +21,8 @@ const viewport=$('viewport'),world=$('world'),nodeEls=new Map(),edgeEls=[],chapt
 function initialCamera(){const n=byId.get(selected)||NODES[0];if(econ.count)return {x:viewport.clientWidth/2-n.x*.78,y:viewport.clientHeight*.4-n.y*.78,scale:.78};const scale=Math.max(.22,Math.min(.55,(viewport.clientHeight-65)/600));return {x:viewport.clientWidth/2,y:viewport.clientHeight*.78,scale};}
 let camera=state.camera||initialCamera();
 let toastTimer,burstTimer,gestureUsed=false,suspended=true,cameraMoving=false,lastHubFrame=0,updatesPage=1;
+const motionPreference=matchMedia('(prefers-reduced-motion: reduce)');
+let opalMotion=null;
 let selectionPending=false,selectionEpoch=0,navigationFrame=0,panelAnimation=null,navigatorCloseTimer=0,cameraIntent=null;
 function format(n,decimals=2){
  if(!Number.isFinite(n))return '∞';
@@ -32,7 +35,16 @@ function format(n,decimals=2){
 }
 function time(n){if(n<1)return '곧';if(n<60)return `${Math.ceil(n)}초`;if(n<3600)return `${Math.floor(n/60)}분 ${Math.floor(n%60)}초`;if(n<86400)return `${(n/3600).toFixed(1)}시간`;return `${(n/86400).toFixed(1)}일`;}
 function toast(message,duration=4000){setText($('toast'),message);$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),duration);}
-function applySettings(){document.body.classList.toggle('reduced-motion',!state.settings.motion||matchMedia('(prefers-reduced-motion: reduce)').matches);for(const k of ['motion','touch','haptic','auto','purchaseCheat'])$(k).checked=state.settings[k];$('format').value=state.settings.format;}
+function syncOpalMotion(){document.body.classList.toggle('effects-paused',document.hidden||suspended);opalMotion?.refresh();}
+function applySettings(){
+ const reduced=!state.settings.motion||motionPreference.matches;document.body.classList.toggle('reduced-motion',reduced);
+ for(const k of ['motion','touch','haptic','auto','purchaseCheat'])$(k).checked=state.settings[k];$('format').value=state.settings.format;
+ if(reduced){panelAnimation?.cancel();panelAnimation=null;if(cameraMoving&&cameraIntent)moveCamera(cameraForIntent(),cameraComplete);}
+ syncOpalMotion();
+}
+function setupOpalMotion(){
+ opalMotion=createOpalMotion([{root:viewport,elements:[...NODES.filter(n=>n.chapter===7).map(n=>nodeEls.get(n.id)),sectorEls[7],$('hubOpalLight')]},{root:null,elements:[$('panelSymbol'),$('sectorMenu').children[7].querySelector('.sector-jump-icon')]}],()=>state.settings.motion&&!motionPreference.matches&&!document.hidden&&!suspended);
+}
 function renderChrome(){
  const compact=state.settings.hudCollapsed;
  $('hud').classList.toggle('is-collapsed',compact);$('hudDetails').hidden=compact;
@@ -52,18 +64,18 @@ function createGraph(){
  const b=MAP_LAYOUT.bounds;for(const id of ['edges','sectorRegions','spokes']){const svg=$(id);svg.setAttribute('viewBox',`${b.minX} ${b.minY} ${b.maxX-b.minX} ${b.maxY-b.minY}`);svg.style.left=b.minX+'px';svg.style.top=b.minY+'px';svg.style.width=(b.maxX-b.minX)+'px';svg.style.height=(b.maxY-b.minY)+'px';}
  for(const n of NODES){
  const el=document.createElement('button');el.className='node';el.id=`node-${n.id}`;el.dataset.id=n.id;el.style.left=n.x+'px';el.style.top=n.y+'px';el.style.setProperty('--node-color',CHAPTERS[n.chapter].color);
- el.innerHTML='<div class="node-top"><span class="symbol"></span><span class="node-id"></span></div><span class="node-name"></span><span class="node-price"><span></span><span class="node-status"></span></span><i class="level-dots"></i>';
+ el.innerHTML='<div class="node-top"><span class="symbol"></span><span class="node-meta"><span class="node-id"></span><span class="node-ready" hidden>가능</span></span></div><span class="node-name"></span><span class="node-price"><span></span><span class="node-status"></span></span><i class="level-dots"></i>';
  el.addEventListener('click',ev=>{if(ev.detail===0)selectNode(n.id);});
  $('nodes').append(el);nodeEls.set(n.id,el);
  for(const r of n.req){const p=byId.get(r.id),path=document.createElementNS('http://www.w3.org/2000/svg','path');
- path.setAttribute('d',connectionPath(p,n,MAP_LAYOUT.sectors));path.style.setProperty('--edge-color',CHAPTERS[n.chapter].color);$('edges').append(path);edgeEls.push({el:path,from:p,to:n,cross:p.branch!==n.branch});}
+ path.style.display='none';path.setAttribute('d',connectionPath(p,n,MAP_LAYOUT.sectors));path.style.setProperty('--edge-color',CHAPTERS[n.chapter].color);$('edges').append(path);edgeEls.push({el:path,from:p,to:n,cross:p.branch!==n.branch});}
  }
  for(const sector of MAP_LAYOUT.sectors){
  const i=sector.chapter,c=CHAPTERS[i],el=document.createElement('div');el.className='chapter-mark';el.style.left=sector.label.x+'px';el.style.top=sector.label.y+'px';el.style.setProperty('--sector-color',c.color);el.textContent=`0${i+1} / ${c.name}`;$('chapterMarks').append(el);chapterEls.push(el);
- const region=document.createElementNS('http://www.w3.org/2000/svg','path');region.setAttribute('d',sector.path);region.setAttribute('class','sector-region');region.style.setProperty('--sector-color',c.color);region.style.display='none';$('sectorRegions').append(region);sectorEls.push(region);
- const jump=document.createElement('button');jump.className='sector-jump';jump.style.setProperty('--sector-color',c.color);jump.innerHTML=`<span class="sector-jump-icon">${iconSvg(sector.members[0].id)}</span><span class="sector-jump-copy"><span class="sector-jump-name">${c.name}</span><span class="sector-jump-progress"></span></span><span class="sector-jump-state" aria-hidden="true"></span>`;jump.onclick=()=>jumpToSector(i);$('sectorMenu').append(jump);
+ const region=document.createElementNS('http://www.w3.org/2000/svg','path');region.setAttribute('d',sector.path);region.setAttribute('class',i===7?'sector-region opal-region':'sector-region');region.style.setProperty('--sector-color',c.color);if(i===7){region.style.fill='url(#opal-region-wash)';region.style.stroke='url(#opal-region-edge)';}region.style.display='none';$('sectorRegions').append(region);sectorEls.push(region);
+ const jump=document.createElement('button');jump.className=i===7?'sector-jump opal-item':'sector-jump';jump.style.setProperty('--sector-color',c.color);jump.innerHTML=`<span class="sector-jump-icon">${iconSvg(sector.members[0].id)}</span><span class="sector-jump-copy"><span class="sector-jump-name">${c.name}</span><span class="sector-jump-progress"></span></span><span class="sector-jump-state" aria-hidden="true"></span>`;jump.onclick=()=>jumpToSector(i);$('sectorMenu').append(jump);
  }
- for(const branch of BRANCHES){const root=MAP_LAYOUT.sectors[branch.chapters[0]].members[0],path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',centerPath(root));path.setAttribute('class','center-spoke');path.style.setProperty('--sector-color',CHAPTERS[root.chapter].color);$('spokes').append(path);spokeEls.push({el:path,root});}
+ for(const branch of BRANCHES){const root=MAP_LAYOUT.sectors[branch.chapters[0]].members[0],path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',centerPath(root));path.setAttribute('class','center-spoke');path.style.display='none';path.style.setProperty('--sector-color',CHAPTERS[root.chapter].color);$('spokes').append(path);spokeEls.push({el:path,root});}
  $('centerNode').addEventListener('click',ev=>{if(ev.detail===0)selectCenter();});
 }
 function graph(){
@@ -71,9 +83,9 @@ function graph(){
  const d=discovery(n);visibility.set(n.id,d);const el=nodeEls.get(n.id);el.hidden=!d;if(!d)continue;
  const l=level(state,n),can=unlocked(state,n),p=cost(state,n,econ),afford=can&&(state.settings.purchaseCheat||state.currencies.money>=p)&&l<n.max;
  const key=[d,l,can,afford,p,selected===n.id,state.settings.format].join(':');if(el.dataset.viewKey===key)continue;el.dataset.viewKey=key;
- const cls=`node ${n.gate?'gate ':''}${l?'bought ':''}${can?'unlocked ':'locked '}${afford?'available ':''}${selected===n.id?'selected ':''}${d===1?'ghost ':''}`;
+ const cls=`node ${n.chapter===7?'opal ':''}${l>=n.max?'maxed ':''}${n.gate?'gate ':''}${l?'bought ':''}${can?'unlocked ':'locked '}${afford?'available ':''}${selected===n.id?'selected ':''}${d===1?'ghost ':''}`;
  const popping=el.classList.contains('pop');if(el.className!==cls+(popping?'pop':''))el.className=cls+(popping?'pop':'');
- el.disabled=d===1;el.tabIndex=d>1?0:-1;
+ el.querySelector('.node-ready').hidden=!afford||d<2;el.disabled=d===1;el.tabIndex=d>1?0:-1;
  setIcon(el.querySelector('.symbol'),d===1?'LockKeyhole':n.id);
  el.querySelector('.node-id').textContent=d===1?'???':String(n.id).padStart(3,'0');
  el.querySelector('.node-name').textContent=d===1?'UNEXPLORED':n.name;
@@ -82,13 +94,13 @@ function graph(){
  el.querySelector('.level-dots').style.width=(l/n.max*100)+'%';
  el.setAttribute('aria-label',d===1?'미발견 연구':`${n.name}. ${effectText(n)}. ${l>=n.max?'완료':`레벨 ${l}/${n.max}, 비용 ${format(p)} 달러, ${can?'구매 조건 충족':'선행 연구 필요'}`}`);
  }
- for(const {el,from,to,cross}of edgeEls){const visible=visibility.get(from.id)>0&&visibility.get(to.id)>0&&(!cross||selected===from.id||selected===to.id);const flash=el.classList.contains('flashing'),cls=`edge ${cross?'cross-link ':''}${level(state,to)?'researched':level(state,from)?'active':'ghost'}${flash?' flashing':''}`,key=visible+cls;if(el.dataset.viewKey===key)continue;el.dataset.viewKey=key;el.style.display=visible?'':'none';if(visible)el.setAttribute('class',cls);}
+ for(const {el,from,to,cross}of edgeEls){const visible=visibility.get(from.id)>1&&visibility.get(to.id)>1&&(!cross||selected===from.id||selected===to.id);const flash=el.classList.contains('flashing'),cls=`edge ${cross?'cross-link ':''}${level(state,to)?'researched':level(state,from)?'active':'ghost'}${flash?' flashing':''}`,key=visible+cls;if(el.dataset.viewKey===key)continue;el.dataset.viewKey=key;el.style.display=visible?'':'none';if(visible)el.setAttribute('class',cls);}
  let finished=0;
  $('centerNode').classList.toggle('selected',selected===CENTER_SELECTION);$('centerNode').setAttribute('aria-pressed',String(selected===CENTER_SELECTION));
- MAP_LAYOUT.sectors.forEach((sector,i)=>{const found=sector.members.some(n=>visibility.get(n.id)>1),progress=sectorProgress(state,i);if(progress.complete)finished++;const key=`${found}:${progress.done}:${byId.get(selected)?.chapter===i}`;if(sectorEls[i].dataset.viewKey===key)return;sectorEls[i].dataset.viewKey=key;chapterEls[i].hidden=!found;chapterEls[i].classList.toggle('complete',progress.complete);chapterEls[i].textContent=`0${i+1} / ${CHAPTERS[i].name}${progress.complete?' · COMPLETE':''}`;sectorEls[i].style.display=progress.complete?'':'none';$('hubSector'+i).classList.toggle('complete',progress.complete);
+ MAP_LAYOUT.sectors.forEach((sector,i)=>{const found=sector.members.some(n=>visibility.get(n.id)>1),progress=sectorProgress(state,i);if(progress.complete)finished++;const key=`${found}:${progress.done}:${byId.get(selected)?.chapter===i}`;if(sectorEls[i].dataset.viewKey===key)return;sectorEls[i].dataset.viewKey=key;chapterEls[i].hidden=!found;chapterEls[i].classList.toggle('complete',progress.complete);chapterEls[i].textContent=`0${i+1} / ${CHAPTERS[i].name}${progress.complete?' · COMPLETE':''}`;sectorEls[i].style.display=progress.complete?'':'none';$('hubSector'+i).classList.toggle('complete',progress.complete);if(i===7){$('hubOpalLight').style.display=progress.complete?'':'none';$('hubSector7').style.stroke=progress.complete?'url(#opal-region-edge)':'';}
  const button=$('sectorMenu').children[i];button.disabled=!found;button.classList.toggle('complete',progress.complete);button.classList.toggle('is-current',byId.get(selected)?.chapter===i);button.setAttribute('aria-current',byId.get(selected)?.chapter===i?'true':'false');setText(button.querySelector('.sector-jump-progress'),progress.complete?'완료':found?`${progress.done} / ${progress.total} 레벨`:'미발견');setIcon(button.querySelector('.sector-jump-state'),progress.complete?'Check':found?'Circle':'LockKeyhole');button.setAttribute('aria-label',`${CHAPTERS[i].ko} 섹터. ${progress.complete?'완료':found?`연구 레벨 ${progress.done}/${progress.total}. 남은 연구로 이동`:'미발견'}`);
  });
- for(const {el,root}of spokeEls)el.classList.toggle('discovered',visibility.get(root.id)>1);
+ for(const {el,root}of spokeEls){const found=visibility.get(root.id)>1;el.classList.toggle('discovered',found);el.style.display=found?'':'none';}
  setText($('navigatorHint'),finished===8?'섹터로 이동':'남은 연구로 이동');setText($('centerProgress'),`${finished} / 8 SECTORS`);$('centerNode').setAttribute('aria-label',`UNBRIK 센터. ${finished}개 섹터 완료. 선택하여 내비게이터 열기`);
 }
 function setBuyState(kind,label,detail,disabled){
@@ -97,7 +109,7 @@ function setBuyState(kind,label,detail,disabled){
 }
 function renderPanel(){
  const center=selected===CENTER_SELECTION,n=center?{name:'UNBRIK'}:byId.get(selected);$('nodePanel').hidden=!n;if(!n)return;
- const collapsed=state.settings.panelCollapsed;$('nodePanel').classList.toggle('is-center',center);
+ const collapsed=state.settings.panelCollapsed;$('nodePanel').classList.toggle('is-center',center);$('panelSymbol').classList.toggle('opal-surface',!center&&n.chapter===7);
  $('nodePanel').classList.toggle('is-collapsed',collapsed);$('panelDetails').hidden=collapsed;
  $('togglePanel').setAttribute('aria-expanded',String(!collapsed));setText($('panelToggleText'),collapsed?'연구 정보 펼치기':'연구 정보 접기');
  setText($('collapsedName'),n.name);$('collapsedName').hidden=!collapsed;setIcon($('panelToggleIcon'),collapsed?'ChevronUp':'ChevronDown');
@@ -211,13 +223,13 @@ $('updatesPrev').onclick=()=>renderUpdates(updatesPage-1);$('updatesNext').oncli
 function renderStats(){const e=economy(state);const entries=[['구매한 노드',`${e.count} / 80`],['총 연구 레벨',format(e.total,0)],['구매 횟수',format(state.stats.purchases,0)],['총 획득','$'+format(state.stats.earned)],['총 사용','$'+format(state.stats.spent)],['현재 생산','$'+format(e.rate)+' /s'],['최고 생산','$'+format(state.stats.peak)+' /s'],['캐시 보너스',e.burst?`${format(e.rate*e.burst)} / ${Math.round(e.interval)}s`:'미해금'],['총 플레이 시간',time(state.stats.seconds)],['오프라인 경과',time(state.stats.offlineSeconds)],['오프라인 수입','$'+format(state.stats.offlineEarned)],['오프라인 환산 생산',time(state.stats.offlineEffectiveSeconds)],['현재 세션',time(sessionSeconds)],['비용 할인',`${((1-e.discount)*100).toFixed(1)}%`]];$('stats').replaceChildren();for(const [a,b]of entries){const div=document.createElement('div');div.className='stat';const span=document.createElement('span'),strong=document.createElement('strong');span.textContent=a;strong.textContent=b;div.append(span,strong);$('stats').append(div);}$('sectorStats').innerHTML=CHAPTERS.map((c,i)=>{const nodes=NODES.filter(n=>n.chapter===i),count=nodes.filter(n=>level(state,n)).length;return `<div class="sector-row" style="--sector-color:${c.color}"><div><span>${c.name}</span><span>${count} / ${nodes.length}</span></div><span class="bar"><i style="width:${count/nodes.length*100}%"></i></span></div>`;}).join('');}
 function suspend(){
  if(suspended)return;
- checkpointOffline(state);suspended=true;pointers.clear();gesture=null;save();
+ checkpointOffline(state);suspended=true;syncOpalMotion();pointers.clear();gesture=null;save();
 }
 function resume(){
  if(document.hidden||!suspended)return;
  // Prefer a newer checkpoint if another window saved while this one was away.
  try{const raw=localStorage.getItem(KEY);if(raw){const input=JSON.parse(raw);if(input.savedAt>state.savedAt)state=validateSave(input);}}catch{}
- const reward=settleOffline(state);suspended=false;lastFrame=performance.now();checkpointOffline(state);save();render();
+ const reward=settleOffline(state);suspended=false;applySettings();lastFrame=performance.now();checkpointOffline(state);save();render();
  if(reward.elapsed>=5&&reward.amount>0)toast(`오프라인 생산 +$${format(reward.amount)}\n${time(reward.elapsed)} 경과 · ${time(reward.effectiveSeconds)}에 해당하는 생산`,8500);
 }
 document.addEventListener('visibilitychange',()=>{if(document.hidden)suspend();else resume();});
@@ -237,8 +249,10 @@ function frame(now){animateHub(now);const dt=Math.max(0,Math.min(1,(now-lastFram
  if(now-lastRender>160){render();lastRender=now;}if(now-lastSave>10000){save();lastSave=now;}}
  requestAnimationFrame(frame);
 }
+motionPreference.addEventListener?.('change',applySettings);
+for(const type of ['selectstart','contextmenu'])$('game').addEventListener(type,preventGameSelection);
 for(const el of document.querySelectorAll('[data-ui-icon]'))setIcon(el,el.dataset.uiIcon);
-createGraph();renderUpdates();applySettings();render();if(!state.camera)camera=initialCamera();transform();resume();requestAnimationFrame(frame);if(loadNotice)setTimeout(()=>toast(loadNotice),500);if(!storageOK)setText($('saveState'),'저장 불가 · 설정에서 내보내기');
+createGraph();setupOpalMotion();renderUpdates();applySettings();render();if(!state.camera)camera=initialCamera();transform();resume();requestAnimationFrame(frame);if(loadNotice)setTimeout(()=>toast(loadNotice),500);if(!storageOK)setText($('saveState'),'저장 불가 · 설정에서 내보내기');
 // Optional browser agent tools use exactly the same state and purchase guard as the UI.
 if(document.modelContext?.registerTool){const lifecycle=new AbortController();const register=tool=>{try{Promise.resolve(document.modelContext.registerTool(tool,{signal:lifecycle.signal})).catch(()=>{});}catch{}};
  register({name:'read_research_state',title:'연구 상태 읽기',description:'현재 자원, 생산량, 발견한 연구와 구매 조건을 읽습니다.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute(){const e=economy(state);return {money:state.currencies.money,rate:e.rate,purchased:e.count,nodes:NODES.filter(n=>discovery(n)>1).map(n=>({id:n.id,name:n.name,level:level(state,n),max:n.max,cost:cost(state,n,e),unlocked:unlocked(state,n)}))};}});

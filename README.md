@@ -1,4 +1,4 @@
-# UNBRIK · Upgrade Tree — v1.6.0
+# UNBRIK · Upgrade Tree — v1.7.0
 
 Portrait incremental game with 80 math/computer-science nodes, 19 repeatable studies and 261 total research levels.
 
@@ -10,12 +10,21 @@ Static files are in `dist/`; serve over HTTP (ES modules are not intended for `f
 - `data.js`: graph, fixed level-price tables, income, guarded purchases and save migration.
 - `icons.js`: 80 distinct Lucide SVG path icons and interface icons, embedded locally. License in `icons-license.txt`. `brand.js` supplies the shared original three-triangle SVG mark; no font asset is required.
 - `hub.js`: regular dodecahedron projection and center SVG geometry; `camera.js`: cancellable camera tween helpers.
+- `effects.js`: visibility-gated opal motion, SVG gradient definitions and scoped selection protection.
 - `updates.js`: version history and two-entry pagination.
 - `offline.js`: departure-income snapshot, integrated exponential decay and settlement cursor.
 - `app.js`: game UI, map gestures, visibility/focus lifecycle and local saves.
 - `index.html`, `style.css`: portrait interface and bounded SVG containers.
 
-Checks: `node check.mjs`, `node balance-check.mjs`, `node offline-check.mjs`, `node ui-check.mjs`, `node layout-check.mjs`, `node motion-check.mjs`.
+Checks: `node check.mjs`, `node balance-check.mjs`, `node offline-check.mjs`, `node ui-check.mjs`, `node layout-check.mjs`, `node motion-check.mjs`, `node effects-check.mjs`.
+
+## Opal and research states 1.7
+
+Sector 8 retains white icons and labels, with pastel cyan/lilac/pink/champagne reflections on node surfaces, icon surrounds, its completed sector enclosure and the eighth center completion segment. Slow CSS effects use the existing animation toggle and OS reduced-motion preference. IntersectionObserver pauses each offscreen surface, and background/inactive sessions, camera movement and full-map overview pause map effects. Static gradients remain when motion is disabled or IntersectionObserver is unavailable. Touch effects remain a separate preference; switching them off does not disable ambient opal motion. Changing animation preferences during navigation settles the existing transition and final button state.
+
+Undiscovered spokes and connections to undiscovered endpoints are hidden, including initial graph construction. Purchase-ready research uses a white border and a small filled `가능` badge, repeatables included. Completed research has its completion check and no ready badge. Selected research uses corner brackets, distinct from the opal identity. The lower purchase action is white, waiting/locked/complete/moving states neutral gray. Research panel progress and fulfilled prerequisite chips no longer use unrelated green purchase accents.
+
+Selection/callout suppression is scoped to game controls, HUD, research details and navigation. Save text fields, reset input and links keep their native selection/context menus. Controlled event tests cover these boundaries; physical Android contextual-search behavior still requires device testing.
 
 ## Center and interface 1.6
 

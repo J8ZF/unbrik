@@ -28,7 +28,7 @@ const createSession=new Function('deps','initial','clock','storage',`
  const Date={now:()=>clock.now},performance={now:()=>clock.now};
  const localStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)};
  const validateSave=s=>helpers.validateSave(s,clock.now),checkpointOffline=s=>helpers.checkpointOffline(s,clock.now),settleOffline=s=>helpers.settleOffline(s,clock.now);
- const el={};const $=()=>el;const toast=()=>{};const render=()=>{};const format=String,time=String;
+ const syncOpalMotion=()=>{},applySettings=()=>{};const el={};const $=()=>el;const toast=()=>{};const render=()=>{};const format=String,time=String;
  ${saveCode}\n${lifecycleCode}
  return {resume,suspend,save,get state(){return state},get suspended(){return suspended},set hidden(v){document.hidden=v}};
 `);

@@ -1,4 +1,4 @@
-import {BRAND_PATH} from './brand.js?v=1.6.0';
+import {BRAND_PATH} from './brand.js?v=1.7.0';
 // Regular dodecahedron. Face adjacency, not vertex depth, determines visibility.
 const phi=(1+Math.sqrt(5))/2,inv=1/phi;
 export const VERTICES=[];
@@ -37,5 +37,6 @@ export const ORBIT_PATH='M'+polygon(8,178).split(' ').join('L')+'Z';
 export function hubArtwork(colors){
  const wire=wireframePaths();
  const markers=colors.map((color,i)=>{const a=-Math.PI/2-Math.PI/8+i*Math.PI/4,p=point(154,a+.035),q=point(154,a+Math.PI/4-.035);return `<path id="hubSector${i}" class="hub-sector" style="--sector-color:${color}" d="M${p.join(',')}L${q.join(',')}"/>`;}).join('');
- return `<svg class="hub-art" viewBox="-200 -200 400 400" aria-hidden="true"><path class="hub-orbit-track" d="${ORBIT_PATH}"/><path class="hub-orbit-trail" d="${ORBIT_PATH}" pathLength="1000"/><path class="hub-orbit-head" d="${ORBIT_PATH}" pathLength="1000"/><polygon class="hub-shell" points="${polygon(8,144)}"/><polygon class="hub-inset" points="${polygon(8,132)}"/><g class="hub-sectors">${markers}</g><path class="hub-background-brand" transform="translate(-99 -154) scale(3.09375)" d="${BRAND_PATH}"/><g class="hub-wire"><path id="hubWireBack" class="wire-back" d="${wire.back}"/><path id="hubWireFront" class="wire-front" d="${wire.front}"/><path id="hubWireOutline" class="wire-outline" d="${wire.outline}"/></g></svg>`;
+ const opalEdge=markers.match(/id="hubSector7"[^>]* d="([^"]+)"/)[1];
+ return `<svg class="hub-art" viewBox="-200 -200 400 400" aria-hidden="true"><path class="hub-orbit-track" d="${ORBIT_PATH}"/><path class="hub-orbit-trail" d="${ORBIT_PATH}" pathLength="1000"/><path class="hub-orbit-head" d="${ORBIT_PATH}" pathLength="1000"/><polygon class="hub-shell" points="${polygon(8,144)}"/><polygon class="hub-inset" points="${polygon(8,132)}"/><g class="hub-sectors">${markers}<path id="hubOpalLight" class="hub-opal-light" d="${opalEdge}" pathLength="100" style="display:none"/></g><path class="hub-background-brand" transform="translate(-99 -154) scale(3.09375)" d="${BRAND_PATH}"/><g class="hub-wire"><path id="hubWireBack" class="wire-back" d="${wire.back}"/><path id="hubWireFront" class="wire-front" d="${wire.front}"/><path id="hubWireOutline" class="wire-outline" d="${wire.outline}"/></g></svg>`;
 }

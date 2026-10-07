@@ -35,5 +35,5 @@ for(const width of [320,360,390,430,520])for(const height of [170,240,340,440,60
  assert(rect.left>=0&&rect.right<=width&&rect.top>=0&&rect.bottom<=height);
  assert(rect.right<=tools.left||rect.bottom<=tools.top,`Center must not overlap map tools at ${width}x${height}`);
 }
-assert.equal(updatePage(99).current,3);assert.equal(updatePage(-1).current,1);assert.equal(updatePage(8,Array.from({length:41},(_,i)=>i)).pages,21);
+assert.equal(updatePage(99).current,updatePage(1).pages);assert.equal(updatePage(-1).current,1);assert.equal(updatePage(8,Array.from({length:41},(_,i)=>i)).pages,21);
 console.log(JSON.stringify({dodecahedron:'20 vertices / 30 edges / 12 faces',silhouetteAcross480Frames:'passed',orbitPath:'octagonal',wordmarkClearance:'passed',latestCameraWins:'passed',interruptedCompletion:'passed',mobileSafeFrames:'passed'}));

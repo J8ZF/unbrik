@@ -1,4 +1,4 @@
-import {economy,MAX_VALUE} from './data.js?v=1.6.0';
+import {economy,MAX_VALUE} from './data.js?v=1.7.0';
 export const OFFLINE_FULL_SECONDS=1800;
 export const OFFLINE_DECAY_SECONDS=600;
 export function offlineEfficiency(seconds){return seconds<=OFFLINE_FULL_SECONDS?1:Math.exp(-(seconds-OFFLINE_FULL_SECONDS)/OFFLINE_DECAY_SECONDS);}
