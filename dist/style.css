@@ -207,49 +207,77 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 /* Every part of a card hits the stable button, not a changing price/SVG child. */
 .node>*,.hub-node>*{pointer-events:none}
 
-/* 2.0 — one quiet surface, two currency columns; the coin column is display-only. */
-.hud{--coin:#d4ae68;background:var(--bg);position:relative;z-index:5}
-.hud .topbar{min-height:60px;height:auto;padding:9px 16px;gap:10px}
-.hud .resources{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch;gap:0;padding:17px 18px 11px}
-.currency-card{min-width:0;--currency-color:var(--accent)}
-.currency-coin{--currency-color:var(--coin)}
-.currency-card+.currency-card{border-left:1px solid var(--line);padding-left:18px;margin-left:16px}
-.currency-card .balance{display:flex;gap:8px;align-items:baseline;font:500 clamp(20px,6.5vw,34px)/1.2 var(--mono);letter-spacing:-.04em;white-space:nowrap;margin:0;color:var(--text)}
-.currency-symbol{font-size:.78em;letter-spacing:0;color:var(--muted);display:inline-flex;align-items:center;flex-shrink:0}
-.currency-coin .currency-symbol{color:var(--coin)}
-.coin-mark{width:.86em;height:.96em;stroke-width:1.65;display:block;overflow:visible;transform:translateY(.06em)}
-.currency-card .currency-rate{display:block;margin-top:9px;font:400 14px/1.4 var(--mono);color:var(--currency-color);white-space:nowrap;font-variant-numeric:tabular-nums}
-.currency-rate>span{color:var(--muted);font-size:.86em}
-.cache-gain-slot{height:19px;margin-top:6px;display:flex;align-items:center}
-.cache-gain{display:inline-block;color:var(--currency-color);font:400 12px/1.2 var(--mono);white-space:nowrap;opacity:0;transform:translateY(3px);transition:opacity .18s ease,transform .22s ease;pointer-events:none;flex-shrink:0}
+/* 2.0: retain the original instrument-panel frame and quiet separators. */
+.hud{--coin:#d4ae68;position:relative;z-index:5;background:var(--bg)}
+.hud .topbar{min-height:62px;height:auto;padding:9px 18px;gap:12px}
+.hud .resources{display:grid;grid-template-columns:minmax(0,1fr);padding:0;gap:0;align-items:stretch}
+.hud.has-coin .resources{grid-template-columns:repeat(2,minmax(0,1fr))}
+.currency-card{min-width:0;padding:20px 18px 17px;--currency-color:var(--accent)}
+.currency-card.currency-coin{border-left:1px solid var(--line);--currency-color:var(--coin)}
+.currency-card .balance{display:flex;gap:9px;align-items:baseline;font:500 32px/1.2 var(--mono);letter-spacing:-.045em;white-space:nowrap;margin:0;color:var(--text);font-variant-numeric:tabular-nums}
+.hud:not(.has-coin) .balance{font-size:38px}
+.currency-symbol{font-size:.8em;letter-spacing:0;color:var(--muted);flex-shrink:0}
+.currency-coin .currency-symbol,.coin-symbol{color:var(--coin)}
+.currency-secondary{position:relative;margin-top:9px;display:flex;flex-direction:row;align-items:baseline;justify-content:space-between;gap:4px;min-height:20px}
+.currency-rate{color:var(--currency-color);font:400 14px/1.4 var(--mono);white-space:nowrap;font-variant-numeric:tabular-nums}
+.currency-rate>span{font-size:12px;color:var(--muted)}
+.cache-gain{display:inline-block;font:400 12px/1.2 var(--mono);color:var(--accent);opacity:0;transform:translateY(3px);transition:opacity .18s ease,transform .22s ease;white-space:nowrap;pointer-events:none}
 .cache-gain.is-visible{opacity:1;transform:none}
-.hud .research-strip{padding:10px 18px;font-size:11px}
-.hud .compact-resources{grid-template-columns:minmax(0,2fr) minmax(0,1fr);column-gap:10px;align-items:center;min-width:0}
+.hud .compact-resources{grid-template-columns:minmax(0,1fr);align-items:center;gap:10px;min-width:0}
+.hud.has-coin .compact-resources{grid-template-columns:repeat(2,minmax(0,1fr))}
 .hud.is-collapsed .compact-resources{display:grid}
-.hud.is-collapsed .topbar{min-height:62px;padding:8px 12px;gap:8px}
+.hud.is-collapsed .topbar{min-height:62px;padding:8px 12px;gap:10px}
 .compact-currency{min-width:0;--currency-color:var(--accent)}
-.compact-currency.currency-coin{--currency-color:var(--coin);border-left:1px solid var(--line);padding-left:10px}
-.compact-value-line{display:flex;align-items:baseline;gap:4px;min-width:0}
-.hud .compact-resources strong{font:500 16px/1.3 var(--mono);letter-spacing:-.045em;white-space:nowrap;flex-shrink:0}
-.hud .compact-resources .currency-rate{display:block;font:400 11px/1.4 var(--mono);color:var(--currency-color);margin-top:3px;white-space:nowrap}
-.hud .compact-resources .cache-gain{font-size:11px;letter-spacing:-.035em}
-.hud .compact-coin-balance{display:flex;gap:4px;align-items:center}
-.compact-coin-balance .coin-mark{color:var(--coin);width:15px;height:17px;transform:none}
-.hud .hud-actions{gap:4px}
-.hud .hud-actions .icon-button,.hud #toggleHud{width:40px;height:44px}
-.cache-meter{height:23px;position:relative;flex-shrink:0}
-.cache-meter-meta{display:flex;align-items:center;justify-content:flex-end;gap:5px;height:20px;padding:0 14px;color:var(--muted);font:11px/1 var(--mono);font-variant-numeric:tabular-nums}
-.cache-meter-meta svg{width:11px;height:11px;stroke-width:1.7}
-.cache-track{height:3px;background:#253139;overflow:hidden}
-#cacheProgress{display:block;width:100%;height:100%;background:var(--accent);transform:scaleX(0);transform-origin:left center;transition:transform .16s linear}
+.compact-currency.currency-coin{--currency-color:var(--coin);padding-left:10px;border-left:1px solid var(--line)}
+.compact-value-line{display:flex;align-items:baseline;gap:5px;min-width:0;position:relative}
+.hud .compact-resources strong{font:500 17px/1.3 var(--mono);letter-spacing:-.045em;white-space:nowrap;flex-shrink:0}
+.hud .compact-resources .currency-rate{display:block;font-size:12px;line-height:1.35;margin-top:4px}
+.hud .compact-resources .cache-gain{font-size:10px;letter-spacing:-.04em;max-width:0;overflow:hidden;flex-shrink:0}
+.hud .compact-resources .cache-gain.is-visible{max-width:none;transform:none}
+.compact-coin-balance{display:flex!important;align-items:baseline;gap:2px}
+.hud .hud-actions{gap:6px}
+.hud .hud-actions .icon-button,.hud #toggleHud{width:38px;height:44px}
+.cache-meter{height:32px;position:relative;flex-shrink:0;background:#0e151e;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.cache-meter-meta{height:29px;display:flex;justify-content:space-between;align-items:center;padding:0 18px;font:11px/1 var(--mono);letter-spacing:.08em;color:var(--muted);font-variant-numeric:tabular-nums}
+.cache-label{display:flex;align-items:center;gap:7px}
+.cache-label svg{width:13px;height:13px;stroke:var(--accent);stroke-width:1.7;fill:none}
+.cache-track{position:absolute;bottom:-1px;left:0;right:0;height:2px;background:#253139;overflow:hidden}
+#cacheProgress{display:block;width:100%;height:100%;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .16s linear}
+.hud.is-collapsed .cache-meter{height:26px}
+.hud.is-collapsed .cache-meter-meta{height:23px;padding-inline:12px}
+.hub-research-track{display:block;width:106px;height:2px;margin:9px auto 0;background:#363b42;overflow:hidden}
+#centerResearchProgress{display:block;width:0;height:100%;background:#dce3e8;transition:width .25s}
 #toast{top:calc(var(--hud-height,66px) + 10px)}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
-@media(max-width:360px){
- .hud .topbar{padding-inline:10px}
- .hud.is-collapsed .topbar{padding-inline:10px;gap:6px}
- .hud .compact-resources{column-gap:6px}
- .compact-currency.currency-coin{padding-left:6px}
- .hud .resources{padding-inline:14px}
- .currency-card+.currency-card{margin-left:10px;padding-left:12px}
- .currency-card .currency-rate{font-size:13px}
+.node .node-price>span:first-child{min-width:0;font-variant-numeric:tabular-nums}
+.node .node-price{font-size:13px;line-height:1.35}
+.node.dual-cost .node-price{font-size:10px}
+.node.dual-cost .node-price>span:first-child{display:flex;flex-direction:column}
+.price-coin{color:#d4ae68}
+#panelCost>span{display:block}
+.currency-secondary .cache-gain{font-size:11px;letter-spacing:-.04em}
+#panelCost{font-size:clamp(16px,4.6vw,23px);line-height:1.4;overflow-wrap:anywhere}
+@media(max-width:400px){
+ .currency-card{padding:17px 14px 14px}
+ .currency-card .balance{font-size:clamp(22px,6.8vw,28px);gap:7px}
+ .hud .compact-resources{gap:7px}
+ .compact-currency.currency-coin{padding-left:7px}
+ .hud .compact-resources strong{font-size:15px}
+ .hud .compact-resources .cache-gain{font-size:10px}
+ .hud .hud-actions{gap:4px}
+ .hud .hud-actions .icon-button,.hud #toggleHud{width:34px}
 }
+@media(max-width:350px){
+ .hud .topbar{padding-inline:10px}
+ .hud.is-collapsed .topbar{padding-inline:8px;gap:6px}
+ .hud .compact-resources{gap:5px}
+ .compact-currency.currency-coin{padding-left:5px}
+ .hud .compact-resources strong{font-size:14px}
+ .hud .compact-resources .currency-rate{font-size:11px}
+ .compact-value-line{gap:3px}
+}
+
+@media(max-width:350px){.hud .compact-resources .cache-gain{font-size:9px}}
+#world.overview .hub-research-track{display:none}
+
+@media(max-width:350px){.currency-card .currency-rate{font-size:12px}.currency-card .currency-rate>span{font-size:10px}.currency-secondary .cache-gain{font-size:10px}}

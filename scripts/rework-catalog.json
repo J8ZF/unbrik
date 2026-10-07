@@ -1,0 +1,947 @@
+[
+  {
+    "id": 1,
+    "sector": 1,
+    "name": "START",
+    "max": 1,
+    "payment": "$",
+    "role": "달러 생산에 첫 배수를 적용",
+    "old": 1
+  },
+  {
+    "id": 2,
+    "sector": 1,
+    "name": "UNIT",
+    "max": 1,
+    "payment": "$",
+    "role": "달러 기본 생산을 한 번 늘림",
+    "old": 0
+  },
+  {
+    "id": 3,
+    "sector": 1,
+    "name": "INCREMENT",
+    "max": 20,
+    "payment": "$",
+    "role": "달러 기본 생산과 작은 배수를 반복 강화",
+    "old": 2
+  },
+  {
+    "id": 4,
+    "sector": 1,
+    "name": "MULTIPLY",
+    "max": 5,
+    "payment": "$",
+    "role": "소수 단계의 큰 달러 생산 배수",
+    "old": 3
+  },
+  {
+    "id": 5,
+    "sector": 1,
+    "name": "BUFFER",
+    "max": 1,
+    "payment": "$",
+    "role": "달러 기본 생산 합계를 강화",
+    "old": 0
+  },
+  {
+    "id": 6,
+    "sector": 1,
+    "name": "COUNTER",
+    "max": 1,
+    "payment": "$",
+    "role": "1섹터의 누적 연구 레벨로 달러 생산 강화",
+    "old": 0
+  },
+  {
+    "id": 7,
+    "sector": 1,
+    "name": "ACCUMULATOR",
+    "max": 1,
+    "payment": "$",
+    "role": "구매한 연구 수에 따른 달러 생산 보너스",
+    "old": 4
+  },
+  {
+    "id": 8,
+    "sector": 1,
+    "name": "BOOTSTRAP",
+    "max": 1,
+    "payment": "$",
+    "role": "달러 생산 도약과 다음 섹터 진입",
+    "old": 5
+  },
+  {
+    "id": 9,
+    "sector": 2,
+    "name": "ADDITION",
+    "max": 10,
+    "payment": "$",
+    "role": "달러 기본 생산을 반복 증가",
+    "old": 6
+  },
+  {
+    "id": 10,
+    "sector": 2,
+    "name": "PRODUCT",
+    "max": 5,
+    "payment": "$",
+    "role": "달러 생산 배수를 반복 증가",
+    "old": 7
+  },
+  {
+    "id": 11,
+    "sector": 2,
+    "name": "SERIES",
+    "max": 1,
+    "payment": "$",
+    "role": "총 연구 레벨에 비례한 달러 생산 보너스",
+    "old": 8
+  },
+  {
+    "id": 12,
+    "sector": 2,
+    "name": "SUMMATION",
+    "max": 1,
+    "payment": "$",
+    "role": "기본 생산 추가형 연구의 합계 강화",
+    "old": 0
+  },
+  {
+    "id": 13,
+    "sector": 2,
+    "name": "FACTORIAL",
+    "max": 1,
+    "payment": "$",
+    "role": "즉시 큰 달러 생산 배수",
+    "old": 9
+  },
+  {
+    "id": 14,
+    "sector": 2,
+    "name": "DISTRIBUTIVE",
+    "max": 1,
+    "payment": "$",
+    "role": "기본 생산과 배수의 결합 효율 강화",
+    "old": 10
+  },
+  {
+    "id": 15,
+    "sector": 2,
+    "name": "RATIO",
+    "max": 1,
+    "payment": "$",
+    "role": "달러 연구 비용을 소폭 할인",
+    "old": 11
+  },
+  {
+    "id": 16,
+    "sector": 2,
+    "name": "COMMON FACTOR",
+    "max": 1,
+    "payment": "$",
+    "role": "달러 보유액의 완만한 자기 생산 보너스",
+    "old": 0
+  },
+  {
+    "id": 17,
+    "sector": 2,
+    "name": "GEOMETRIC",
+    "max": 20,
+    "payment": "$",
+    "role": "작은 달러 복리 배수를 반복 강화",
+    "old": 12
+  },
+  {
+    "id": 18,
+    "sector": 2,
+    "name": "REMAINDER",
+    "max": 1,
+    "payment": "$",
+    "role": "캐시 해금과 기본 달러 일괄 지급",
+    "old": 13
+  },
+  {
+    "id": 19,
+    "sector": 2,
+    "name": "CONVERGENCE",
+    "max": 1,
+    "payment": "$",
+    "role": "달러 보유액 보너스의 효율 강화",
+    "old": 14
+  },
+  {
+    "id": 20,
+    "sector": 2,
+    "name": "ARITHMETIC CORE",
+    "max": 1,
+    "payment": "$",
+    "role": "달러 생산 도약과 3섹터 진입",
+    "old": 15
+  },
+  {
+    "id": 21,
+    "sector": 3,
+    "name": "VARIABLE",
+    "max": 10,
+    "payment": "$",
+    "role": "달러 기본 생산을 반복 증가",
+    "old": 16
+  },
+  {
+    "id": 22,
+    "sector": 3,
+    "name": "BASIS",
+    "max": 1,
+    "payment": "$",
+    "role": "코인 해금 1 ¢/s와 기본 코인 캐시 참여",
+    "old": 0
+  },
+  {
+    "id": 23,
+    "sector": 3,
+    "name": "SCALAR",
+    "max": 10,
+    "payment": "$",
+    "role": "코인 기본 생산을 반복 증가",
+    "old": 0
+  },
+  {
+    "id": 24,
+    "sector": 3,
+    "name": "LINEAR",
+    "max": 1,
+    "payment": "$",
+    "role": "코인 기본 생산 합계를 강화",
+    "old": 17
+  },
+  {
+    "id": 25,
+    "sector": 3,
+    "name": "LOGARITHM",
+    "max": 1,
+    "payment": "$",
+    "role": "보유 달러에 따른 달러 생산 보너스 강화",
+    "old": 18
+  },
+  {
+    "id": 26,
+    "sector": 3,
+    "name": "POLYNOMIAL",
+    "max": 5,
+    "payment": "¢",
+    "role": "코인 투자로 달러 생산 배수 강화",
+    "old": 19
+  },
+  {
+    "id": 27,
+    "sector": 3,
+    "name": "MATRIX",
+    "max": 1,
+    "payment": "¢",
+    "role": "구매한 연구 수로 달러 생산 강화",
+    "old": 20
+  },
+  {
+    "id": 28,
+    "sector": 3,
+    "name": "VECTOR",
+    "max": 1,
+    "payment": "$",
+    "role": "달러 투자로 코인 생산 배수 강화",
+    "old": 21
+  },
+  {
+    "id": 29,
+    "sector": 3,
+    "name": "TRANSFORM",
+    "max": 1,
+    "payment": "¢",
+    "role": "보유 달러에 따른 코인 생산 보너스 해금",
+    "old": 0
+  },
+  {
+    "id": 30,
+    "sector": 3,
+    "name": "INNER PRODUCT",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "보유 코인에 따른 달러 생산 보너스 해금",
+    "old": 0
+  },
+  {
+    "id": 31,
+    "sector": 3,
+    "name": "EIGENVALUE",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "달러와 코인의 생산을 함께 강화",
+    "old": 22
+  },
+  {
+    "id": 32,
+    "sector": 3,
+    "name": "DERIVATIVE",
+    "max": 1,
+    "payment": "¢",
+    "role": "총 연구 레벨에 따른 코인 생산 보너스",
+    "old": 23
+  },
+  {
+    "id": 33,
+    "sector": 3,
+    "name": "INTEGRAL",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "두 재화의 캐시 지급 초수 증가",
+    "old": 24
+  },
+  {
+    "id": 34,
+    "sector": 3,
+    "name": "ALGEBRA CORE",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "교차 보유액 효과 강화와 다음 섹터 진입",
+    "old": 25
+  },
+  {
+    "id": 35,
+    "sector": 4,
+    "name": "BOOLEAN",
+    "max": 1,
+    "payment": "$",
+    "role": "달러 생산에 즉시 배수",
+    "old": 26
+  },
+  {
+    "id": 36,
+    "sector": 4,
+    "name": "AND GATE",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "달러·코인 연구 구매 수로 양쪽 생산 강화",
+    "old": 27
+  },
+  {
+    "id": 37,
+    "sector": 4,
+    "name": "OR GATE",
+    "max": 5,
+    "payment": "¢",
+    "role": "대체 선행 경로 중 하나로 열리는 달러 배수",
+    "old": 28
+  },
+  {
+    "id": 38,
+    "sector": 4,
+    "name": "IMPLICATION",
+    "max": 1,
+    "payment": "$",
+    "role": "달러로 구매한 연구 수에 따른 코인 생산 강화",
+    "old": 0
+  },
+  {
+    "id": 39,
+    "sector": 4,
+    "name": "NEGATION",
+    "max": 1,
+    "payment": "¢",
+    "role": "달러 연구 비용 할인",
+    "old": 29
+  },
+  {
+    "id": 40,
+    "sector": 4,
+    "name": "XOR",
+    "max": 1,
+    "payment": "$",
+    "role": "코인으로 구매한 연구 수에 따른 달러 생산 강화",
+    "old": 30
+  },
+  {
+    "id": 41,
+    "sector": 4,
+    "name": "TRUTH TABLE",
+    "max": 20,
+    "payment": "$+¢",
+    "role": "총 연구 레벨 연동 달러 생산을 장기 강화",
+    "old": 31
+  },
+  {
+    "id": 42,
+    "sector": 4,
+    "name": "BITSHIFT",
+    "max": 10,
+    "payment": "$",
+    "role": "코인 생산의 작은 복리 배수",
+    "old": 32
+  },
+  {
+    "id": 43,
+    "sector": 4,
+    "name": "MUX",
+    "max": 1,
+    "payment": "¢",
+    "role": "달러 캐시 지급 초수 증가",
+    "old": 33
+  },
+  {
+    "id": 44,
+    "sector": 4,
+    "name": "DEMUX",
+    "max": 1,
+    "payment": "$",
+    "role": "코인 캐시 지급 초수 증가",
+    "old": 0
+  },
+  {
+    "id": 45,
+    "sector": 4,
+    "name": "DECODER",
+    "max": 5,
+    "payment": "¢",
+    "role": "코인 기본 생산 합계를 반복 강화",
+    "old": 0
+  },
+  {
+    "id": 46,
+    "sector": 4,
+    "name": "SAT SOLVER",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "두 보유액 교차 보너스의 효율 강화",
+    "old": 34
+  },
+  {
+    "id": 47,
+    "sector": 4,
+    "name": "LOGIC CORE",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "양쪽 생산 강화와 다음 섹터 진입",
+    "old": 35
+  },
+  {
+    "id": 48,
+    "sector": 5,
+    "name": "REGISTER",
+    "max": 20,
+    "payment": "$",
+    "role": "달러 기본 생산을 반복 증가",
+    "old": 36
+  },
+  {
+    "id": 49,
+    "sector": 5,
+    "name": "L1 CACHE",
+    "max": 1,
+    "payment": "$",
+    "role": "달러 캐시 지급 초수 증가",
+    "old": 37
+  },
+  {
+    "id": 50,
+    "sector": 5,
+    "name": "MEMORY BUS",
+    "max": 10,
+    "payment": "¢",
+    "role": "코인 기본 생산을 반복 증가",
+    "old": 38
+  },
+  {
+    "id": 51,
+    "sector": 5,
+    "name": "L2 CACHE",
+    "max": 1,
+    "payment": "¢",
+    "role": "코인 캐시 지급 초수 증가",
+    "old": 39
+  },
+  {
+    "id": 52,
+    "sector": 5,
+    "name": "BUFFER POOL",
+    "max": 10,
+    "payment": "$",
+    "role": "코인 기본 생산 합계를 반복 강화",
+    "old": 0
+  },
+  {
+    "id": 53,
+    "sector": 5,
+    "name": "POINTER",
+    "max": 1,
+    "payment": "¢",
+    "role": "달러 기본 생산 합계를 강화",
+    "old": 40
+  },
+  {
+    "id": 54,
+    "sector": 5,
+    "name": "STACK",
+    "max": 1,
+    "payment": "¢",
+    "role": "총 연구 레벨로 달러 생산 강화",
+    "old": 41
+  },
+  {
+    "id": 55,
+    "sector": 5,
+    "name": "HEAP",
+    "max": 1,
+    "payment": "$",
+    "role": "구매한 연구 수로 코인 생산 강화",
+    "old": 42
+  },
+  {
+    "id": 56,
+    "sector": 5,
+    "name": "CACHE LINE",
+    "max": 5,
+    "payment": "$+¢",
+    "role": "두 재화의 캐시 지급 배수를 반복 강화",
+    "old": 0
+  },
+  {
+    "id": 57,
+    "sector": 5,
+    "name": "PREFETCH",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "공통 캐시 주기를 단축",
+    "old": 43
+  },
+  {
+    "id": 58,
+    "sector": 5,
+    "name": "WRITEBACK",
+    "max": 1,
+    "payment": "¢",
+    "role": "달러 캐시 지급 배수 강화",
+    "old": 0
+  },
+  {
+    "id": 59,
+    "sector": 5,
+    "name": "PAGING",
+    "max": 1,
+    "payment": "$",
+    "role": "코인 캐시 지급 배수 강화",
+    "old": 0
+  },
+  {
+    "id": 60,
+    "sector": 5,
+    "name": "GARBAGE COLLECTOR",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "일반 반복 연구의 비용 부담 완화",
+    "old": 44
+  },
+  {
+    "id": 61,
+    "sector": 5,
+    "name": "MEMORY CORE",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "기본 생산 강화와 다음 섹터 진입",
+    "old": 45
+  },
+  {
+    "id": 62,
+    "sector": 6,
+    "name": "BINARY SEARCH",
+    "max": 1,
+    "payment": "¢",
+    "role": "달러 반복 연구 가격의 단계별 보정",
+    "old": 46
+  },
+  {
+    "id": 63,
+    "sector": 6,
+    "name": "DIVIDE & CONQUER",
+    "max": 1,
+    "payment": "$",
+    "role": "코인 생산에 즉시 큰 배수",
+    "old": 47
+  },
+  {
+    "id": 64,
+    "sector": 6,
+    "name": "MEMOIZATION",
+    "max": 1,
+    "payment": "¢",
+    "role": "달러 캐시 지급 배수 강화",
+    "old": 48
+  },
+  {
+    "id": 65,
+    "sector": 6,
+    "name": "BINARY HEAP",
+    "max": 5,
+    "payment": "$",
+    "role": "코인 반복 연구의 비용 효율 강화",
+    "old": 0
+  },
+  {
+    "id": 66,
+    "sector": 6,
+    "name": "QUICKSORT",
+    "max": 10,
+    "payment": "¢",
+    "role": "달러 생산 복리 배수",
+    "old": 49
+  },
+  {
+    "id": 67,
+    "sector": 6,
+    "name": "DYNAMIC PROGRAM",
+    "max": 10,
+    "payment": "$+¢",
+    "role": "총 연구 레벨 연동 코인 생산을 장기 강화",
+    "old": 50
+  },
+  {
+    "id": 68,
+    "sector": 6,
+    "name": "GREEDY",
+    "max": 1,
+    "payment": "¢",
+    "role": "구매한 연구 수에 따른 달러 생산 강화",
+    "old": 51
+  },
+  {
+    "id": 69,
+    "sector": 6,
+    "name": "RECURSION",
+    "max": 5,
+    "payment": "$",
+    "role": "단계가 오를수록 효과가 커지는 코인 배수",
+    "old": 52
+  },
+  {
+    "id": 70,
+    "sector": 6,
+    "name": "AMORTIZATION",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "달러·코인 비용 할인 효과를 소폭 강화",
+    "old": 0
+  },
+  {
+    "id": 71,
+    "sector": 6,
+    "name": "HASH MAP",
+    "max": 1,
+    "payment": "$",
+    "role": "코인 연구 비용 할인",
+    "old": 53
+  },
+  {
+    "id": 72,
+    "sector": 6,
+    "name": "STABLE SORT",
+    "max": 1,
+    "payment": "¢",
+    "role": "코인 보유액의 달러 생산 보너스 강화",
+    "old": 0
+  },
+  {
+    "id": 73,
+    "sector": 6,
+    "name": "OPTIMIZATION",
+    "max": 1,
+    "payment": "¢",
+    "role": "달러 반복 연구 비용 효율 강화",
+    "old": 54
+  },
+  {
+    "id": 74,
+    "sector": 6,
+    "name": "TOPOLOGICAL SORT",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "완료한 섹터 수에 따른 양쪽 생산 보너스",
+    "old": 0
+  },
+  {
+    "id": 75,
+    "sector": 6,
+    "name": "ALGORITHM CORE",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "교차 생산 효율 강화와 다음 섹터 진입",
+    "old": 55
+  },
+  {
+    "id": 76,
+    "sector": 7,
+    "name": "CLOCK",
+    "max": 20,
+    "payment": "$",
+    "role": "달러 생산의 작은 복리 배수",
+    "old": 56
+  },
+  {
+    "id": 77,
+    "sector": 7,
+    "name": "PIPELINE",
+    "max": 1,
+    "payment": "¢",
+    "role": "달러 기본 생산 합계 강화",
+    "old": 57
+  },
+  {
+    "id": 78,
+    "sector": 7,
+    "name": "THREAD",
+    "max": 1,
+    "payment": "$",
+    "role": "총 연구 레벨로 코인 생산 강화",
+    "old": 58
+  },
+  {
+    "id": 79,
+    "sector": 7,
+    "name": "SCHEDULER",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "두 재화의 캐시 지급량 강화로 교체",
+    "old": 59
+  },
+  {
+    "id": 80,
+    "sector": 7,
+    "name": "PARALLELISM",
+    "max": 1,
+    "payment": "$",
+    "role": "코인 캐시 지급 배수 강화",
+    "old": 60
+  },
+  {
+    "id": 81,
+    "sector": 7,
+    "name": "SIMD",
+    "max": 1,
+    "payment": "¢",
+    "role": "달러 기본 생산 합계를 크게 강화",
+    "old": 61
+  },
+  {
+    "id": 82,
+    "sector": 7,
+    "name": "BRANCH PREDICTOR",
+    "max": 1,
+    "payment": "$",
+    "role": "코인 반복 연구 비용 할인",
+    "old": 62
+  },
+  {
+    "id": 83,
+    "sector": 7,
+    "name": "MULTICORE",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "MAX가 된 반복 연구 수로 양쪽 생산 강화",
+    "old": 63
+  },
+  {
+    "id": 84,
+    "sector": 7,
+    "name": "SUPERSCALAR",
+    "max": 1,
+    "payment": "$",
+    "role": "코인 기본 생산에 큰 일회성 증가",
+    "old": 0
+  },
+  {
+    "id": 85,
+    "sector": 7,
+    "name": "INSTRUCTION SET",
+    "max": 5,
+    "payment": "¢",
+    "role": "달러 생산에 큰 반복 배수",
+    "old": 64
+  },
+  {
+    "id": 86,
+    "sector": 7,
+    "name": "SPECULATION",
+    "max": 1,
+    "payment": "$",
+    "role": "보유 달러의 코인 생산 보너스 강화",
+    "old": 65
+  },
+  {
+    "id": 87,
+    "sector": 7,
+    "name": "CLOCK DOMAIN",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "공통 캐시 주기를 추가 단축",
+    "old": 66
+  },
+  {
+    "id": 88,
+    "sector": 7,
+    "name": "LOAD BALANCER",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "달러·코인 교차 보유액 효과를 함께 강화",
+    "old": 0
+  },
+  {
+    "id": 89,
+    "sector": 7,
+    "name": "INTERCONNECT",
+    "max": 1,
+    "payment": "¢",
+    "role": "코인 결제 연구 수에 따른 달러 생산 강화",
+    "old": 67
+  },
+  {
+    "id": 90,
+    "sector": 7,
+    "name": "ARCHITECTURE CORE",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "양쪽 생산 도약과 8섹터 진입",
+    "old": 68
+  },
+  {
+    "id": 91,
+    "sector": 8,
+    "name": "FINITE STATE",
+    "max": 1,
+    "payment": "$",
+    "role": "코인 생산에 즉시 큰 배수",
+    "old": 69
+  },
+  {
+    "id": 92,
+    "sector": 8,
+    "name": "TURING MACHINE",
+    "max": 1,
+    "payment": "¢",
+    "role": "총 연구 레벨로 달러 생산 강화",
+    "old": 70
+  },
+  {
+    "id": 93,
+    "sector": 8,
+    "name": "LAMBDA CALCULUS",
+    "max": 5,
+    "payment": "$",
+    "role": "코인 생산의 큰 반복 배수",
+    "old": 71
+  },
+  {
+    "id": 94,
+    "sector": 8,
+    "name": "FIXED POINT",
+    "max": 5,
+    "payment": "¢",
+    "role": "단계가 오를수록 효과가 커지는 달러 배수",
+    "old": 72
+  },
+  {
+    "id": 95,
+    "sector": 8,
+    "name": "INFORMATION",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "구매한 연구 수로 양쪽 생산 강화",
+    "old": 73
+  },
+  {
+    "id": 96,
+    "sector": 8,
+    "name": "INVARIANT",
+    "max": 1,
+    "payment": "$",
+    "role": "달러 보유액의 코인 생산 보너스 강화",
+    "old": 0
+  },
+  {
+    "id": 97,
+    "sector": 8,
+    "name": "ENTROPY",
+    "max": 1,
+    "payment": "¢",
+    "role": "후반 달러 연구의 비용 할인",
+    "old": 74
+  },
+  {
+    "id": 98,
+    "sector": 8,
+    "name": "COMPLEXITY",
+    "max": 1,
+    "payment": "$",
+    "role": "후반 코인 반복 연구 비용 효율 강화",
+    "old": 75
+  },
+  {
+    "id": 99,
+    "sector": 8,
+    "name": "SUPERPOSITION",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "양쪽 생산에 큰 일회성 배수",
+    "old": 76
+  },
+  {
+    "id": 100,
+    "sector": 8,
+    "name": "DUALITY",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "보유액 교차 효과의 후반 감쇠를 완화",
+    "old": 0
+  },
+  {
+    "id": 101,
+    "sector": 8,
+    "name": "FOURIER",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "두 재화의 캐시 지급 배수 강화",
+    "old": 77
+  },
+  {
+    "id": 102,
+    "sector": 8,
+    "name": "CONSERVATION",
+    "max": 1,
+    "payment": "¢",
+    "role": "코인 보유액의 달러 생산 보너스 강화",
+    "old": 0
+  },
+  {
+    "id": 103,
+    "sector": 8,
+    "name": "UNIVERSAL",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "기본 생산·배수 결합의 최종 강화",
+    "old": 78
+  },
+  {
+    "id": 104,
+    "sector": 8,
+    "name": "SINGULARITY",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "양쪽 생산의 마지막 큰 도약",
+    "old": 79
+  },
+  {
+    "id": 105,
+    "sector": 8,
+    "name": "AXIOM",
+    "max": 1,
+    "payment": "$+¢",
+    "role": "최종 연구 완료와 양쪽 생산 보너스",
+    "old": 80
+  }
+]

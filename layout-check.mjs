@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {NODES,MAP_LAYOUT,defaultState,validateSave,sectorProgress} from './dist/data.js';
 import {BRANCHES,CENTER,connectionPath,centerPath} from './dist/layout.js';
-assert.equal(NODES.length,80);assert.equal(NODES.at(-1).name,'AXIOM');
+assert.equal(NODES.length,105);assert.equal(NODES.at(-1).name,'AXIOM');
 assert.deepEqual(BRANCHES.map(b=>b.chapters),[[0,1],[2],[3,4],[5],[6,7]]);
 const within=(point,polygon)=>polygon.every((a,i)=>{const b=polygon[(i+1)%polygon.length];return (b.x-a.x)*(point.y-a.y)-(b.y-a.y)*(point.x-a.x)>=-1e-6;});
 const separated=(a,b)=>[...a,...b].some((p,i)=>{
@@ -23,9 +23,9 @@ for(const n of MAP_LAYOUT.sectors[0].members)state.levels[n.id]=n.max;
 assert(sectorProgress(state,0).complete);assert(!sectorProgress(state,1).complete);
 for(const n of NODES)state.levels[n.id]=n.max;
 for(let i=0;i<8;i++)assert(sectorProgress(state,i).complete);
-state.levels[31]--;assert(!sectorProgress(state,3).complete,'Long-term levels count toward completion');
+state.levels[41]--;assert(!sectorProgress(state,3).complete,'Long-term levels count toward completion');
 const old=defaultState();delete old.layoutVersion;old.camera={x:100,y:-9000,scale:.8};old.settings.hudCollapsed=true;old.currencies.money=3456;old.levels[1]=1;
-const migrated=validateSave(old);assert.equal(migrated.camera,null);assert.equal(migrated.settings.hudCollapsed,false);assert.equal(migrated.currencies.money,3456);assert.deepEqual(migrated.levels,old.levels);
+const migrated=validateSave(old);assert.equal(migrated.camera,null);assert.equal(migrated.settings.hudCollapsed,true);assert.equal(migrated.currencies.money,3456);assert.deepEqual(migrated.levels,old.levels);
 const current=defaultState();current.camera={x:-200,y:400,scale:.6};current.settings.hudCollapsed=true;
 const restored=validateSave(current);assert.deepEqual(restored.camera,current.camera);assert.equal(restored.settings.hudCollapsed,true);
 console.log(JSON.stringify({radialLayout:'passed',branches:5,sectors:8,cardOverlap:false,regionOverlap:false,completionRequiresAllLevels:'passed',oldSaveMigration:'passed'}));

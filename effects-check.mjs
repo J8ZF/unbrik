@@ -29,7 +29,7 @@ const setup=new Function('createOpalMotion','NODES','defaultState','$','element'
 const ui=setup((groups,enabled)=>createOpalMotion(groups,enabled,Observer),NODES,defaultState,$,element);
 assert.equal(observers.length,1);assert.equal(observers[0].options.root,ui.viewport);
 assert.equal(observers[0].targets.length,NODES.filter(n=>n.chapter===7).length);
-const node=ui.nodeEls.get(71),offscreen=ui.nodeEls.get(72),status=el=>el.style['--opal-play-state'];
+const node=ui.nodeEls.get(93),offscreen=ui.nodeEls.get(94),status=el=>el.style['--opal-play-state'];
 assert.equal(status(node),'paused');observers[0].emit(node,true);assert.equal(status(node),'running');assert.equal(status(offscreen),'paused');
 ui.setting('touch',false);assert.equal(status(node),'running','Touch toggle must remain independent of ambient motion');
 ui.setting('motion',false);assert.equal(status(node),'paused');assert(ui.body.classList.contains('reduced-motion'));assert(!$('motion').checked);

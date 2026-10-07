@@ -1,37 +1,32 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {NODES,byId,defaultState,unlocked,level,economy,cost,purchase,tick,validateSave,LEGACY_MAX,MAX_VALUE} from './dist/data.js';
-import {iconSvg,ICON_NAMES} from './dist/icons.js';
-assert.equal(NODES.length,80);assert.equal(new Set(NODES.map(n=>n.id)).size,80);
-let s=defaultState();assert.equal(economy(s).rate,1);tick(s,5);tick(s,5);assert.equal(s.currencies.money,10);assert(purchase(s,NODES[0]));assert.equal(economy(s).rate,2);assert.equal(s.currencies.money,0);assert(!purchase(s,NODES[0]));
-s.currencies.money=1e200;assert(!unlocked(s,NODES[3]));assert(purchase(s,NODES[1]));assert(!unlocked(s,NODES[3]));assert(purchase(s,NODES[2]));assert(unlocked(s,NODES[3]));assert(purchase(s,NODES[1]));assert.equal(level(s,2),2);
-for(const n of NODES){
- assert(n.baseCost>0&&Number.isFinite(n.baseCost));assert.equal(n.costs.length,n.max);
- for(let i=0;i<n.max;i++){assert(Number.isFinite(n.costs[i]));if(i)assert(n.costs[i]>n.costs[i-1]);}
- for(const r of n.req){assert(byId.has(r.id));assert(r.id<n.id);}
- assert(unlocked(s,n),`${n.name} unreachable`);if(!level(s,n))assert(purchase(s,n));
-}
-assert.equal(economy(s).count,80);assert(economy(s).auto);
-const saved=JSON.parse(JSON.stringify(s));assert.deepEqual(validateSave(saved).levels,s.levels);
-for(const corrupt of [{...saved,version:2},{...saved,contentVersion:99},{...saved,currencies:{money:-1}},{...saved,levels:{80:1}},{...saved,levels:{1:99}},{...saved,currencies:{money:NaN}}])assert.throws(()=>validateSave(corrupt));
-const old=defaultState();old.contentVersion=2;old.currencies.money=123456;old.levels=Object.fromEntries(NODES.map(n=>[n.id,LEGACY_MAX[n.id]||1]));const migrated=validateSave(old);assert.equal(migrated.currencies.money,123456);for(const n of NODES){if(LEGACY_MAX[n.id])assert.equal(level(migrated,n),n.max);}assert.equal(level(migrated,31),11);assert.equal(level(migrated,50),6);assert.equal(migrated.contentVersion,3);
-const before=s.stats.earned;s.timers.cache=0;const e=economy(s);for(let i=0;i<30;i++)tick(s,1);assert(s.stats.earned-before>e.rate*30*.999);s.settings.auto=true;const purchases=s.stats.purchases;for(let i=0;i<10;i++)tick(s,1);assert(s.stats.purchases>purchases);
-for(const n of NODES){s.currencies.money=1e280;while(level(s,n)<n.max)assert(purchase(s,n));}assert(Number.isFinite(economy(s).rate));assert.equal(NODES.filter(n=>n.max>1).length,19);assert.equal(NODES.reduce((a,n)=>a+n.max,0),261);
-assert.equal(ICON_NAMES.length,80);const icons=NODES.map(n=>iconSvg(n.id));assert.equal(new Set(icons).size,80);for(const svg of icons){assert(svg.includes('viewBox="0 0 24 24"'));assert(!/<text|<image|<foreignObject|href=/.test(svg));}assert(iconSvg(7).includes('10.5'),'PRODUCT uses embedded factory paths');
-// Regression: X and Plus previously fell back to the padlock icon.
-assert.equal(iconSvg('X'),iconSvg(3));assert.equal(iconSvg('Plus'),iconSvg(2));
-const cheat=defaultState();assert.equal(cheat.settings.purchaseCheat,false);cheat.settings.purchaseCheat=true;
-assert(!purchase(cheat,NODES[3]),'cheat retains prerequisites');
-let price=cost(cheat,NODES[0]);assert(price>0);assert(purchase(cheat,NODES[0]),'cheat permits a zero-balance purchase');assert.equal(cheat.currencies.money,0);assert.equal(cheat.stats.spent,0);assert.equal(cheat.stats.earned,0);
-assert(!purchase(cheat,NODES[0]),'cheat retains maximum level');
-cheat.settings.purchaseCheat=false;assert(!purchase(cheat,NODES[1]),'disabling cheat restores affordability');cheat.currencies.money=1000;const balance=cheat.currencies.money;price=cost(cheat,NODES[1]);assert(purchase(cheat,NODES[1]));assert.equal(cheat.currencies.money,balance-price);assert.equal(cheat.stats.spent,price);
-cheat.settings.purchaseCheat=true;cheat.settings.hudCollapsed=false;cheat.settings.panelCollapsed=true;cheat.settings.mapControls=true;
-const roundTrip=validateSave(JSON.parse(JSON.stringify(cheat)));assert.deepEqual(roundTrip.settings,cheat.settings);assert.equal(roundTrip.currencies.money,cheat.currencies.money);
-const legacy=JSON.parse(JSON.stringify(cheat));for(const k of ['purchaseCheat','hudCollapsed','panelCollapsed','mapControls'])delete legacy.settings[k];const clean=validateSave(legacy);assert.equal(clean.settings.purchaseCheat,false);assert.equal(clean.settings.hudCollapsed,false);assert.equal(clean.settings.panelCollapsed,false);assert.equal(clean.settings.mapControls,false);
-const autoCheat=defaultState();autoCheat.currencies.money=1e200;for(const n of NODES){assert(purchase(autoCheat,n));if(economy(autoCheat).auto)break;}
-autoCheat.currencies.money=0;autoCheat.stats.earned=0;autoCheat.stats.spent=0;autoCheat.timers.auto=5;autoCheat.settings.auto=true;autoCheat.settings.purchaseCheat=true;const autoNormal=structuredClone(autoCheat);autoNormal.settings.purchaseCheat=false;
-const autoEvents=tick(autoCheat,1e-30),normalEvents=tick(autoNormal,1e-30);assert(autoEvents.some(e=>e.type==='auto'));assert(!normalEvents.some(e=>e.type==='auto'));assert.equal(autoCheat.stats.purchases,autoNormal.stats.purchases+1);assert.equal(autoCheat.currencies.money,autoNormal.currencies.money);assert.equal(autoCheat.stats.earned,autoNormal.stats.earned);assert.equal(autoCheat.stats.spent,0);
-const capped=defaultState();capped.currencies.money=MAX_VALUE;capped.settings.purchaseCheat=true;assert(purchase(capped,NODES[0]));assert.equal(capped.currencies.money,MAX_VALUE);assert(Number.isFinite(capped.currencies.money));
-const html=fs.readFileSync('dist/index.html','utf8'),app=fs.readFileSync('dist/app.js','utf8'),css=fs.readFileSync('dist/style.css','utf8');const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);for(const match of app.matchAll(/\$\('([^']+)'\)/g))if(!match[1].endsWith('-'))assert(ids.includes(match[1]),`Missing ${match[1]}`);assert(!app.includes('.textContent=n.symbol'));assert(!html.includes('>Λ')&&!html.includes('>⏻'));assert(css.includes('.panel-symbol .glyph{width:30px;height:30px'));for(const ref of html.matchAll(/(?:src|href)="([^"?#]+)(?:\?[^"#]*)?"/g)){if(!/^(https?:|data:|#)/.test(ref[1]))assert(fs.existsSync('dist/'+ref[1]),`Missing ${ref[1]}`);}
-for(const [,name]of html.matchAll(/data-ui-icon="([^"]+)"/g))assert.notEqual(iconSvg(name),iconSvg('LockKeyhole'),`Unknown interface icon: ${name}`);
-console.log(JSON.stringify({checks:'passed',nodes:80,repeatables:19,totalLevels:261,uniqueFontFreeIcons:80,maxedRate:economy(s).rate}));
+import {NODES,byId,defaultState,unlocked,level,economy,cost,purchase,tick,validateSave,MAX_VALUE,affordable} from './dist/data.js';
+import {iconSvg} from './dist/icons.js';
+import {checkpointOffline,settleOffline,effectiveOfflineSeconds} from './dist/offline.js';
+assert.equal(NODES.length,105);assert.equal(new Set(NODES.map(n=>n.id)).size,105);
+assert.deepEqual(Array.from({length:8},(_,i)=>NODES.filter(n=>n.chapter===i).length),[8,12,14,13,14,14,15,15]);
+assert.equal(NODES.reduce((a,n)=>a+n.max,0),316);assert.equal(NODES.at(-1).name,'AXIOM');
+let s=defaultState();assert.deepEqual(economy(s).rates,{money:1,coin:0});tick(s,5);tick(s,5);assert.equal(s.currencies.money,10);assert(purchase(s,NODES[0]));assert.equal(economy(s).rate,2);assert.equal(s.currencies.money,0);assert(!purchase(s,NODES[0]));
+for(const n of NODES){assert.equal(n.costs.length,n.max);assert(n.effects.length);assert(!n.effects.some(e=>e.type==='automation'||e.type==='power'));for(const p of n.costs)for(const k of n.payment)assert(Number.isFinite(p[k])&&p[k]>0);for(const r of n.req)assert(byId.has(r.id)&&r.id<n.id);}
+const cheat=defaultState();cheat.settings.purchaseCheat=true;assert(!purchase(cheat,byId.get(22)));const zero={...cheat.currencies};
+for(const n of NODES){assert(unlocked(cheat,n));assert(purchase(cheat,n));assert.deepEqual(cheat.currencies,zero);if(n.id===21)assert.equal(economy(cheat).coinRate,0);if(n.id===22)assert.equal(economy(cheat).coinRate,1);}
+for(const n of NODES){while(level(cheat,n)<n.max)assert(purchase(cheat,n));assert(!purchase(cheat,n));}
+assert.equal(cheat.stats.spent,0);assert.equal(cheat.stats.coinSpent,0);assert.equal(cheat.stats.purchases,316);assert(Number.isFinite(economy(cheat).rate));
+assert.deepEqual(validateSave(JSON.parse(JSON.stringify(cheat))).levels,cheat.levels);
+const dual=defaultState();dual.settings.purchaseCheat=true;for(const n of NODES.filter(n=>n.id<30))assert(purchase(dual,n));dual.settings.purchaseCheat=false;
+// Either shortage aborts the complete transaction, including levels and stats.
+for(const missing of ['money','coin']){dual.currencies={money:1e50,coin:1e50};dual.currencies[missing]=0;const before=structuredClone(dual);assert(!affordable(dual,byId.get(30)));assert(!purchase(dual,byId.get(30)));assert.deepEqual(dual,before);}
+dual.currencies={money:1e20,coin:1e20};const prices=cost(dual,byId.get(30)),before={...dual.currencies};assert(purchase(dual,byId.get(30)));for(const k of ['money','coin'])assert.equal(dual.currencies[k],before[k]-prices[k]);
+// Both cache amounts use the same pre-payment production snapshot.
+const cache=structuredClone(cheat);cache.settings.purchaseCheat=false;cache.currencies={money:1e31,coin:1e15};cache.timers.cache=economy(cache).interval-.1;const e=economy(cache),old={...cache.currencies},event=tick(cache,.2)[0];assert(event&&event.money>0&&event.coin>0);assert.equal(event.money,e.rate*e.burst);assert.equal(event.coin,e.coinRate*e.coinBurst);
+for(const k of ['money','coin'])assert.equal(cache.currencies[k],Math.min(MAX_VALUE,old[k]+e.rates[k]*.2+event[k]));
+// Split offline settlements, reloads, and full settlement agree for both currencies.
+const start=100000,whole=structuredClone(cache),split=structuredClone(cache);checkpointOffline(whole,start);checkpointOffline(split,start);const snapshot={...whole.offline};settleOffline(whole,start+7200000);for(let t=60;t<=7200;t+=60)settleOffline(split,start+t*1000);
+for(const k of ['money','coin'])assert(Math.abs(whole.currencies[k]-split.currencies[k])/whole.currencies[k]<1e-12);assert.equal(settleOffline(whole,start+7200000).coin,0);assert.equal(settleOffline(validateSave(whole,start+7200000),start+7200000).amount,0);assert.equal(snapshot.coinRate,economy(cache).coinRate*(1+economy(cache).coinBurst/economy(cache).interval));assert(effectiveOfflineSeconds(86400)<=2400);
+const saved=JSON.parse(JSON.stringify(cheat));for(const corrupt of [{...saved,version:1},{...saved,economyEpoch:'old'},{...saved,currencies:{money:-1,coin:0}},{...saved,levels:{105:1}},{...saved,levels:{1:99}},{...saved,currencies:{money:NaN,coin:0}},{...saved,currencies:{money:0,coin:Infinity}}])assert.throws(()=>validateSave(corrupt));
+const icons=NODES.map(n=>iconSvg(n.icon));assert.equal(new Set(icons).size,105);for(const svg of icons){assert(svg.includes('viewBox="0 0 24 24"'));assert(!/<text|<image|<foreignObject|href=/.test(svg));assert.notEqual(svg,iconSvg('LockKeyhole'));}
+const html=fs.readFileSync('dist/index.html','utf8'),app=fs.readFileSync('dist/app.js','utf8');const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);for(const match of app.matchAll(/\$\('([^']+)'\)/g))if(!match[1].endsWith('-'))assert(ids.includes(match[1]),`Missing ${match[1]}`);
+for(const ref of html.matchAll(/(?:src|href)="([^"?#]+)(?:\?[^"#]*)?"/g))if(!/^(https?:|data:|#)/.test(ref[1]))assert(fs.existsSync('dist/'+ref[1]),`Missing ${ref[1]}`);
+for(const [,name]of html.matchAll(/data-ui-icon="([^"]+)"/g))assert.notEqual(iconSvg(name),iconSvg('LockKeyhole'));
+assert(!html.includes('id="progressBar"'));assert(!html.includes('coin-mark'));assert(html.includes('>¢</span>'));assert(!html.includes('autoSetting'));
+console.log(JSON.stringify({economy:'passed',nodes:105,totalLevels:316,icons:105,dualCurrencyAtomicPurchase:'passed',coinUnlock:'1 per second',cacheSnapshot:'passed',offlineTwoCurrencies:'passed',saveEpoch:'passed',DOMReferences:'passed'}));

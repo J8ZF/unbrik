@@ -16,10 +16,10 @@ function element(){const classes=new Set(),queries=new Map(),listeners=new Map()
 const elements=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,element()]));
 const $=id=>{assert(elements.has(id),`Missing element ${id}`);return elements.get(id);};
 const slice=(start,end)=>{const a=app.indexOf(start),b=app.indexOf(end,a);assert(a>=0&&b>a);return app.slice(a,b);};
-const source=[slice('const CENTER_SELECTION','const KEY='),slice('function syncOpalMotion(){','function save('),slice('function sectorUnlocked(','const visibility='),slice('function createGraph(){','function animatePanel('),slice('function animatePanel(','function ripple('),slice('function buySelected(){','const pointers='),slice('const pointers=',"$('zoomIn').onclick="),slice('let previousWidth=','new ResizeObserver(reframeViewport)'),slice('function renderUpdates(','function suspend('),
- slice("$('toggleHud').onclick=", "$('settings').onclick="),slice("for(const k of ['motion','touch','haptic','auto','mapControls'])", "$('format').onchange="),slice("$('purchaseCheat').onchange=", "$('saveNow').onclick=")].join('\n');
+const source=[slice('const CENTER_SELECTION','const KEY='),slice('function compactFormat(', 'function time('),slice('function syncOpalMotion(){','function save('),slice('function sectorUnlocked(','const visibility='),slice('function createGraph(){','function animatePanel('),slice('function animatePanel(','function ripple('),slice('function buySelected(){','const pointers='),slice('const pointers=',"$('zoomIn').onclick="),slice('let previousWidth=','new ResizeObserver(reframeViewport)'),slice('function renderUpdates(','function suspend('),
+ slice("$('toggleHud').onclick=", "$('settings').onclick="),slice("for(const k of ['motion','touch','haptic','mapControls'])", "$('format').onchange="),slice("$('purchaseCheat').onchange=", "$('saveNow').onclick=")].join('\n');
 const createUI=new Function('deps','$','document',`
- const {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,effectText,validateSave,MAP_LAYOUT,sectorProgress,BRANCHES,CENTER,boundsOf,connectionPath,centerPath,iconSvg,setIcon,UPDATES,updatePage,interpolateCamera,overviewMode,mapFrames,fitCamera}=deps;
+ const {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,purchase,effectText,validateSave,MAP_LAYOUT,sectorProgress,BRANCHES,CENTER,boundsOf,connectionPath,centerPath,iconSvg,setIcon,UPDATES,updatePage,interpolateCamera,overviewMode,mapFrames,fitCamera}=deps;
  let sessionSeconds=0;let state=defaultState(),selected=1,econ=economy(state),saved=null,camera={x:0,y:0,scale:1},cameraMoving=false,updatesPage=1;
  let suspended=false,opalMotion={refresh(){}},motionPreference={matches:false};
  let selectionPending=false,selectionEpoch=0,navigationFrame=0,panelAnimation=null,navigatorCloseTimer=0,cameraIntent=null;
@@ -114,25 +114,25 @@ $('toggleHud').onclick();assert.equal($('toggleHud').attributes['aria-label'],'�
 assert(!$('panelDetails').hidden);$('togglePanel').onclick();assert.equal(ui.selected,1);assert($('panelDetails').hidden);assert.equal($('panelToggleText').textContent,'연구 정보 펼치기');assert.equal($('collapsedName').textContent,'START');assert(ui.saved.settings.panelCollapsed);
 $('togglePanel').onclick();assert(!$('panelDetails').hidden);assert.equal(ui.selected,1);
 $('togglePanel').onclick();ui.state.levels[1]=1;assert(ui.selectNode(2));assert.equal(ui.selected,2);assert(!$('panelDetails').hidden);assert.equal($('togglePanel').attributes['aria-expanded'],'true');
-const displayedPrice=$('panelCost').textContent;assert(ui.state.currencies.money<data.cost(ui.state,data.byId.get(2)));$('purchaseCheat').checked=true;$('purchaseCheat').onchange();assert(ui.state.settings.purchaseCheat);assert(ui.saved.settings.purchaseCheat);assert(!$('cheatBadge').hidden);assert.equal($('panelCost').textContent,displayedPrice);assert.equal($('costLabel').textContent,'RESEARCH COST');assert.equal($('buyDetail').textContent,'무료 연구');assert.equal($('buy').className,'');assert(!$('buy').disabled);assert(ui.nodeEls.get(2).className.includes('available'));assert(!ui.nodeEls.get(1).className.includes('available'));
+const displayedPrice=$('panelCost').textContent;assert(ui.state.currencies.money<data.cost(ui.state,data.byId.get(2)).money);$('purchaseCheat').checked=true;$('purchaseCheat').onchange();assert(ui.state.settings.purchaseCheat);assert(ui.saved.settings.purchaseCheat);assert(!$('cheatBadge').hidden);assert.equal($('panelCost').textContent,displayedPrice);assert.equal($('costLabel').textContent,'RESEARCH COST');assert.equal($('buyDetail').textContent,'무료 연구');assert.equal($('buy').className,'');assert(!$('buy').disabled);assert(ui.nodeEls.get(2).className.includes('available'));assert(!ui.nodeEls.get(1).className.includes('available'));
 $('purchaseCheat').checked=false;$('purchaseCheat').onchange();assert(!ui.state.settings.purchaseCheat);assert($('cheatBadge').hidden);assert.equal($('costLabel').textContent,'RESEARCH COST');assert.equal($('panelCost').textContent,displayedPrice);assert.equal($('buy').className,'waiting');
 ui.openCenter();assert.equal(ui.selected,-1);assert.equal($('panelName').textContent,'UNBRIK');assert(!$('sectorDialog').open);assert.equal($('buyText').textContent,'내비게이터');assert($('panelEffect').hidden);assert($('requirements').hidden);assert($('purchaseTrack').hidden);ui.buySelected();assert($('sectorDialog').open);ui.jumpToSector(7);assert($('sectorDialog').open,'Undiscovered sector cannot navigate');ui.jumpToSector(0);assert.equal($('buy').className,'pending');assert($('buy').disabled);assert.equal($('buyText').textContent,'…');assert.equal(ui.buySelected(),false);finishNavigation();assert(!$('sectorDialog').open);assert.equal(ui.selected,2);assert(!ui.pending);assert.equal($('buy').className,'waiting');
 for(const n of data.MAP_LAYOUT.sectors[0].members)ui.state.levels[n.id]=1;ui.render();assert.equal(ui.sectorEls[0].style.display,'none');
-for(const n of data.MAP_LAYOUT.sectors[0].members)ui.state.levels[n.id]=n.max;ui.render();assert.equal(ui.sectorEls[0].style.display,'');assert.equal($('centerProgress').textContent,'1 / 8 SECTORS');
-for(const n of data.NODES)ui.state.levels[n.id]=n.max;ui.state.levels[31]--;ui.render();assert.equal(ui.sectorEls[3].style.display,'none');ui.openCenter();ui.buySelected();ui.jumpToSector(3);assert(ui.pending);finishNavigation();assert.equal(ui.selected,31);assert(!$('sectorDialog').open);
+for(const n of data.MAP_LAYOUT.sectors[0].members)ui.state.levels[n.id]=n.max;ui.render();assert.equal(ui.sectorEls[0].style.display,'');assert.equal($('centerProgress').textContent,'8 / 105 연구');
+for(const n of data.NODES)ui.state.levels[n.id]=n.max;ui.state.levels[41]--;ui.render();assert.equal(ui.sectorEls[3].style.display,'none');ui.openCenter();ui.buySelected();ui.jumpToSector(3);assert(ui.pending);finishNavigation();assert.equal(ui.selected,41);assert(!$('sectorDialog').open);
 assert($('hubSector0').classList.contains('complete'));assert(!$('hubSector3').classList.contains('complete'));
 assert.equal($('updateEntries').children.length,2);assert.equal($('updatePages').children.length,updates.updatePage(1).pages);assert($('updatesPrev').disabled);for(let i=1;i<updates.updatePage(1).pages;i++)$('updatesNext').onclick();assert(!$('updatesPrev').disabled);assert($('updatesNext').disabled);assert.equal($('updateEntries').children.length,updates.updatePage(99).entries.length);
 $('updateContents').hidden=true;$('toggleUpdates').onclick();assert(!$('updateContents').hidden);$('toggleUpdates').onclick();assert($('updateContents').hidden);
 // One final state after navigation, even with money changes, interruption or a newer request.
 ui.state.currencies.money=0;ui.state.settings.purchaseCheat=false;ui.jumpToSector(3);ui.advance(now+=16);
-ui.state.currencies.money=1e200;ui.render();assert.equal($('buy').className,'pending');ui.advance(now+=500);assert.equal($('buy').className,'');
+ui.state.currencies.money=1e90;ui.state.currencies.coin=1e90;ui.render();assert.equal($('buy').className,'pending');ui.advance(now+=500);assert.equal($('buy').className,'');
 ui.jumpToSector(3);ui.advance(now+=16);ui.jumpToSector(0);assert.equal($('buy').className,'pending');finishNavigation();assert.equal(ui.selected,1);assert.equal($('buy').className,'completed');
-ui.jumpToSector(3);ui.advance(now+=16);ui.interruptMapMotion();assert(!ui.pending);assert(!$('buy').disabled);ui.advance(now+=500);assert.equal(ui.selected,31);
+ui.jumpToSector(3);ui.advance(now+=16);ui.interruptMapMotion();assert(!ui.pending);assert(!$('buy').disabled);ui.advance(now+=500);assert.equal(ui.selected,41);
 ui.state.settings.purchaseCheat=true;ui.jumpToSector(3);finishNavigation();assert.equal($('buyDetail').textContent,'무료 연구');
 ui.jumpToSector(3);ui.advance(now+=16);ui.resize(360,240);assert(ui.pending);ui.advance(now+=500);assert(!ui.pending);assert.equal($('buyDetail').textContent,'무료 연구');
-ui.state.levels[31]=data.byId.get(31).max;ui.render();assert.equal($('navigatorHint').textContent,'섹터로 이동');
-ui.state.levels[31]--;ui.jumpToSector(3);ui.advance(now+=16);for(const r of data.byId.get(31).req)ui.state.levels[r.id]=0;ui.advance(now+=500);assert.equal($('buy').className,'blocked');assert($('buy').disabled);
-for(const n of data.NODES)ui.state.levels[n.id]=n.max;ui.state.levels[31]--;ui.reduced(true);ui.jumpToSector(3);ui.advance(now+=16);assert(!ui.pending);assert(!ui.moving);assert.equal($('buyDetail').textContent,'무료 연구');
+ui.state.levels[41]=data.byId.get(41).max;ui.render();assert.equal($('navigatorHint').textContent,'섹터로 이동');
+ui.state.levels[41]--;ui.jumpToSector(3);ui.advance(now+=16);for(const r of data.byId.get(41).req)ui.state.levels[r.id]=0;ui.advance(now+=500);assert.equal($('buy').className,'blocked');assert($('buy').disabled);
+for(const n of data.NODES)ui.state.levels[n.id]=n.max;ui.state.levels[41]--;ui.reduced(true);ui.jumpToSector(3);ui.advance(now+=16);assert(!ui.pending);assert(!ui.moving);assert.equal($('buyDetail').textContent,'무료 연구');
 // Actual settings changes while a navigation is in flight must settle the action once.
 ui.reduced(false);ui.state.settings.motion=true;ui.jumpToSector(3);ui.advance(now+=16);assert(ui.pending&&ui.moving);
 ui.state.settings.motion=false;ui.applySettings();assert(!ui.pending&&!ui.moving);assert.equal($('buyDetail').textContent,'무료 연구');assert(!$('motion').checked);
@@ -143,18 +143,18 @@ $('mapControls').checked=true;$('mapControls').onchange();assert(ui.pending&&ui.
 for(const {el,to}of ui.edgeEls)assert.equal(el.style['--edge-color'],data.CHAPTERS[to.chapter].color);
 // Border decoration belongs only to sector 8 and becomes eligible after purchase.
 for(const n of data.NODES){const border=ui.nodeEls.get(n.id).children.find(el=>el.className==='opal-border');assert.equal(!!border,n.chapter===7);if(border)assert.equal(border.attributes['aria-hidden'],'true');}
-for(const n of data.NODES)ui.state.levels[n.id]=n.id<69?n.max:0;
-ui.state.settings.purchaseCheat=false;ui.state.currencies.money=0;ui.selectNode(69);ui.render();assert(!ui.nodeEls.get(69).className.includes('bought'));assert(!ui.nodeEls.get(69).className.includes('available'));
-ui.state.settings.purchaseCheat=true;ui.render();assert(ui.nodeEls.get(69).className.includes('available'));assert(!ui.nodeEls.get(69).className.includes('bought'));
-assert(data.purchase(ui.state,data.byId.get(69)));ui.render();assert(ui.nodeEls.get(69).className.includes('bought'));assert(!ui.nodeEls.get(69).className.includes('available'));
+for(const n of data.NODES)ui.state.levels[n.id]=n.id<91?n.max:0;
+ui.state.settings.purchaseCheat=false;ui.state.currencies.money=0;ui.selectNode(91);ui.render();assert(!ui.nodeEls.get(91).className.includes('bought'));assert(!ui.nodeEls.get(91).className.includes('available'));
+ui.state.settings.purchaseCheat=true;ui.render();assert(ui.nodeEls.get(91).className.includes('available'));assert(!ui.nodeEls.get(91).className.includes('bought'));
+assert(data.purchase(ui.state,data.byId.get(91)));ui.render();assert(ui.nodeEls.get(91).className.includes('bought'));assert(!ui.nodeEls.get(91).className.includes('available'));
 for(const n of data.NODES)ui.state.levels[n.id]=n.max;
 // Original detail panel/center interfaces have no added opal decorations.
-ui.selectNode(80);assert(!app.includes('opal-surface'));ui.selectCenter();
-ui.state.levels[80]=0;ui.render();assert.equal(ui.sectorEls[7].style.display,'none');
+ui.selectNode(105);assert(!app.includes('opal-surface'));ui.selectCenter();
+ui.state.levels[105]=0;ui.render();assert.equal(ui.sectorEls[7].style.display,'none');
 for(const {el,from,to}of ui.edgeEls)if(ui.visibility.get(from.id)<2||ui.visibility.get(to.id)<2)assert.equal(el.style.display,'none');
 assert.equal(iconSvg('brand').includes('<svg'),true);assert(!iconSvg('brand').includes('⟁'));assert.equal(data.CHAPTERS[6].color,'#F2DA5B');assert.equal(data.CHAPTERS[7].color,'#F2F4F7');
 // Sector boundaries: cross-sector prerequisites must not reveal a later sector.
-for(const through of [0,4,5,9,15,25,35,37,45,55,68,80]){
+for(const through of [0,7,8,19,20,33,34,46,47,60,61,74,75,89,90,105]){
  ui.interruptMapMotion();ui.state.levels={};for(const n of data.NODES)if(n.id<=through)ui.state.levels[n.id]=1;
  ui.selectNode(1);ui.render();ui.renderStats();
  for(const sector of data.MAP_LAYOUT.sectors){
@@ -192,8 +192,8 @@ for(const restoredCollapsed of [true,false]){
  const get=id=>{assert(map.has(id),`Missing ${id}`);return map.get(id);};
  const doc={...element(),createElement:element,createElementNS:element,body:element()};
  const hud=createUI({...data,...layout,...updates,...cameraHelpers,iconSvg,setIcon},get,doc);
- hud.render();assert(get('cacheMeter').hidden);assert.deepEqual(hud.state.currencies,{money:0});
- hud.state.levels=Object.fromEntries(data.NODES.filter(n=>n.id<=13).map(n=>[n.id,1]));
+ hud.render();assert(get('cacheMeter').hidden);assert.deepEqual(hud.state.currencies,{money:0,coin:0});
+ hud.state.levels=Object.fromEntries(data.NODES.filter(n=>n.id<=18).map(n=>[n.id,1]));
  hud.state.timers.cache=7.5;hud.render();
  assert(!get('cacheMeter').hidden);assert.equal(get('cacheInfo').textContent,'22.5s');
  assert.equal(get('cacheTrack').attributes['aria-valuenow'],'25');
@@ -212,7 +212,7 @@ for(const restoredCollapsed of [true,false]){
  // Rendering future simultaneous awards must itself never credit a currency.
  hud.showCacheReward({money:100,coin:12});
  assert(get('cacheCoin').classList.contains('is-visible'));assert.equal(get('compactCacheCoin').textContent,'+12');
- assert.equal(JSON.stringify(hud.state),before);assert(!('coin' in hud.state.currencies));
+ assert.equal(JSON.stringify(hud.state),before);assert.equal(hud.state.currencies.coin,0);
  hud.advance(4802);hud.render();assert(!get('compactCacheCoin').classList.contains('is-visible'));
  for(const motion of [true,false])for(const os of [true,false]){
   hud.state.settings.motion=motion;hud.osReduce(os);hud.state.timers.cache=15;hud.render();
@@ -220,4 +220,16 @@ for(const restoredCollapsed of [true,false]){
   assert.equal(doc.body.classList.contains('reduced-motion'),!motion||os);
  }
 }
-console.log(JSON.stringify({uiControls:'passed',cacheHud:'passed',coinPlaceholder:'no economy mutations',cacheSettingsCases:4,nativeClickReopens:'passed',lowerTapClickThrough:'blocked',targetBeforeRepaint:'passed',initialPanelLayoutCases:8,freshSessionCases:2,lostCaptureRecovery:'passed',dragPinchCancellation:'passed',inputSettingsCombinations:24,saveCompatibility:'passed',originalNodeMarkup:'restored',sectorBoundaryCases:12,lockedSectorMenuAndStats:'hidden',crossPrerequisiteLeaks:'blocked',invalidNavigation:'blocked',atomicFinalButton:'passed',motionToggleDuringNavigation:'passed'}));
+console.log(JSON.stringify({uiControls:'passed',cacheHud:'passed',dualCurrencyRewardDisplay:'no duplicate economy mutations',cacheSettingsCases:4,nativeClickReopens:'passed',lowerTapClickThrough:'blocked',targetBeforeRepaint:'passed',initialPanelLayoutCases:8,freshSessionCases:2,lostCaptureRecovery:'passed',dragPinchCancellation:'passed',inputSettingsCombinations:24,saveCompatibility:'passed',originalNodeMarkup:'restored',sectorBoundaryCases:12,lockedSectorMenuAndStats:'hidden',crossPrerequisiteLeaks:'blocked',invalidNavigation:'blocked',atomicFinalButton:'passed',motionToggleDuringNavigation:'passed'}));
+
+// Coin visibility, data wiring, and real dual-currency cache awards in both HUD states.
+ui.interruptMapMotion();ui.state.levels={};ui.state.currencies={money:0,coin:0};ui.render();
+assert($('coinCard').hidden&&$('compactCoinCard').hidden);
+for(const n of data.NODES.filter(n=>n.id<=22))ui.state.levels[n.id]=1;
+ui.render();assert(!$('coinCard').hidden&&!$('compactCoinCard').hidden);assert($('hud').classList.contains('has-coin'));
+assert.equal($('compactCoinRate').textContent,'+1 /s');
+ui.state.timers.cache=29.9;const payout=data.tick(ui.state,.2).find(e=>e.type==='cache');assert(payout.coin>0&&payout.money>0);
+ui.render();const awarded=structuredClone(ui.state.currencies);ui.showCacheReward(payout);
+for(const collapsed of [true,false]){ui.state.settings.hudCollapsed=collapsed;ui.render();assert(!$('cacheMeter').hidden);assert($('cacheCoin').classList.contains('is-visible'));assert($('compactCacheCoin').classList.contains('is-visible'));assert.deepEqual(ui.state.currencies,awarded);}
+ui.selectNode(22);ui.selectCenter();ui.selectNode(22);assert.equal($('panelCost').innerHTML,'완료','Panel markup cache must survive center/research switching');
+console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',headerTogglePreservesReward:'passed',centerPanelMarkup:'passed'}));
