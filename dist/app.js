@@ -1,6 +1,6 @@
-import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,tick,effectText,validateSave} from './data.js?v=1.3.0';
-import {iconSvg,setIcon} from './icons.js?v=1.3.0';
-import {checkpointOffline,settleOffline} from './offline.js?v=1.3.0';
+import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,tick,effectText,validateSave} from './data.js?v=1.3.1';
+import {iconSvg,setIcon} from './icons.js?v=1.3.1';
+import {checkpointOffline,settleOffline} from './offline.js?v=1.3.1';
 const $=id=>document.getElementById(id);
 const KEY='axiom-save-v1',BACKUP=KEY+'-backup';
 let loadNotice='',storageOK=true;
@@ -27,7 +27,7 @@ function applySettings(){document.body.classList.toggle('reduced-motion',!state.
 function renderChrome(){
  const compact=state.settings.hudCollapsed;
  $('hud').classList.toggle('is-collapsed',compact);$('hudDetails').hidden=compact;
- $('toggleHud').setAttribute('aria-expanded',String(!compact));$('hudToggleText').textContent=compact?'상단 펼치기':'상단 접기';setIcon($('hudToggleIcon'),compact?'ChevronDown':'ChevronUp');
+ $('toggleHud').setAttribute('aria-expanded',String(!compact));$('toggleHud').setAttribute('aria-label',compact?'상단 펼치기':'상단 접기');
  $('compactMoney').textContent='$'+format(state.currencies.money);$('compactRate').textContent='+'+format(econ.rate)+' /s';
  $('cheatBadge').hidden=!state.settings.purchaseCheat;
 }
@@ -57,7 +57,7 @@ function createGraph(){
 function graph(){
  for(const n of NODES){
  const d=discovery(n);visibility.set(n.id,d);const el=nodeEls.get(n.id);el.hidden=!d;if(!d)continue;
- const l=level(state,n),can=unlocked(state,n),p=cost(state,n,econ),afford=can&&state.currencies.money>=p&&l<n.max;
+ const l=level(state,n),can=unlocked(state,n),p=cost(state,n,econ),afford=can&&(state.settings.purchaseCheat||state.currencies.money>=p)&&l<n.max;
  const cls=`node ${n.gate?'gate ':''}${l?'bought ':''}${can?'unlocked ':'locked '}${afford?'available ':''}${selected===n.id?'selected ':''}${d===1?'ghost ':''}`;
  const popping=el.classList.contains('pop');if(el.className!==cls+(popping?'pop':''))el.className=cls+(popping?'pop':'');
  el.disabled=d===1;el.tabIndex=d>1?0:-1;
@@ -79,17 +79,17 @@ function renderPanel(){
  $('togglePanel').setAttribute('aria-expanded',String(!collapsed));$('panelToggleText').textContent=collapsed?'연구 정보 펼치기':'연구 정보 접기';
  $('collapsedName').textContent=n.name;$('collapsedName').hidden=!collapsed;setIcon($('panelToggleIcon'),collapsed?'ChevronUp':'ChevronDown');
  if(collapsed)return;
- const l=level(state,n),p=cost(state,n,econ),can=unlocked(state,n),max=l>=n.max,afford=state.currencies.money>=p;
+ const l=level(state,n),p=cost(state,n,econ),can=unlocked(state,n),max=l>=n.max,afford=state.settings.purchaseCheat||state.currencies.money>=p;
  setIcon($('panelSymbol'),n.id);$('panelSymbol').style.color=CHAPTERS[n.chapter].color;
  $('panelMeta').textContent=`${String(n.id).padStart(3,'0')} / ${CHAPTERS[n.chapter].name}${n.max>1?` · LV.${l}/${n.max}`:''}${n.longTerm?' · 장기 연구':''}`;
  $('panelName').textContent=n.name;$('panelEffect').textContent=effectText(n);
  const reqKey=n.req.map(r=>`${r.id}:${level(state,r.id)>=r.level}`).join(',')+n.any;
  if($('requirements').dataset.key!==reqKey){$('requirements').dataset.key=reqKey;$('requirements').replaceChildren();if(n.any){const label=document.createElement('span');label.className='req';label.textContent='둘 중 하나';$('requirements').append(label);}
  for(const r of n.req){const b=document.createElement('button'),done=level(state,r.id)>=r.level;b.className=`req ${done?'done':''}`;b.innerHTML=iconSvg(done?'Check':'Circle');const label=document.createElement('span');label.textContent=byId.get(r.id).name;b.append(label);b.onclick=()=>{selectNode(r.id);focusNode(r.id);};$('requirements').append(b);}}
- $('costLabel').textContent=max?'RESEARCH COMPLETE':state.settings.purchaseCheat?'치트 · 구매 시 지급':'RESEARCH COST';$('panelCost').textContent=max?'완료':(state.settings.purchaseCheat?'+$':'$')+format(p);
+ $('costLabel').textContent=max?'RESEARCH COMPLETE':'RESEARCH COST';$('panelCost').textContent=max?'완료':'$'+format(p);
  $('buy').className=max?'completed':!can?'blocked':afford?'':'waiting';$('buy').disabled=max||!can;
  $('buyText').textContent=max?'연구 완료':!can?'잠김':n.max>1&&l>0?'레벨 업':'연구';
- $('buyDetail').textContent=max?'MAX':!can?'조건 미충족':afford?l?`Lv.${l+1}`:'구매 가능':time((p-state.currencies.money)/(econ.rate*(1+econ.burst/econ.interval)))+' 후';
+ $('buyDetail').textContent=max?'MAX':!can?'조건 미충족':state.settings.purchaseCheat?'무료 연구':afford?l?`Lv.${l+1}`:'구매 가능':time((p-state.currencies.money)/(econ.rate*(1+econ.burst/econ.interval)))+' 후';
  $('purchaseProgress').style.width=(max?100:Math.min(100,state.currencies.money/p*100))+'%';
 }
 function render(){
@@ -134,7 +134,7 @@ $('settings').onclick=()=>{applySettings();renderStats();$('settingsDialog').sho
 $('settingsDialog').addEventListener('click',e=>{if(e.target===$('settingsDialog')){const r=e.target.getBoundingClientRect();if(e.clientY<r.top||e.clientX<r.left||e.clientX>r.right)$('settingsDialog').close();}});
 for(const button of document.querySelectorAll('[data-tab]')){button.onclick=()=>{for(const b of document.querySelectorAll('[data-tab]')){const active=b===button;b.setAttribute('aria-selected',String(active));$('pane-'+b.dataset.tab).hidden=!active;}if(button.dataset.tab==='stats')renderStats();};}
 for(const k of ['motion','touch','haptic','auto'])$(k).onchange=()=>{state.settings[k]=$(k).checked;applySettings();save();};$('format').onchange=()=>{state.settings.format=$('format').value;render();save();};
-$('purchaseCheat').onchange=()=>{state.settings.purchaseCheat=$('purchaseCheat').checked;render();save();toast(state.settings.purchaseCheat?'테스트 치트 ON · 구매 금액만큼 지급됩니다.':'테스트 치트 OFF · 구매 시 정상 차감됩니다.');};
+$('purchaseCheat').onchange=()=>{state.settings.purchaseCheat=$('purchaseCheat').checked;render();save();toast(state.settings.purchaseCheat?'테스트 치트 ON · 자금 소모 없이 연구합니다.':'테스트 치트 OFF · 구매 시 정상 차감됩니다.');};
 $('saveNow').onclick=()=>save(true);
 function exportText(){save();$('transfer').hidden=false;$('saveText').value=JSON.stringify(state);$('transferStatus').textContent='파일을 저장하거나 위 데이터를 복사해 보관하세요.';return $('saveText').value;}
 $('exportSave').onclick=()=>{const txt=exportText();const blob=new Blob([txt],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='axiom-save-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
@@ -172,5 +172,5 @@ createGraph();applySettings();render();transform();resume();requestAnimationFram
 if(document.modelContext?.registerTool){const lifecycle=new AbortController();const register=tool=>{try{Promise.resolve(document.modelContext.registerTool(tool,{signal:lifecycle.signal})).catch(()=>{});}catch{}};
  register({name:'read_research_state',title:'연구 상태 읽기',description:'현재 자원, 생산량, 발견한 연구와 구매 조건을 읽습니다.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute(){const e=economy(state);return {money:state.currencies.money,rate:e.rate,purchased:e.count,nodes:NODES.filter(n=>discovery(n)>1).map(n=>({id:n.id,name:n.name,level:level(state,n),max:n.max,cost:cost(state,n,e),unlocked:unlocked(state,n)}))};}});
  register({name:'select_research',title:'연구 선택',description:'발견한 연구를 선택하고 화면을 이동합니다. 구매하지 않습니다.',inputSchema:{type:'object',properties:{id:{type:'integer',minimum:1,maximum:80}},required:['id'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||!Number.isInteger(input.id)||!selectNode(input.id))throw Error('발견한 연구 ID가 필요합니다.');focusNode(input.id);return {selected:input.id};}});
- register({name:'purchase_research',title:'연구 구매',description:'발견한 연구를 1레벨 구매합니다. 선행 조건과 금액을 검사하고, 테스트 치트 설정에 따라 구매 금액을 차감하거나 지급합니다.',inputSchema:{type:'object',properties:{id:{type:'integer',minimum:1,maximum:80}},required:['id'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||!Number.isInteger(input.id)||!selectNode(input.id))throw Error('발견한 연구 ID가 필요합니다.');if(!buySelected())throw Error('자원이 부족하거나 연구가 잠겼거나 최대 레벨입니다.');return {id:input.id,level:level(state,input.id),money:state.currencies.money};}});
+ register({name:'purchase_research',title:'연구 구매',description:'발견한 연구를 1레벨 구매합니다. 선행 조건과 최대 레벨을 검사합니다. 무료 연구 치트가 켜져 있으면 자금을 소모하지 않으며, 꺼져 있으면 보유 금액을 검사하고 구매 금액을 차감합니다.',inputSchema:{type:'object',properties:{id:{type:'integer',minimum:1,maximum:80}},required:['id'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||!Number.isInteger(input.id)||!selectNode(input.id))throw Error('발견한 연구 ID가 필요합니다.');if(!buySelected())throw Error('자원이 부족하거나 연구가 잠겼거나 최대 레벨입니다.');return {id:input.id,level:level(state,input.id),money:state.currencies.money};}});
  window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});}

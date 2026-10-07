@@ -78,9 +78,8 @@ export function economy(s){
 export function cost(s,n,e=economy(s)){return Math.min(MAX_VALUE,Math.max(1,(n.costs?.[level(s,n)]??n.baseCost)*e.discount*e.scaling**level(s,n)));}
 export function purchase(s,n){
  const e=economy(s),p=cost(s,n,e);
- if(!unlocked(s,n)||level(s,n)>=n.max||s.currencies.money+Math.max(1,p)*1e-12<p)return false;
- if(s.settings.purchaseCheat){const grant=Math.min(p,MAX_VALUE-s.currencies.money);s.currencies.money+=grant;s.stats.earned=Math.min(MAX_VALUE,s.stats.earned+grant);}
- else{s.currencies.money=Math.max(0,s.currencies.money-p);s.stats.spent=Math.min(MAX_VALUE,s.stats.spent+p);}
+ if(!unlocked(s,n)||level(s,n)>=n.max||(!s.settings.purchaseCheat&&s.currencies.money+Math.max(1,p)*1e-12<p))return false;
+ if(!s.settings.purchaseCheat){s.currencies.money=Math.max(0,s.currencies.money-p);s.stats.spent=Math.min(MAX_VALUE,s.stats.spent+p);}
  s.levels[n.id]=level(s,n)+1;s.stats.purchases++;return true;
 }
 export function tick(s,dt){

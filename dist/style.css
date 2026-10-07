@@ -34,6 +34,9 @@
 .disclosure-button{display:flex;align-items:center;justify-content:center;gap:4px;min-height:44px;background:#121b23;border:1px solid #2a3540;border-radius:8px;padding:6px 8px;font-size:14px;white-space:nowrap}
 .disclosure-button:active,.panel-toggle:active{background:#24313c}
 .disclosure-button .glyph,.panel-toggle .glyph{width:18px;height:18px;display:block;flex-shrink:0}
+#toggleHud{width:44px;height:44px;padding:0}
+#hudToggleIcon{display:grid;place-items:center;transform:rotate(0deg);transition:transform .24s cubic-bezier(.22,.61,.36,1)}
+#toggleHud[aria-expanded="true"] #hudToggleIcon{transform:rotate(180deg)}
 .compact-resources{display:none;min-width:0;flex:1;font-family:var(--mono);font-variant-numeric:tabular-nums}
 .compact-resources strong{display:block;font-size:18px;line-height:1.3;white-space:nowrap}
 .compact-resources>span{display:block;font-size:13px;line-height:1.4;color:var(--accent);white-space:nowrap}

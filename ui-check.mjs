@@ -26,10 +26,10 @@ const createUI=new Function('deps','$','document',`
 const ui=createUI({...data,iconSvg,setIcon},$,{createElement:element});
 ui.render();assert.equal($('toggleHud').attributes['aria-expanded'],'false');assert($('hudDetails').hidden);
 $('toggleHud').onclick();assert.equal($('toggleHud').attributes['aria-expanded'],'true');assert(!$('hudDetails').hidden);assert.equal(ui.saved.settings.hudCollapsed,false);
-$('toggleHud').onclick();assert.equal($('hudToggleText').textContent,'상단 펼치기');assert(ui.saved.settings.hudCollapsed);
+$('toggleHud').onclick();assert.equal($('toggleHud').attributes['aria-label'],'상단 펼치기');assert(!html.includes('id="hudToggleText"'));assert(ui.saved.settings.hudCollapsed);
 assert(!$('panelDetails').hidden);$('togglePanel').onclick();assert.equal(ui.selected,1);assert($('panelDetails').hidden);assert.equal($('panelToggleText').textContent,'연구 정보 펼치기');assert.equal($('collapsedName').textContent,'START');assert(ui.saved.settings.panelCollapsed);
 $('togglePanel').onclick();assert(!$('panelDetails').hidden);assert.equal(ui.selected,1);
 $('togglePanel').onclick();ui.state.levels[1]=1;assert(ui.selectNode(2));assert.equal(ui.selected,2);assert(!$('panelDetails').hidden);assert.equal($('togglePanel').attributes['aria-expanded'],'true');
-$('purchaseCheat').checked=true;$('purchaseCheat').onchange();assert(ui.state.settings.purchaseCheat);assert(ui.saved.settings.purchaseCheat);assert(!$('cheatBadge').hidden);assert($('panelCost').textContent.startsWith('+$'));assert.equal($('costLabel').textContent,'치트 · 구매 시 지급');
-$('purchaseCheat').checked=false;$('purchaseCheat').onchange();assert(!ui.state.settings.purchaseCheat);assert($('cheatBadge').hidden);assert.equal($('costLabel').textContent,'RESEARCH COST');
+const displayedPrice=$('panelCost').textContent;assert(ui.state.currencies.money<data.cost(ui.state,data.byId.get(2)));$('purchaseCheat').checked=true;$('purchaseCheat').onchange();assert(ui.state.settings.purchaseCheat);assert(ui.saved.settings.purchaseCheat);assert(!$('cheatBadge').hidden);assert.equal($('panelCost').textContent,displayedPrice);assert.equal($('costLabel').textContent,'RESEARCH COST');assert.equal($('buyDetail').textContent,'무료 연구');assert.equal($('buy').className,'');assert(!$('buy').disabled);
+$('purchaseCheat').checked=false;$('purchaseCheat').onchange();assert(!ui.state.settings.purchaseCheat);assert($('cheatBadge').hidden);assert.equal($('costLabel').textContent,'RESEARCH COST');assert.equal($('panelCost').textContent,displayedPrice);assert.equal($('buy').className,'waiting');
 console.log(JSON.stringify({uiControls:'passed',collapseKeepsSelection:'passed',nodeSelectionReopens:'passed',settingsSave:'passed',cheatIndicator:'passed'}));
