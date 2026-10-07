@@ -1,4 +1,4 @@
-# UNBRIK — 3.0.1 (2.0 economy, mainland map, paged header, 환생 prestige and the bloom map)
+# UNBRIK — 3.0.2 (2.0 economy, mainland map, paged header, 환생 prestige and the bloom map)
 
 A portrait incremental game with 105 research nodes across the original eight sectors, 316 finite research levels, dollars and coins. The center is navigation, not a purchasable research. AXIOM is research 105.
 
@@ -88,12 +88,29 @@ Built from the roadmap the user dictated (below, kept for reference) plus the fo
 - Prestige tree (`prestige.js`): 36 nodes, ids 1001–1036, five petals from a pentagon center with the mainland's row/upstream rule (1-2-2-2-1 ×3, 1-2-2-1 ×2). DORMANT (offline reward), SCALING (production), AGENT (automation, one AUTOPILOT per mainland sector), EXPANSION (6 reserved nodes for studies that are not designed yet), REWARD (REWARD MODEL ×tokens, DISTILLATION +tokens, 4 reserved). Reserved nodes are visible, named and dotted, never purchasable; `petalProgress` ignores them so a petal can still light up. 26 purchasable nodes, 66 levels, 451 tokens in total. Effects aggregate in `prestigeBonuses` and apply in `economy()` (base/multipliers/cache/discount) and `offlineParams()` (full window, decay constant, offline rate).
 - Pacing: `scripts/prestige-sim.mjs` simulates the loop with automation; the whole prestige tree completes in about 3.9 hours over four prestiges (≈135, 52, 37 and 11 minutes).
 - Automation (`autoResearch`): each owned AUTOPILOT shows an AUTO check beside its sector heading on the mainland; while checked, that sector's cheapest affordable unlocked study is bought (up to six per second). A sector cannot run ahead of its gate, so an unopened sector never completes by itself. Checks clear on every prestige.
-- Map (`prestige-layer` in `index.html`, `bloom.js`): the flower shares the viewport and the camera code; `state.map` selects the layer. The flower's land is five separate angular lobes (`buildLand` with no center land) around a bare pentagon hub with the same rotating polyhedron. Discovery, ghost cards, link flashing, petal completion lighting on the hub, the navigator (petal list) and the center panel all mirror the mainland.
-- Theme: `body.theme-bloom` swaps the color tokens (background dark blue-gray, accent pink, grid kept) and restyles every surface — header, cards, ledger, cache strip, panel, buttons, dialogs, navigator, settings, toasts; the whole game cross-fades and colors tween on a map switch. Falling cherry petals and light rain (heavier when the world weather is rain, none in snow) are drawn on a canvas only while the flower is shown and motion is on. There is no theme setting; the theme belongs to the map.
+- Map (`prestige-layer` in `index.html`, `bloom.js`): the flower shares the viewport and the camera code; `state.map` selects the layer (the mainland layers are hidden by the `hidden` attribute, which also works on SVG). The flower's land is five separate angular lobes (`buildLand` with no center land) around a bare pentagon hub with the same rotating polyhedron. Discovery, ghost cards, link flashing, petal completion lighting on the hub, the navigator (petal list) and the center panel all mirror the mainland.
+- Theme: `body.theme-bloom` swaps the color tokens (background dark blue-gray, accent pink, grid kept) and restyles every surface — header, cards, ledger, cache strip, panel, buttons, dialogs, navigator, settings, toasts; the whole game cross-fades and colors tween on a map switch. Steady rain (thin slanted streaks) and a few drifting cherry petals are drawn on a canvas only while the flower is shown and motion is on; fog is at the edges only. There is no theme setting; the theme belongs to the map.
 - Switching maps: the header's map button (a map tab like the navigator; the flower is locked until the first prestige) and the navigator's 지도 이동 row. Each map remembers its own selection.
 - Rebirth sequence: confirm → blackout with the spinning UNBRIK polyhedron, "N번째 환생 · ✿tokens" → the mainland resets under the blackout → the flower appears with a sticky notice.
 - Statistics: MAINLAND (nodes, levels, production, cache, lifetime gains), REBIRTH (count, condition, tokens held and earned, nodes, production multiplier, automation, current run, last prestige), TIME (play time, offline). Removed as noise: purchase count, total spent, peak rate, offline-equivalent production, current session, cost discount. A BLOOM PETALS block appears after the first prestige.
 - Save: `currencies.token` (fractional), `prestige {count, tokensEarned, tokensSpent, purchases, levels, auto, last}`, `map`, the new `stats` keys and `offline.full/decay` are all optional on load, so 2.2 saves load unchanged.
+
+### 3.0.2 interface audit
+
+The user asked for a review of interface problems and of changes made without being asked. Fixed:
+
+- Mainland layers showed through on the prestige map. `#sectorRegions`, `#spokes` and `#edges` are SVG elements, which have no `.hidden` property, so setting it did nothing; the layer switch now toggles the `hidden` attribute. After a prestige the stale mainland land (completed sectors) stayed drawn on the flower.
+- Labels renamed on the prestige map without being asked: UPGRADE TREE → BLOOM TREE, RESEARCH NETWORK → BLOOM NETWORK, RESEARCH CENTER → BLOOM CENTER, CENTER / 00 → BLOOM / 00, the navigator eyebrow. All restored; the map keeps the mainland wording.
+- Weather: rain is the constant effect (long thin streaks at a 17° slant, no longer tied to the world weather); the drifting cherry petals were drawn wide with a deep notch and read as hearts — now small, elongated, tumbling, and fewer.
+- A blue glow in the middle of the prestige map hid the nodes; the fog is now only at the edges.
+- `$` turned pink on the prestige map because the theme overrides `--accent`; money symbols are pinned to green.
+- Weather notices turned pink on the prestige map (the theme's toast rule came later with equal specificity); the theme now styles only ordinary notices.
+- Prestige studies used an invented verb (개화); they use the mainland's 연구 / RESEARCH COST.
+- Petal land was always drawn (dashed); like the mainland, it now appears only when the petal is complete.
+- The availability mark asked for was a small square; the round pulsing ✿ badge became a plain square.
+- Statistics: the 2.2.2 labels (LIVE TELEMETRY, 구매한 노드) and order are restored; only the removed entries stay removed and the REBIRTH block follows. Two info-tab rows added without being asked are removed.
+- Two stray color tweaks on the prestige map (day icon, CHEAT badge) removed.
+- Switching maps reset the camera to fit; each map now keeps its own view.
 
 ### Roadmap as dictated (for reference)
 

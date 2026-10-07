@@ -334,7 +334,7 @@ function renderPanel(){
  $('requirements').hidden=center;$('purchaseTrack').hidden=center;$('panelEffect').hidden=center;
  renderPrestigeButton(center);
  if(center){setIcon($('panelSymbol'),'brand');$('panelSymbol').style.color='#f2f4f7';$('panelSymbol').style.setProperty('--sector-color','#f2f4f7');setText($('panelName'),'UNBRIK');
-  if(onPrestige()){const complete=PRESTIGE_BRANCHES.filter((_,i)=>petalProgress(state,i).complete).length;setText($('panelMeta'),'BLOOM / 00');setText($('costLabel'),'완성한 꽃잎');setHtml($('panelCost'),`${complete} / 5`);}
+  if(onPrestige()){const complete=PRESTIGE_BRANCHES.filter((_,i)=>petalProgress(state,i).complete).length;setText($('panelMeta'),'CENTER / 00');setText($('costLabel'),'완성한 꽃잎');setHtml($('panelCost'),`${complete} / 5`);}
   else{const complete=CHAPTERS.filter((_,i)=>sectorProgress(state,i).complete).length;setText($('panelMeta'),'CENTER / 00');setText($('costLabel'),'완료한 섹터');setHtml($('panelCost'),`${complete} / 8`);}
   setBuyState('navigator','내비게이터','열기',false);return;}
  if(n.prestige){renderPrestigeNode(n);return;}
@@ -358,10 +358,10 @@ function renderPrestigeNode(n){
  const reqKey='p'+n.req.map(r=>`${r.id}:${prestigeLevel(state,r.id)>=r.level}`).join(',');
  if($('requirements').dataset.key!==reqKey){$('requirements').dataset.key=reqKey;$('requirements').replaceChildren();
  for(const r of n.req){const b=document.createElement('button'),done=prestigeLevel(state,r.id)>=r.level;b.className=`req ${done?'done':''}`;b.innerHTML=iconSvg(done?'Check':'Circle');const label=document.createElement('span');label.textContent=prestigeById.get(r.id).name;b.append(label);b.onclick=()=>{if(selectNode(r.id))focusNode(r.id);};$('requirements').append(b);}}
- setText($('costLabel'),n.reserved?'RESERVED':max?'NODE COMPLETE':'NODE COST');setHtml($('panelCost'),n.reserved?'설계 대기':max?'완료':priceMarkup(p));
+ setText($('costLabel'),n.reserved?'RESERVED':max?'RESEARCH COMPLETE':'RESEARCH COST');setHtml($('panelCost'),n.reserved?'설계 대기':max?'완료':priceMarkup(p));
  if(selectionPending)setBuyState('pending','…','이동 중',true);
  else if(n.reserved)setBuyState('blocked','예약','설계 전',true);
- else setBuyState(max?'completed':!can?'blocked':afford?'':'waiting',max?'개화 완료':!can?'잠김':n.max>1&&l>0?'레벨 업':'개화',max?'MAX':!can?'조건 미충족':state.settings.purchaseCheat?'무료 개화':afford?l?`Lv.${l+1}`:'구매 가능':`✿${tokenFormat(Math.max(0,p.token-state.currencies.token))} 더 필요`,max||!can);
+ else setBuyState(max?'completed':!can?'blocked':afford?'':'waiting',max?'연구 완료':!can?'잠김':n.max>1&&l>0?'레벨 업':'연구',max?'MAX':!can?'조건 미충족':state.settings.purchaseCheat?'무료 연구':afford?l?`Lv.${l+1}`:'구매 가능':`✿${tokenFormat(Math.max(0,p.token-state.currencies.token))} 더 필요`,max||!can);
  $('purchaseProgress').style.width=(max||n.reserved?100:Math.min(100,state.currencies.token/p.token*100))+'%';
 }
 // The center panel's prestige button, left of the navigator: shown once the
@@ -420,7 +420,7 @@ function focusNode(id,onComplete=null){cameraIntent={type:'node',id};moveCamera(
 function fit(){cancelSelection();render();cameraIntent={type:'fit'};moveCamera(cameraForIntent());}
 function openCenter(){selectCenter();cameraIntent={type:'center'};moveCamera(cameraForIntent());}
 function updateNavigatorScroll(){const content=$('sectorDialog').querySelector('.navigator-content');$('navigatorScrollHint').hidden=content.scrollHeight-content.clientHeight-content.scrollTop<12;}
-function openNavigator(){clearTimeout(navigatorCloseTimer);const p=onPrestige();$('sectorMenu').hidden=p;$('petalMenu').hidden=!p;setText($('navigatorEyebrow'),p?'UNBRIK / BLOOM':'UNBRIK / CENTER');setText($('navigatorSummary'),p?'꽃잎 선택':'섹터 선택');const unlocked=state.prestige.count>0;setText($('navMapsHint'),unlocked?(p?'본섬으로':'환생 지도로'):'환생 지도 · 잠김');$('sectorDialog').classList.remove('closing');if(!$('sectorDialog').open)$('sectorDialog').showModal();requestAnimationFrame(updateNavigatorScroll);}
+function openNavigator(){clearTimeout(navigatorCloseTimer);const p=onPrestige();$('sectorMenu').hidden=p;$('petalMenu').hidden=!p;setText($('navigatorSummary'),p?'꽃잎 선택':'섹터 선택');const unlocked=state.prestige.count>0;setText($('navMapsHint'),unlocked?(p?'본섬으로':'환생 지도로'):'환생 지도 · 잠김');$('sectorDialog').classList.remove('closing');if(!$('sectorDialog').open)$('sectorDialog').showModal();requestAnimationFrame(updateNavigatorScroll);}
 function closeNavigator(){const dialog=$('sectorDialog');if(!dialog.open)return;clearTimeout(navigatorCloseTimer);dialog.classList.add('closing');const finish=()=>{dialog.close();dialog.classList.remove('closing');};if(document.body.classList.contains('reduced-motion'))finish();else navigatorCloseTimer=setTimeout(finish,160);}
 function jumpToSector(chapter){
  if(!sectorUnlocked(chapter))return false;const members=MAP_LAYOUT.sectors[chapter].members;
@@ -500,15 +500,15 @@ $('toggleUpdates').onclick=()=>{const open=$('updateContents').hidden;$('updateC
 $('updatesPrev').onclick=()=>renderUpdates(updatesPage-1);$('updatesNext').onclick=()=>renderUpdates(updatesPage+1);
 function renderStats(){
  const e=economy(state),pb=prestigeBonuses(state),pr=state.prestige,purchasable=PRESTIGE_NODES.filter(n=>!n.reserved),owned=purchasable.filter(n=>prestigeLevel(state,n)>0).length,levels=purchasable.reduce((a,n)=>a+prestigeLevel(state,n),0),levelsTotal=purchasable.reduce((a,n)=>a+n.max,0);
+ // Lifetime coin totals stay listed after a prestige locks coins again.
  const coinStats=e.coinUnlocked||state.stats.coinEarned>0;
  const condition=prestigeReady(state)?`충족 · ✿${tokenFormat(tokensFor(state))}`:treeComplete(state)?`$${format(PRESTIGE_THRESHOLD-state.currencies.money)} 더`:`${NODES.length}개 연구 + $${format(PRESTIGE_THRESHOLD)}`;
- const sections=[
-  ['MAINLAND',[['연구 노드',`${e.count} / ${NODES.length}`],['총 연구 레벨',format(e.total,0)],['현재 생산','$'+format(e.rate)+' /s'],...(e.coinUnlocked?[['코인 생산','¢'+format(e.coinRate)+' /s']]:[]),['캐시 보너스',e.burst?`${priceText({money:e.rate*e.burst,...(e.coinUnlocked?{coin:e.coinRate*e.coinBurst}:{})})} / ${Math.round(e.interval)}s`:'미해금'],['총 달러 획득','$'+format(state.stats.earned)],...(coinStats?[['총 코인 획득','¢'+format(state.stats.coinEarned)]]:[])]],
-  ['REBIRTH',[['환생 횟수',`${pr.count}회`],['환생 조건',condition],...(pr.count?[['보유 토큰','✿'+tokenFormat(state.currencies.token)],['누적 토큰','✿'+tokenFormat(pr.tokensEarned)],['환생 노드',`${owned} / ${purchasable.length} · ${levels} / ${levelsTotal} 레벨`],['생산 배율',`$ ×${format(pb.moneyMul*pb.allMul)} · ¢ ×${format(pb.coinMul*pb.allMul)}`],['자동 연구 섹터',`${pb.auto.size} / 8 해금 · ${Object.keys(pr.auto).length} 켜짐`],['이번 회차',time(state.stats.seconds-(state.stats.runStart||0))],...(pr.last?[['마지막 환생',`$${format(pr.last.money)} → ✿${tokenFormat(pr.last.tokens)}`]]:[])]:[])]],
-  ['TIME',[['총 플레이 시간',time(state.stats.seconds)],['오프라인 경과',time(state.stats.offlineSeconds)],['오프라인 수입',priceText({money:state.stats.offlineEarned,...(coinStats?{coin:state.stats.offlineCoinEarned}:{})})]]],
- ];
- $('stats').replaceChildren();
- for(const [title,entries]of sections){const label=document.createElement('div');label.className='section-label';label.textContent=title;$('stats').append(label);for(const [a,b]of entries){const div=document.createElement('div');div.className='stat';const span=document.createElement('span'),strong=document.createElement('strong');span.textContent=a;strong.innerHTML=symbolMarkup(b);div.append(span,strong);$('stats').append(div);}}
+ // 2.2.2 entries and order, minus the removed ones; prestige entries follow.
+ const entries=[['구매한 노드',`${e.count} / ${NODES.length}`],['총 연구 레벨',format(e.total,0)],['총 달러 획득','$'+format(state.stats.earned)],...(coinStats?[['총 코인 획득','¢'+format(state.stats.coinEarned)]]:[]),...(e.coinUnlocked?[['코인 생산','¢'+format(e.coinRate)+' /s']]:[]),['현재 생산','$'+format(e.rate)+' /s'],['캐시 보너스',e.burst?`${priceText({money:e.rate*e.burst,...(e.coinUnlocked?{coin:e.coinRate*e.coinBurst}:{})})} / ${Math.round(e.interval)}s`:'미해금'],['총 플레이 시간',time(state.stats.seconds)],['오프라인 경과',time(state.stats.offlineSeconds)],['오프라인 수입',priceText({money:state.stats.offlineEarned,...(coinStats?{coin:state.stats.offlineCoinEarned}:{})})]];
+ const rebirth=[['환생 횟수',`${pr.count}회`],['환생 조건',condition],...(pr.count?[['보유 토큰','✿'+tokenFormat(state.currencies.token)],['누적 토큰','✿'+tokenFormat(pr.tokensEarned)],['환생 노드',`${owned} / ${purchasable.length} · ${levels} / ${levelsTotal} 레벨`],['생산 배율',`$ ×${format(pb.moneyMul*pb.allMul)} · ¢ ×${format(pb.coinMul*pb.allMul)}`],['자동 연구 섹터',`${pb.auto.size} / 8 해금 · ${Object.keys(pr.auto).length} 켜짐`],['이번 회차',time(state.stats.seconds-(state.stats.runStart||0))],...(pr.last?[['마지막 환생',`$${format(pr.last.money)} → ✿${tokenFormat(pr.last.tokens)}`]]:[])]:[])];
+ const row=([a,b])=>{const div=document.createElement('div');div.className='stat';const span=document.createElement('span'),strong=document.createElement('strong');span.textContent=a;strong.innerHTML=symbolMarkup(b);div.append(span,strong);return div;};
+ $('stats').replaceChildren();for(const entry of entries)$('stats').append(row(entry));
+ const label=document.createElement('div');label.className='section-label';label.textContent='REBIRTH';$('stats').append(label);for(const entry of rebirth)$('stats').append(row(entry));
  $('sectorStats').innerHTML=CHAPTERS.flatMap((c,i)=>{if(!sectorUnlocked(i))return [];const nodes=NODES.filter(n=>n.chapter===i),count=nodes.filter(n=>level(state,n)).length;return `<div class="sector-row" style="--sector-color:${c.color}"><div><span>${c.name}${pr.auto[i]?' · AUTO':''}</span><span>${count} / ${nodes.length}</span></div><span class="bar"><i style="width:${count/nodes.length*100}%"></i></span></div>`;}).join('');
  $('petalStatsLabel').hidden=!pr.count;$('petalStats').innerHTML=pr.count?PRESTIGE_BRANCHES.map((c,i)=>{const p=petalProgress(state,i);return `<div class="sector-row" style="--sector-color:${c.color}"><div><span>${c.name}</span><span>${p.done} / ${p.total}</span></div><span class="bar"><i style="width:${p.total?p.done/p.total*100:0}%"></i></span></div>`;}).join(''):'';
 }
@@ -559,12 +559,13 @@ installGameSelectionGuard();
 for(const el of document.querySelectorAll('[data-ui-icon]'))setIcon(el,el.dataset.uiIcon);
 // Map switching and the night theme. The flower keeps the grid, turns the
 // logo pink and the background blue-gray; every surface follows body.theme-bloom.
-function applyMapTheme(){const p=onPrestige();document.body.dataset.map=state.map;document.body.classList.toggle('theme-bloom',p);world.classList.toggle('map-prestige',p);$('prestigeLayer').hidden=!p;for(const id of ['sectorRegions','spokes','edges','centerNode','chapterMarks','nodes'])$(id).hidden=p;setText($('wordmarkSub'),p?'BLOOM TREE':'UPGRADE TREE');setText($('networkLabel'),p?'BLOOM NETWORK':'RESEARCH NETWORK');$('maps').classList.toggle('is-bloom',p);bloom?.refresh();}
-function presentMap(){selected=selectionByMap[state.map]??defaultSelection();state.settings.panelCollapsed=false;applyMapTheme();econ=economy(state);render();cameraIntent={type:'fit'};camera=cameraForIntent();constrain();transform();state.camera={...camera};}
+function applyMapTheme(){const p=onPrestige();document.body.dataset.map=state.map;document.body.classList.toggle('theme-bloom',p);world.classList.toggle('map-prestige',p);$('prestigeLayer').hidden=!p;for(const id of ['sectorRegions','spokes','edges','centerNode','chapterMarks','nodes'])$(id).toggleAttribute('hidden',p);$('maps').classList.toggle('is-bloom',p);bloom?.refresh();}
+const cameraByMap={};
+function presentMap(){selected=selectionByMap[state.map]??defaultSelection();state.settings.panelCollapsed=false;applyMapTheme();econ=economy(state);render();const kept=cameraByMap[state.map];if(kept)camera={...kept};else{cameraIntent={type:'fit'};camera=cameraForIntent();cameraIntent=null;}constrain();transform();state.camera={...camera};}
 let themeTimer=0;
 function switchMap(id){
  const target=MAPS.find(m=>m.id===id);if(!target||id===state.map||target.locked?.(state))return false;
- cancelSelection();cameraIntent=null;selectionByMap[state.map]=selected;closeNavigator();closeMaps();
+ cancelSelection();cameraIntent=null;selectionByMap[state.map]=selected;cameraByMap[state.map]={...camera};closeNavigator();closeMaps();
  const apply=()=>{state.map=id;presentMap();save();};
  if(document.body.classList.contains('reduced-motion')){apply();return true;}
  clearTimeout(themeTimer);document.body.classList.add('theme-tween');$('game').classList.add('map-fading');
@@ -597,12 +598,12 @@ function runPrestige(){
  overlay.hidden=false;overlay.classList.remove('is-in','is-out');void overlay.offsetWidth;overlay.classList.add('is-in');
  const spin=now=>{const p=wireframePaths((now-t0)/1000*2.4);$('oWireBack').setAttribute('d',p.back);$('oWireFront').setAttribute('d',p.front);$('oWireOutline').setAttribute('d',p.outline);raf=requestAnimationFrame(spin);};
  if(reduced)spin(t0+400);else raf=requestAnimationFrame(spin);if(reduced)cancelAnimationFrame(raf);
- const commit=()=>{cacheReward={money:0,coin:0,until:0};for(const k of Object.keys(selectionByMap))delete selectionByMap[k];granted=prestige(state);presentMap();save();};
+ const commit=()=>{cacheReward={money:0,coin:0,until:0};for(const k of Object.keys(selectionByMap))delete selectionByMap[k];for(const k of Object.keys(cameraByMap))delete cameraByMap[k];granted=prestige(state);presentMap();save();};
  const finish=()=>{cancelAnimationFrame(raf);overlay.classList.remove('is-in');overlay.classList.add('is-out');setTimeout(()=>{overlay.hidden=true;overlay.classList.remove('is-out');},reduced?0:700);prestigeRunning=false;toast(`${run}번째 환생 · ✿${tokenFormat(granted)} 토큰 획득`,0,'important');};
  if(reduced){commit();setTimeout(finish,900);}else{setTimeout(commit,1700);setTimeout(finish,2900);}
  return true;
 }
-bloom=createBloom($('bloom'),()=>onPrestige()&&state.settings.motion&&!motionPreference.matches&&!document.hidden&&!suspended,()=>worldState(state).weather);
+bloom=createBloom($('bloom'),()=>onPrestige()&&state.settings.motion&&!motionPreference.matches&&!document.hidden&&!suspended);
 createGraph();setupOpalMotion();renderUpdates();applyMapTheme();applySettings();render();if(!state.camera)camera=initialCamera();transform();resume();requestAnimationFrame(frame);if(loadNotice)setTimeout(()=>toast(loadNotice,0,'important'),500);if(!storageOK)setText($('saveState'),'저장 불가 · 설정에서 내보내기');
 // Optional browser agent tools use exactly the same state and purchase guard as the UI.
 if(document.modelContext?.registerTool){const lifecycle=new AbortController();const register=tool=>{try{Promise.resolve(document.modelContext.registerTool(tool,{signal:lifecycle.signal})).catch(()=>{});}catch{}};

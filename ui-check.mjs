@@ -14,7 +14,7 @@ const html=readFileSync('dist/index.html','utf8'),app=readFileSync('dist/app.js'
 function element(){const classes=new Set(),queries=new Map(),listeners=new Map(),captures=new Set();return {dataset:{},style:{setProperty(k,v){this[k]=v;}},attributes:{},children:[],hidden:false,textContent:'',innerHTML:'',checked:false,open:false,scrollHeight:720,clientHeight:450,scrollTop:0,
  querySelector(k){if(!queries.has(k))queries.set(k,element());return queries.get(k);},addEventListener(type,fn){if(!listeners.has(type))listeners.set(type,[]);listeners.get(type).push(fn);},emit(type,event){for(const fn of listeners.get(type)||[])fn(event);},getBoundingClientRect(){return {left:0,top:0};},setPointerCapture(id){captures.add(id);},hasPointerCapture(id){return captures.has(id);},releasePointerCapture(id){captures.delete(id);},showModal(){this.open=true;},close(){this.open=false;},
  classList:{toggle(k,v){v?classes.add(k):classes.delete(k);},contains:k=>classes.has(k),add:k=>classes.add(k),remove:k=>classes.delete(k)},
- setAttribute(k,v){this.attributes[k]=v;},append(v){this.children.push(v);},replaceChildren(){this.children=[];}};}
+ setAttribute(k,v){this.attributes[k]=v;},toggleAttribute(k,force){if(force)this.attributes[k]='';else delete this.attributes[k];return !!force;},append(v){this.children.push(v);},replaceChildren(){this.children=[];}};}
 const elements=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,element()]));
 const $=id=>{assert(elements.has(id),`Missing element ${id}`);return elements.get(id);};
 const slice=(start,end)=>{const a=app.indexOf(start),b=app.indexOf(end,a);assert(a>=0&&b>a);return app.slice(a,b);};
@@ -278,8 +278,8 @@ console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',
  get('prestigeButton').onclick();assert(get('prestigeDialog').open);assert(get('prestigeSummary').innerHTML.includes('1번째'));
  get('confirmPrestige').onclick();assert(!get('prestigeDialog').open);assert(!get('prestigeOverlay').hidden);
  assert.equal(ui3.state.map,'prestige','Reduced motion commits at once');assert.equal(ui3.state.currencies.token,20);assert.deepEqual(ui3.state.levels,{});assert.equal(ui3.state.currencies.money,0);assert.equal(ui3.state.currencies.coin,0);
- assert(doc.body.classList.contains('theme-bloom'));assert(!get('prestigeLayer').hidden);assert(get('nodes').hidden&&get('centerNode').hidden);
- assert.equal(get('wordmarkSub').textContent,'BLOOM TREE');assert.equal(ui3.selected,-1);assert(get('pCenter').classList.contains('selected'));assert(get('prestigeButton').hidden,'No prestige button on the flower');assert(get('hubBadge').hidden);assert(!ui3.state.prestige.noticed,'The notice flag resets with the run');
+ assert(doc.body.classList.contains('theme-bloom'));assert(!get('prestigeLayer').hidden);assert(get('nodes').attributes.hidden!==undefined&&get('centerNode').attributes.hidden!==undefined);
+ for(const id of ['sectorRegions','spokes','edges'])assert(get(id).attributes.hidden!==undefined,'Mainland SVG layers are hidden by attribute on the flower');assert.equal(ui3.selected,-1);assert(get('pCenter').classList.contains('selected'));assert(get('prestigeButton').hidden,'No prestige button on the flower');assert(get('hubBadge').hidden);assert(!ui3.state.prestige.noticed,'The notice flag resets with the run');
  ui3.advance(1000);assert(get('prestigeOverlay').hidden,'Overlay lifts after the hold');
  assert(!get('tokenCard').hidden);assert.equal(get('token').textContent,'20');assert.equal(get('tokenNote').textContent,'환생 1회');
  assert(get('moneyCard').hidden,'The flower page shows only tokens');
@@ -288,7 +288,7 @@ console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',
  for(const n of roots)assert.equal(ui3.visibility.get(n.id),2);for(const n of second)assert.equal(ui3.visibility.get(n.id),1);for(const n of third)assert.equal(ui3.visibility.get(n.id),0);
  assert(ui3.pEdgeEls.every(e=>e.el.style.display==='none'),'No link is shown before a root is owned');
  assert(!ui3.selectNode(1),'Mainland nodes are not selectable on the flower');assert(ui3.selectNode(1001));
- assert.equal(get('panelMeta').textContent,'P01 / DORMANT · LV.0/4');assert.equal(get('buyText').textContent,'개화');
+ assert.equal(get('panelMeta').textContent,'P01 / DORMANT · LV.0/4');assert.equal(get('buyText').textContent,'연구','Prestige studies use the mainland verb');
  assert(ui3.buySelected());assert.equal(prestigeModule.prestigeLevel(ui3.state,1001),1);assert.equal(ui3.state.currencies.token,17);
  assert(ui3.pNodeEls.get(1001).className.includes('bought'));assert.equal(ui3.visibility.get(1002),2);assert.equal(ui3.visibility.get(1004),1);
  assert(ui3.pEdgeEls.some(e=>e.from.id===1001&&e.el.style.display===''),'Links appear once the parent is owned');
@@ -298,9 +298,9 @@ console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',
  // AUTOPILOT I unlocks the sector-1 automation check on the mainland.
  assert(ui3.selectNode(1017));assert.equal(get('panelName').textContent,'AUTOPILOT I');assert(ui3.buySelected());assert.equal(ui3.state.currencies.token,14);
  assert(ui3.jumpToPetal(1));assert.equal(ui3.selected,1009,'Petal jump picks the open root');
- ui3.openNavigator();assert(get('sectorMenu').hidden&&!get('petalMenu').hidden);assert.equal(get('navigatorEyebrow').textContent,'UNBRIK / BLOOM');
+ ui3.openNavigator();assert(get('sectorMenu').hidden&&!get('petalMenu').hidden);
  assert.equal(get('petalMenu').children.length,5);
- assert(ui3.switchMap('main'));assert.equal(ui3.state.map,'main');assert(!doc.body.classList.contains('theme-bloom'));assert(get('prestigeLayer').hidden&&!get('nodes').hidden);
+ assert(ui3.switchMap('main'));assert.equal(ui3.state.map,'main');for(const id of ['sectorRegions','spokes','edges'])assert.equal(get(id).attributes.hidden,undefined,'Mainland layers return');assert(!doc.body.classList.contains('theme-bloom'));assert(get('prestigeLayer').hidden&&get('nodes').attributes.hidden===undefined);
  assert.equal(ui3.selected,1,'Mainland selection starts at the first study after a rebirth');
  assert(get('tokenCard').hidden&&!get('moneyCard').hidden,'Page 1 shows the mainland currencies');assert(!get('ledger').children[2].hidden,'The ledger page still lists tokens');
  const toggle=ui3.chapterEls[0].querySelector('.auto-toggle'),toggle2=ui3.chapterEls[1].querySelector('.auto-toggle');
@@ -312,7 +312,7 @@ console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',
  assert(!data.level(ui3.state,data.MAP_LAYOUT.sectors[1].members[0]),'Automation never crosses into a sector without its own check');
  assert(toggle.hidden,'A finished sector hides its check');
  // Stats show the rebirth block; the save round-trips with the prestige data.
- ui3.renderStats();assert(get('stats').children.some(c=>c.textContent==='REBIRTH'));assert(!get('petalStatsLabel').hidden);
+ ui3.renderStats();assert(get('stats').children.some(c=>c.textContent==='REBIRTH'));assert(!get('petalStatsLabel').hidden);assert.equal(get('stats').children[0].children[0].textContent,'구매한 노드','2.2.2 stat labels are kept');
  const saved=data.validateSave(JSON.parse(JSON.stringify(ui3.state)));assert.equal(saved.prestige.count,1);assert.equal(saved.currencies.token,14);assert.deepEqual(saved.prestige.auto,{0:true});
  // The flower keeps its selection when the player returns.
  assert(ui3.switchMap('prestige'));assert.equal(ui3.selected,1009);

@@ -424,8 +424,9 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 #prestigeLayer{position:relative}
 #pRegions,#pSpokes,#pEdges{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none}
 #pRegions{z-index:0}#pSpokes{z-index:1}#pEdges{z-index:2}#pNodes,#pMarks{position:relative;z-index:3}
-.petal-region{display:block;fill-opacity:.07;stroke-opacity:.5;stroke-dasharray:12 10;stroke-width:2.5}
-.petal-region.complete{fill-opacity:.17;stroke-opacity:.85;stroke-dasharray:none;stroke-width:3}
+/* Petal land lights up on completion, like a mainland sector. */
+.petal-region{display:none}
+.petal-region.complete{display:block}
 .petal-mark{opacity:.75}
 .hub-art-wrap{position:absolute;inset:-46px;pointer-events:none}
 .bloom-hub .hub-shell{fill:#141828;stroke:#9aa3c7}
@@ -451,10 +452,9 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 .buy-row:has(#prestigeButton:not([hidden])){gap:10px}
 @media(max-width:360px){#prestigeButton{width:92px;min-width:92px}}
 /* Center node badge: prestige is available */
-.hub-badge{position:absolute;right:38px;top:34px;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:#f3a1c8;color:#3a1226;font:700 15px/1 var(--mono);box-shadow:0 0 0 3px #0b1017,0 0 18px #f3a1c880;animation:badgePulse 2.4s ease-in-out infinite;z-index:2}
-#world.overview .hub-badge{transform:scale(2.1);transform-origin:center;right:30px;top:26px}
-@keyframes badgePulse{50%{box-shadow:0 0 0 3px #0b1017,0 0 30px #f3a1c8c0}}
-.reduced-motion .hub-badge{animation:none}
+/* Prestige available: a small square on the center node, like a notification mark. */
+.hub-badge{position:absolute;right:24px;top:24px;width:20px;height:20px;background:#f3a1c8;box-shadow:0 0 0 3px #0b1017;z-index:2}
+#world.overview .hub-badge{transform:scale(2.2);transform-origin:top right}
 /* Navigator: map jump */
 #petalMenu{display:grid;gap:10px;padding-bottom:2px}
 .nav-maps{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;min-height:52px;margin-top:12px;padding:12px 14px;border:1px dashed #4a515c;border-radius:9px;background:transparent;color:#d6d9df;font-size:14px;text-align:left}
@@ -495,7 +495,8 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 /* Night theme: dark blue-gray, pink logo, grid kept */
 body.theme-bloom{--bg:#0e111c;--panel:#141a28;--line:#2a3348;--accent:#f3a1c8;--muted:#95a0bd;--text:#e9ecf5;background:#090b14}
 .theme-bloom #viewport{background-color:#0d111d;background-image:radial-gradient(circle,#2c3552 1px,transparent 1px)}
-.theme-bloom #viewport:before{background:radial-gradient(ellipse at 50% 28%,#1b2246 0%,transparent 48%),radial-gradient(ellipse at 50% 40%,transparent 15%,#070a1480 85%)}
+/* Fog only at the edges; the middle of the map stays clear. */
+.theme-bloom #viewport:before{background:radial-gradient(ellipse at 50% 46%,transparent 52%,rgba(120,134,172,.10) 72%,rgba(132,146,186,.24) 100%)}
 .theme-bloom .coordinates{color:#6b779d}
 .theme-bloom .map-tools .icon-button{background:#151b2b}
 .theme-bloom .edge{stroke:#3a4568}
@@ -530,7 +531,6 @@ body.theme-bloom{--bg:#0e111c;--panel:#141a28;--line:#2a3348;--accent:#f3a1c8;--
 .theme-bloom .cache-track{background:#262e48}
 .theme-bloom .page-arrow:active{background:#1c2338}
 .theme-bloom .page-dots i{background:#333d5c}
-.theme-bloom .world-line[data-phase="day"] #worldIcon{color:#ffd27a}
 .theme-bloom dialog{background:#141a28;border-color:#39456a}
 .theme-bloom dialog::backdrop{background:#04060fa8}
 .theme-bloom #sectorDialog{background:#141826;border-color:#3b4360}
@@ -549,12 +549,16 @@ body.theme-bloom{--bg:#0e111c;--panel:#141a28;--line:#2a3348;--accent:#f3a1c8;--
 .theme-bloom .stat{border-bottom-color:#283250}
 .theme-bloom .section-label{color:#95a0bd}
 .theme-bloom .sector-row .bar{background:#263050}
-.theme-bloom .toast{background:#3a2436;border-color:#9a5f82;color:#ffd9ea}
-.theme-bloom .toast .toast-track i{background:#f3a1c8}
+.theme-bloom .toast.kind-info{background:#3a2436;border-color:#9a5f82;color:#ffd9ea}
+.theme-bloom .toast.kind-info .toast-track i{background:#f3a1c8}
 .theme-bloom .toast.kind-important{background:#1b2135;border-color:#e9ecf5;color:#f5f6fb}
 .theme-bloom #updatePages button[aria-current=page]{color:#ffd0e4;border-color:#a06a88;background:#f3a1c814}
 .theme-bloom .hub-shell{fill:#141828;stroke:#9aa3c7}
 .theme-bloom .hub-sector{stroke:#363d58}
-.theme-bloom .cheat-badge{color:#ffd27a}
 .theme-bloom #hint{color:#aab3d0}
 .theme-bloom button:focus-visible,.theme-bloom a:focus-visible,.theme-bloom section:focus-visible{outline-color:var(--accent)}
+
+/* 3.0.2: the 2.2.2 currency rule holds on every map — $ green, ¢ ochre,
+   ✿ pink — even where the theme changes the accent color. */
+.theme-bloom .sym-money,.theme-bloom .price-money .sym,.theme-bloom .cash-symbol,.theme-bloom .currency-card.currency-cash .currency-symbol{color:#b9f36d}
+.theme-bloom .currency-card.currency-cash,.theme-bloom .compact-currency.currency-cash{--currency-color:#b9f36d}
