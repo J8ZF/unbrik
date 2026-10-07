@@ -1,4 +1,4 @@
-# AXIOM · Upgrade Tree — v1.2.0
+# AXIOM · Upgrade Tree — v1.3.0
 
 Portrait incremental game with 80 math/computer-science nodes, 19 repeatable studies and 261 total research levels.
 
@@ -12,7 +12,15 @@ Static files are in `dist/`; serve over HTTP (ES modules are not intended for `f
 - `app.js`: game UI, map gestures, visibility/focus lifecycle and local saves.
 - `index.html`, `style.css`: portrait interface and bounded SVG containers.
 
-Checks: `node check.mjs`, `node balance-check.mjs`, `node offline-check.mjs`.
+Checks: `node check.mjs`, `node balance-check.mjs`, `node offline-check.mjs`, `node ui-check.mjs`.
+
+## Interface and test mode 1.3
+
+The top HUD starts compact, showing money, production, settings and a labeled expansion control. Expanding restores the original full resource and research summary. Its state is saved. The lower research panel also has a labeled collapse/expand control, retains the selected node while collapsed, and opens when a research node is selected. Its collapsed state is saved as well. Named SVG aliases now resolve both research and interface requests, including the formerly missing X and Plus icons.
+
+Settings includes an opt-in purchase payout cheat, off by default. With it on, a purchase grants its price instead of deducting it, for manual and automatic purchases. Affordability, prerequisites and maximum levels still apply. Granted money counts as earned rather than spent. Values retain the existing finite numeric cap. Turning it off restores normal charging without rolling back money or research. An on-screen badge and positive purchase amount indicate the mode. Saves/imports preserve the toggle; older saves default to off. The existing RESET confirmation and deletion controls are unchanged.
+
+Regression checks cover normal/cheat/automatic purchases, guards, finite caps, old-save defaults, setting round trips and all named interface SVGs. The actual disclosure renderers and handlers are exercised through a minimal element adapter in `ui-check.mjs`; this does not constitute browser layout testing.
 
 ## Balance 1.2
 
