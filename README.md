@@ -1,4 +1,4 @@
-# UNBRIK · Upgrade Tree — v1.7.0
+# UNBRIK · Upgrade Tree — v1.7.3
 
 Portrait incremental game with 80 math/computer-science nodes, 19 repeatable studies and 261 total research levels.
 
@@ -10,19 +10,35 @@ Static files are in `dist/`; serve over HTTP (ES modules are not intended for `f
 - `data.js`: graph, fixed level-price tables, income, guarded purchases and save migration.
 - `icons.js`: 80 distinct Lucide SVG path icons and interface icons, embedded locally. License in `icons-license.txt`. `brand.js` supplies the shared original three-triangle SVG mark; no font asset is required.
 - `hub.js`: regular dodecahedron projection and center SVG geometry; `camera.js`: cancellable camera tween helpers.
-- `effects.js`: visibility-gated opal motion and scoped selection protection.
+- `effects.js`: visibility-gated opal-border motion and whole-game selection protection, with editable save fields preserved.
+- `notifications.js`: dismissible notifications with a single deadline for the timeout and remaining-time bar.
 - `updates.js`: version history and two-entry pagination.
 - `offline.js`: departure-income snapshot, integrated exponential decay and settlement cursor.
 - `app.js`: game UI, map gestures, visibility/focus lifecycle and local saves.
 - `index.html`, `style.css`: portrait interface and bounded SVG containers.
 
-Checks: `node check.mjs`, `node balance-check.mjs`, `node offline-check.mjs`, `node ui-check.mjs`, `node layout-check.mjs`, `node motion-check.mjs`, `node effects-check.mjs`.
+Checks: `node check.mjs`, `node balance-check.mjs`, `node offline-check.mjs`, `node ui-check.mjs`, `node layout-check.mjs`, `node motion-check.mjs`, `node effects-check.mjs`, `node notification-check.mjs`.
 
-## Corrected interface 1.7
+## Continue this exact Site in another session
 
-The 1.6 layout, node markup, selected rings, panel progress, prerequisite chips and navigator are restored. No ready badge or corner brackets are added. Existing purchase-ready highlights and the available research action use white, including repeatable nodes; the main accent remains #B9F36D. The header UNBRIK text matches the settings wordmark's accent.
+- Live URL: https://axiom-upgrade-tree.workingdad365.chatgpt.site
+- Sites project ID: `appgprj_6ac5785df1cc8191aee137a5f749f5b8`
+- Source branch: `main` in the authenticated ChatGPT Sites Git repository. No GitHub repository is connected.
+- Git endpoint: https://git.chatgpt-team.site/a55592db-5743-421d-8f15-dd86632c516a/appgprj_6ac5785df1cc8191aee137a5f749f5b8.git
+- Use Sites to open this existing project and fetch its latest source with a fresh authorized credential. Do not create a replacement project or assume the scratch checkout persists. Follow the Sites skills for source opening, checks, commit/push, packaging, version saving and publication. Never store credentials in the repository.
+- `dist/` is served directly as static HTML/CSS/JavaScript. No application build step is required. Browser-local player progress is separate from source code and is exported/imported through existing settings.
 
-Only sector 8 research-node surfaces receive four softly overlapping color fields, sampled from the supplied opal direction: blue-violet, pale green, pink and cyan. Each field occupies a different corner; the positions interpolate through four arrangements with pauses between them. The white icon, text and sector identity remain. No new hub decoration, region wash or navigator/detail icon surround is added. The existing animation toggle, live OS reduced-motion preference, viewport visibility, map zoom/tween and inactive-session controls govern motion; static fields remain when animation is off. Text selection protection on game controls still permits save-field selection and paste.
+## Accepted interface and patch scope
+
+The user accepted version 1.7.2. Version 1.7.3 fixes input handling only; preserve that design and game balance for any future work unless the user explicitly changes the scope. A future 2.0 update has been mentioned but is not specified or authorized here. Do not add badges, text, corner brackets, colors or new controls as incidental improvements.
+
+The 1.6 layout, selected rings, panel progress, prerequisite chips and navigator remain. Purchase-ready **map nodes** use white. The bottom **research action** uses the original theme green `#B9F36D`; do not conflate the two. Header UNBRIK text uses that same theme green. The center navigator action remains neutral as in 1.6.
+
+Sector 8 keeps its white identity and original gray/white node interior. Purchased sector-8 nodes alone get a masked border with six smoothly interpolated pastel colors rotating clockwise, continuously and without holds. No color fills the node background. The animation toggle and OS reduced-motion preference stop the rotation while retaining a static multicolor border; offscreen/inactive-session animation pauses. No extra hub, region, navigator or detail-panel opal decoration is added.
+
+The small yellow `CHEAT` text inherits `RESEARCH NETWORK` typography and sits directly below it. The default map toolbar has two vertical buttons; a saved settings toggle reveals fit/zoom-out/zoom-in. Notifications retain their existing theme with an immediate close button and remaining-time bar. All game text is protected from selection, while save fields remain selectable. Connection colors retain the target sector across researched and flashing states.
+
+The 1.7.3 regression test sends actual application click/pointer handlers controlled events. It reproduces the former ignored native click and stale pointer after lost capture, then verifies same-node/center reopening, compatibility-click suppression, drag/pinch/cancel behavior, and 24 input/settings combinations. This is not physical-device browser testing.
 
 A sector is revealed only when its entry research is unlocked or already purchased. Cross-sector supplementary prerequisites do not reveal its nodes, ghost placeholders, headings, navigator rows, statistics, connecting paths or full-map fit bounds. Navigation checks the same gate and does not move the camera if selection fails. Twelve progression boundary cases exercise all eight sectors, including the former node 9, 25 and 37 early-reveal cases. No prices, prerequisites, saved progress or reset behavior were changed.
 
@@ -50,7 +66,7 @@ Layout revision 1 discards legacy vertical-map camera coordinates while retainin
 
 The top HUD starts expanded. It can collapse to money, production, settings and an icon-only expansion control with an accessible label. The same SVG chevron rotates 180 degrees over 240 ms when expanded, respecting reduced-motion preferences. Expanding restores the original full resource and research summary. Its state is saved. The lower research panel also has a labeled collapse/expand control, retains the selected node while collapsed, and opens when a research node is selected. Its collapsed state is saved as well. Named SVG aliases now resolve both research and interface requests, including the formerly missing X and Plus icons.
 
-Settings includes an opt-in free research cheat, off by default. With it on, manual and automatic purchases require no money and do not change the balance or earned/spent statistics. Displayed prices remain the normal research prices. Prerequisites and maximum levels still apply. Turning it off restores normal charging without rolling back research or altering money. An on-screen badge and the purchase button indicate free research. Saves/imports preserve the toggle; older saves default to off. The existing RESET confirmation and deletion controls are unchanged.
+Settings includes an opt-in free research cheat, off by default. With it on, manual and automatic purchases require no money and do not change the balance or earned/spent statistics. Displayed prices remain the normal research prices. Prerequisites and maximum levels still apply. Turning it off restores normal charging without rolling back research or altering money. The small yellow CHEAT text and the purchase button indicate free research. Saves/imports preserve the toggle; older saves default to off. The existing RESET confirmation and deletion controls are unchanged.
 
 Regression checks cover normal/cheat/automatic purchases, guards, finite caps, old-save defaults, setting round trips and all named interface SVGs. The actual disclosure renderers and handlers are exercised through a minimal element adapter in `ui-check.mjs`; this does not constitute browser layout testing.
 

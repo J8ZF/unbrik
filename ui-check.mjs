@@ -9,14 +9,14 @@ import * as cameraHelpers from './dist/camera.js';
 // Run the actual renderers and controls against a minimal element adapter.
 // This verifies state/DOM wiring, not browser layout or physical touch input.
 const html=readFileSync('dist/index.html','utf8'),app=readFileSync('dist/app.js','utf8');
-function element(){const classes=new Set(),queries=new Map();return {dataset:{},style:{setProperty(k,v){this[k]=v;}},attributes:{},children:[],hidden:false,textContent:'',innerHTML:'',checked:false,open:false,scrollHeight:720,clientHeight:450,scrollTop:0,
- querySelector(k){if(!queries.has(k))queries.set(k,element());return queries.get(k);},addEventListener(){},showModal(){this.open=true;},close(){this.open=false;},
+function element(){const classes=new Set(),queries=new Map(),listeners=new Map(),captures=new Set();return {dataset:{},style:{setProperty(k,v){this[k]=v;}},attributes:{},children:[],hidden:false,textContent:'',innerHTML:'',checked:false,open:false,scrollHeight:720,clientHeight:450,scrollTop:0,
+ querySelector(k){if(!queries.has(k))queries.set(k,element());return queries.get(k);},addEventListener(type,fn){if(!listeners.has(type))listeners.set(type,[]);listeners.get(type).push(fn);},emit(type,event){for(const fn of listeners.get(type)||[])fn(event);},getBoundingClientRect(){return {left:0,top:0};},setPointerCapture(id){captures.add(id);},hasPointerCapture(id){return captures.has(id);},releasePointerCapture(id){captures.delete(id);},showModal(){this.open=true;},close(){this.open=false;},
  classList:{toggle(k,v){v?classes.add(k):classes.delete(k);},contains:k=>classes.has(k),add:k=>classes.add(k),remove:k=>classes.delete(k)},
  setAttribute(k,v){this.attributes[k]=v;},append(v){this.children.push(v);},replaceChildren(){this.children=[];}};}
 const elements=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,element()]));
 const $=id=>{assert(elements.has(id),`Missing element ${id}`);return elements.get(id);};
 const slice=(start,end)=>{const a=app.indexOf(start),b=app.indexOf(end,a);assert(a>=0&&b>a);return app.slice(a,b);};
-const source=[slice('const CENTER_SELECTION','const KEY='),slice('function syncOpalMotion(){','function save('),slice('function sectorUnlocked(','const visibility='),slice('function createGraph(){','function animatePanel('),slice('function animatePanel(','function ripple('),slice('function buySelected(){','const pointers='),slice('let previousWidth=','new ResizeObserver(reframeViewport)'),slice('function renderUpdates(','function suspend('),
+const source=[slice('const CENTER_SELECTION','const KEY='),slice('function syncOpalMotion(){','function save('),slice('function sectorUnlocked(','const visibility='),slice('function createGraph(){','function animatePanel('),slice('function animatePanel(','function ripple('),slice('function buySelected(){','const pointers='),slice('const pointers=',"$('zoomIn').onclick="),slice('let previousWidth=','new ResizeObserver(reframeViewport)'),slice('function renderUpdates(','function suspend('),
  slice("$('toggleHud').onclick=", "$('settings').onclick="),slice("for(const k of ['motion','touch','haptic','auto','mapControls'])", "$('format').onchange="),slice("$('purchaseCheat').onchange=", "$('saveNow').onclick=")].join('\n');
 const createUI=new Function('deps','$','document',`
  const {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,effectText,validateSave,MAP_LAYOUT,sectorProgress,BRANCHES,CENTER,boundsOf,connectionPath,centerPath,iconSvg,setIcon,UPDATES,updatePage,interpolateCamera,overviewMode,mapFrames,fitCamera}=deps;
@@ -28,17 +28,46 @@ const createUI=new Function('deps','$','document',`
  const setTimeout=(fn,ms)=>{timers.set(++seed,{fn,at:clock+ms});return seed},clearTimeout=id=>timers.delete(id);
  const nodeEls=new Map(),edgeEls=[],chapterEls=[],sectorEls=[],spokeEls=[],visibility=new Map(),viewport=$('viewport'),world=$('world');
  viewport.clientWidth=390;viewport.clientHeight=440;const originalQuery=viewport.querySelector;viewport.querySelector=k=>k==='.map-tools'?$('mapTools'):originalQuery(k);Object.defineProperties($('mapTools'),{offsetLeft:{get:()=>viewport.clientWidth-($('mapTools').classList.contains('is-compact')?50:94)},offsetTop:{get:()=>viewport.clientHeight-($('mapTools').classList.contains('is-compact')?110:170)}});
- const format=String,time=String,toast=()=>{};
+ const format=String,time=String,toast=()=>{},ripple=()=>{};let gestureUsed=false;
  function save(){saved=validateSave(JSON.parse(JSON.stringify(state)));}
  ${source}
  createGraph();renderUpdates();
  return {sectorUnlocked,renderStats,fit,render,selectNode,selectCenter,buySelected,openCenter,openNavigator,jumpToSector,interruptMapMotion,renderUpdates,sectorEls,chapterEls,nodeEls,edgeEls,spokeEls,visibility,applySettings,osReduce(value){motionPreference.matches=value;applySettings();},
  advance(now){clock=now;for(const [id,timer]of timers){if(timer.at<=clock){timers.delete(id);timer.fn();}}const pending=[...frames.values()];frames.clear();for(const frame of pending)frame(now);},
- resize(width,height){viewport.clientWidth=width;viewport.clientHeight=height;reframeViewport();},reduced(value){document.body.classList.toggle('reduced-motion',value)},get moving(){return cameraMoving},get pending(){return selectionPending},get state(){return state},get selected(){return selected},get saved(){return saved}};
+ resize(width,height){viewport.clientWidth=width;viewport.clientHeight=height;reframeViewport();},reduced(value){document.body.classList.toggle('reduced-motion',value)},get activePointers(){return pointers.size},get moving(){return cameraMoving},get pending(){return selectionPending},get state(){return state},get selected(){return selected},get saved(){return saved}};
 `);
 const ui=createUI({...data,...layout,...updates,...cameraHelpers,iconSvg,setIcon},$,{createElement:element,createElementNS:element,body:element()});
 let now=0;function finishNavigation(){ui.advance(now+=16);ui.advance(now+=500);}
 ui.applySettings();ui.render();
+// Actual click and captured-pointer event paths, including reselecting the same node.
+function targetFor(id){const el=id===-1?$('centerNode'):ui.nodeEls.get(id);el.dataset.id=String(id);return {closest:selector=>selector==='.node,.hub-node'?el:null};}
+function pointer(type,id,node=1,x=100,y=100,pointerType='touch'){const event={pointerId:id,pointerType,button:0,clientX:x,clientY:y,target:targetFor(node),preventDefault(){}};$('viewport').emit(type,event);}
+function closePanel(){if(!ui.state.settings.panelCollapsed)$('togglePanel').onclick();}
+closePanel();ui.nodeEls.get(1).emit('click',{detail:1});const nativeClickReopens=!$('panelDetails').hidden;
+ui.selectNode(1);closePanel();pointer('pointerdown',101);pointer('lostpointercapture',101);pointer('pointerdown',102);pointer('pointerup',102);const lostCaptureReopens=!$('panelDetails').hidden;
+assert.deepEqual({nativeClickReopens,lostCaptureReopens},{nativeClickReopens:true,lostCaptureReopens:true});
+assert.equal(ui.activePointers,0);
+// Preserve drag/pinch/cancel semantics and ignore the compatibility click after pointer-up.
+for(const mode of ['drag','pinch','cancel']){
+ closePanel();pointer('pointerdown',201);
+ if(mode==='drag')pointer('pointermove',201,1,130,100);
+ if(mode==='pinch'){pointer('pointerdown',202,1,150,100);pointer('pointerup',202,1,150,100);}
+ pointer(mode==='cancel'?'pointercancel':'pointerup',201);
+ ui.nodeEls.get(1).emit('click',{detail:1});assert($('panelDetails').hidden,mode+' must not reopen the panel');assert.equal(ui.activePointers,0);
+}
+for(const motion of [true,false])for(const touch of [true,false])for(const mapControls of [true,false]){
+ Object.assign(ui.state.settings,{motion,touch,mapControls});ui.applySettings();
+ for(const pointerType of ['touch','mouse','pen']){
+  ui.selectNode(1);closePanel();pointer('pointerdown',301,1,100,100,pointerType);pointer('pointerup',301,1,100,100,pointerType);
+  assert(!$('panelDetails').hidden);assert.equal(ui.selected,1);assert.equal($('togglePanel').attributes['aria-expanded'],'true');
+  closePanel();ui.nodeEls.get(1).emit('click',{detail:1});assert($('panelDetails').hidden,'Compatibility click must not reopen a panel that was closed after the tap');
+ }
+ ui.selectCenter();closePanel();pointer('pointerdown',401,-1);pointer('pointerup',401,-1);assert(!$('panelDetails').hidden);assert.equal($('buyText').textContent,'내비게이터');
+ closePanel();$('centerNode').emit('click',{detail:0});assert(!$('panelDetails').hidden,'Keyboard activation remains available');
+}
+ui.advance(now+=600);ui.selectNode(1);closePanel();ui.nodeEls.get(1).emit('click',{detail:1});assert(!$('panelDetails').hidden,'A later native click must not retain an old gesture suppression');
+Object.assign(ui.state.settings,{motion:true,touch:true,mapControls:false});ui.applySettings();
+
 assert($('mapTools').classList.contains('is-compact'));assert(!$('mapControls').checked);
 for(const id of ['fit','zoomOut','zoomIn'])assert($(id).hidden);
 $('mapControls').checked=true;$('mapControls').onchange();assert(ui.saved.settings.mapControls);assert(!$('mapTools').classList.contains('is-compact'));
@@ -109,4 +138,4 @@ for(const through of [0,4,5,9,15,25,35,37,45,55,68,80]){
  }
  for(const {el,from,to}of ui.edgeEls)if(!ui.sectorUnlocked(from.chapter)||!ui.sectorUnlocked(to.chapter))assert.equal(el.style.display,'none');
 }
-console.log(JSON.stringify({uiControls:'passed',saveCompatibility:'passed',originalNodeMarkup:'restored',sectorBoundaryCases:12,lockedSectorMenuAndStats:'hidden',crossPrerequisiteLeaks:'blocked',invalidNavigation:'blocked',atomicFinalButton:'passed',motionToggleDuringNavigation:'passed'}));
+console.log(JSON.stringify({uiControls:'passed',nativeClickReopens:'passed',lostCaptureRecovery:'passed',dragPinchCancellation:'passed',inputSettingsCombinations:24,saveCompatibility:'passed',originalNodeMarkup:'restored',sectorBoundaryCases:12,lockedSectorMenuAndStats:'hidden',crossPrerequisiteLeaks:'blocked',invalidNavigation:'blocked',atomicFinalButton:'passed',motionToggleDuringNavigation:'passed'}));

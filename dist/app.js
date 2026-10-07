@@ -1,12 +1,12 @@
-import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress} from './data.js?v=1.7.2';
-import {iconSvg,setIcon} from './icons.js?v=1.7.2';
-import {checkpointOffline,settleOffline} from './offline.js?v=1.7.2';
-import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=1.7.2';
-import {wireframePaths} from './hub.js?v=1.7.2';
-import {UPDATES,updatePage} from './updates.js?v=1.7.2';
-import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=1.7.2';
-import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=1.7.2';
-import {createNotification} from './notifications.js?v=1.7.2';
+import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress} from './data.js?v=1.7.3';
+import {iconSvg,setIcon} from './icons.js?v=1.7.3';
+import {checkpointOffline,settleOffline} from './offline.js?v=1.7.3';
+import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=1.7.3';
+import {wireframePaths} from './hub.js?v=1.7.3';
+import {UPDATES,updatePage} from './updates.js?v=1.7.3';
+import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=1.7.3';
+import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=1.7.3';
+import {createNotification} from './notifications.js?v=1.7.3';
 const $=id=>document.getElementById(id);
 const CENTER_SELECTION=-1;
 const setText=(el,value)=>{const next=String(value);if(el.textContent!==next)el.textContent=next;};
@@ -73,7 +73,7 @@ function createGraph(){
  const el=document.createElement('button');el.className='node';el.hidden=true;el.id=`node-${n.id}`;el.dataset.id=n.id;el.style.left=n.x+'px';el.style.top=n.y+'px';el.style.setProperty('--node-color',CHAPTERS[n.chapter].color);
  el.innerHTML='<div class="node-top"><span class="symbol"></span><span class="node-id"></span></div><span class="node-name"></span><span class="node-price"><span></span><span class="node-status"></span></span><i class="level-dots"></i>';
  if(n.chapter===7){const border=document.createElement('span');border.className='opal-border';border.setAttribute('aria-hidden','true');el.append(border);}
- el.addEventListener('click',ev=>{if(ev.detail===0)selectNode(n.id);});
+ el.addEventListener('click',ev=>handleMapClick(ev,n.id));
  $('nodes').append(el);nodeEls.set(n.id,el);
  for(const r of n.req){const p=byId.get(r.id),path=document.createElementNS('http://www.w3.org/2000/svg','path');
  path.style.display='none';path.setAttribute('d',connectionPath(p,n,MAP_LAYOUT.sectors));path.style.setProperty('--edge-color',CHAPTERS[n.chapter].color);$('edges').append(path);edgeEls.push({el:path,from:p,to:n,cross:p.branch!==n.branch});}
@@ -84,7 +84,7 @@ function createGraph(){
  const jump=document.createElement('button');jump.className='sector-jump';jump.hidden=true;jump.style.setProperty('--sector-color',c.color);jump.innerHTML=`<span class="sector-jump-icon">${iconSvg(sector.members[0].id)}</span><span class="sector-jump-copy"><span class="sector-jump-name">${c.name}</span><span class="sector-jump-progress"></span></span><span class="sector-jump-state" aria-hidden="true"></span>`;jump.onclick=()=>jumpToSector(i);$('sectorMenu').append(jump);
  }
  for(const branch of BRANCHES){const root=MAP_LAYOUT.sectors[branch.chapters[0]].members[0],path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',centerPath(root));path.setAttribute('class','center-spoke');path.style.display='none';path.style.setProperty('--sector-color',CHAPTERS[root.chapter].color);$('spokes').append(path);spokeEls.push({el:path,root});}
- $('centerNode').addEventListener('click',ev=>{if(ev.detail===0)selectCenter();});
+ $('centerNode').addEventListener('click',ev=>handleMapClick(ev,CENTER_SELECTION));
 }
 function graph(){
  for(const n of NODES){
@@ -197,13 +197,20 @@ function buySelected(){if(selectionPending)return false;if(selected===CENTER_SEL
  if(n.type==='automation'&&level(state,n)===1)toast('SCHEDULER 해금 · 설정에서 자동 구매를 켤 수 있습니다.');
  render();save();if(econ.count===80&&before<80)toast('80개 노드 연구 완료. AXIOM에 도달했습니다.');return true;
 }
-const pointers=new Map();let gesture=null;
+// Pointer-up handles captured taps. Native clicks are a fallback, with no duplicate
+// activation or accidental selection after a drag, pinch or canceled contact.
+function handleMapClick(event,id){
+ if(event.detail!==0&&performance.now()<suppressMapClickUntil)return;
+ if(id===CENTER_SELECTION)selectCenter();else selectNode(id);
+}
+const pointers=new Map();let gesture=null,suppressMapClickUntil=0;
 function point(ev){const rect=viewport.getBoundingClientRect();return {x:ev.clientX-rect.left,y:ev.clientY-rect.top};}
 function resetGesture(pinched=false){const p=[...pointers.values()];if(p.length>=2){const mid={x:(p[0].x+p[1].x)/2,y:(p[0].y+p[1].y)/2};gesture={pinched:true,moved:true,distance:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y),scale:camera.scale,anchor:{x:(mid.x-camera.x)/camera.scale,y:(mid.y-camera.y)/camera.scale}};}else if(p.length){gesture={start:p[0],base:{...camera},moved:pinched,pinched,id:p[0].node,time:performance.now()};}}
-viewport.addEventListener('pointerdown',ev=>{if(ev.target.closest('.map-tools'))return;if(ev.pointerType==='mouse'&&ev.button!==0)return;interruptMapMotion();const p={...point(ev),node:Number(ev.target.closest('.node,.hub-node')?.dataset.id)||null};pointers.set(ev.pointerId,p);viewport.setPointerCapture(ev.pointerId);resetGesture(pointers.size>1);ev.preventDefault();});
+viewport.addEventListener('pointerdown',ev=>{if(ev.target.closest('.map-tools'))return;if(ev.pointerType==='mouse'&&ev.button!==0)return;suppressMapClickUntil=0;interruptMapMotion();const p={...point(ev),node:Number(ev.target.closest('.node,.hub-node')?.dataset.id)||null};pointers.set(ev.pointerId,p);viewport.setPointerCapture(ev.pointerId);resetGesture(pointers.size>1);ev.preventDefault();});
 viewport.addEventListener('pointermove',ev=>{if(!pointers.has(ev.pointerId))return;const prev=pointers.get(ev.pointerId);pointers.set(ev.pointerId,{...point(ev),node:prev.node});const ps=[...pointers.values()];if(ps.length>=2&&gesture){const a=ps[0],b=ps[1],mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};camera.scale=Math.max(.035,Math.min(1.7,gesture.scale*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,gesture.distance)));camera.x=mid.x-gesture.anchor.x*camera.scale;camera.y=mid.y-gesture.anchor.y*camera.scale;}else if(gesture){const p=ps[0],dx=p.x-gesture.start.x,dy=p.y-gesture.start.y;if(Math.hypot(dx,dy)>7)gesture.moved=true;if(gesture.moved){camera.x=gesture.base.x+dx;camera.y=gesture.base.y+dy;}}if(gesture?.moved){constrain();transform();$('hint').style.opacity='0';gestureUsed=true;}ev.preventDefault();});
-function endPointer(ev,cancelled=false){if(!pointers.has(ev.pointerId))return;const p=pointers.get(ev.pointerId),tap=!cancelled&&pointers.size===1&&gesture&&!gesture.moved&&!gesture.pinched&&performance.now()-gesture.time<900,id=gesture?.id;pointers.delete(ev.pointerId);if(tap){ripple(p.x,p.y);if(id===CENTER_SELECTION)selectCenter();else if(id)selectNode(id);}if(pointers.size)resetGesture(true);else{gesture=null;state.camera={...camera};}if(viewport.hasPointerCapture(ev.pointerId))viewport.releasePointerCapture(ev.pointerId);}
+function endPointer(ev,cancelled=false){if(!pointers.has(ev.pointerId))return;suppressMapClickUntil=performance.now()+500;const p=pointers.get(ev.pointerId),tap=!cancelled&&pointers.size===1&&gesture&&!gesture.moved&&!gesture.pinched&&performance.now()-gesture.time<900,id=gesture?.id;pointers.delete(ev.pointerId);if(tap){ripple(p.x,p.y);if(id===CENTER_SELECTION)selectCenter();else if(id)selectNode(id);}if(pointers.size)resetGesture(true);else{gesture=null;state.camera={...camera};}if(viewport.hasPointerCapture(ev.pointerId))viewport.releasePointerCapture(ev.pointerId);}
 viewport.addEventListener('pointerup',e=>endPointer(e));viewport.addEventListener('pointercancel',e=>endPointer(e,true));
+viewport.addEventListener('lostpointercapture',e=>endPointer(e,true));
 viewport.addEventListener('wheel',e=>{e.preventDefault();interruptMapMotion();const p=point(e);zoomAt(camera.scale*Math.exp(-e.deltaY*.002),p.x,p.y);},{passive:false});
 viewport.addEventListener('keydown',e=>{if(e.target!==viewport)return;interruptMapMotion();const steps={ArrowLeft:[70,0],ArrowRight:[-70,0],ArrowUp:[0,70],ArrowDown:[0,-70]};if(steps[e.key]){e.preventDefault();camera.x+=steps[e.key][0];camera.y+=steps[e.key][1];constrain();transform();}else if(['+','=','-'].includes(e.key)){e.preventDefault();zoomAt(camera.scale*(e.key==='-'?.8:1.25),viewport.clientWidth/2,viewport.clientHeight/2);}});
 $('zoomIn').onclick=()=>{interruptMapMotion();zoomAt(camera.scale*1.25,viewport.clientWidth/2,viewport.clientHeight/2);};$('zoomOut').onclick=()=>{interruptMapMotion();zoomAt(camera.scale*.8,viewport.clientWidth/2,viewport.clientHeight/2);};$('fit').onclick=fit;$('center').onclick=openCenter;$('closeSectors').onclick=closeNavigator;$('sectorDialog').addEventListener('cancel',event=>{event.preventDefault();closeNavigator();});
