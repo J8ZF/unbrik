@@ -1,6 +1,6 @@
-import {createRadialLayout} from './layout.js?v=2.1-island';
-import {RESEARCH} from './research.js?v=2.1-island';
-import {PRICES} from './prices.js?v=2.1-island';
+import {createRadialLayout} from './layout.js?v=2.2-prep';
+import {RESEARCH} from './research.js?v=2.2-prep';
+import {PRICES} from './prices.js?v=2.2-prep';
 export const CHAPTERS = [
  {name:'INITIALIZATION',ko:'초기화',color:'#b9f36d'},
  {name:'ARITHMETIC',ko:'산술',color:'#65e2cc'},
@@ -14,6 +14,33 @@ export const CHAPTERS = [
 export const MAX_VALUE=1e100;
 export const ECONOMY_EPOCH='unbrik-2.0-rework';
 export const CURRENCIES=['money','coin'];
+// Currency registry for the header. Up to eight are planned; the ledger pages
+// show four per page. `shown` decides whether a currency appears at all.
+export const CURRENCY_DEFS={
+ money:{symbol:'$',name:'달러',color:'#b9f36d',shown:()=>true},
+ coin:{symbol:'¢',name:'코인',color:'#d4ae68',shown:(s,e)=>e.coinUnlocked},
+};
+// Maps. The header's first page and the collapsed header show the currencies
+// of the current map; a future prestige map lists its own token here.
+export const MAPS=[
+ {id:'main',name:'본섬',currencies:['money','coin']},
+];
+export const currentMap=s=>MAPS.find(m=>m.id===s.map)||MAPS[0];
+// World clock. One game day is 24 minutes of play (one real minute per game
+// hour); it does not follow wall-clock time. Dawn 05–07, day 07–17, dusk
+// 17–19, night 19–05. Weather is rolled every 10 game-minutes of play:
+// rain 20%, snow 10%, otherwise clear. Both are recorded for later systems
+// and have no economic effect yet.
+export const DAY_SECONDS=24*60,WEATHER_INTERVAL=600,START_HOUR=7;
+export const PHASES=[{id:'dawn',ko:'새벽',from:5,to:7},{id:'day',ko:'낮',from:7,to:17},{id:'dusk',ko:'석양',from:17,to:19},{id:'night',ko:'밤',from:19,to:29}];
+export const WEATHERS={clear:{ko:'맑음'},rain:{ko:'비'},snow:{ko:'눈'}};
+export function rollWeather(random=Math.random()){return random<.2?'rain':random<.3?'snow':'clear';}
+export function worldState(s){
+ const seconds=s.world?.seconds||0,hours=(START_HOUR+seconds/60)%24,hour=Math.floor(hours),minute=Math.floor((hours-hour)*60);
+ const phase=PHASES.find(p=>hours>=p.from&&hours<p.to)||PHASES.find(p=>(hours+24)>=p.from&&(hours+24)<p.to)||PHASES[3];
+ const weather=WEATHERS[s.world?.weather]?s.world.weather:'clear';
+ return {seconds,hour,minute,clock:`${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`,phase:phase.id,phaseKo:phase.ko,weather,weatherKo:WEATHERS[weather].ko,day:Math.floor((START_HOUR*60+seconds)/DAY_SECONDS)+1};
+}
 export const NODES=RESEARCH.map(n=>({...n,effects:n.effects.map(e=>({...e})),costs:PRICES[n.id]||Array.from({length:n.max},()=>Object.fromEntries(n.payment.map(k=>[k,10])))}));
 // Each sector is a flow: one root fans out into rows of two or three parallel
 // studies, then narrows back into a single gate that opens the next sector.
@@ -58,7 +85,7 @@ export const MAP_LAYOUT=createRadialLayout(NODES);
 export const level=(s,n)=>s.levels[typeof n==='number'?n:n.id]||0;
 export function unlocked(s,n){return n.req.length===0||(n.any?n.req.some(r=>level(s,r.id)>=r.level):n.req.every(r=>level(s,r.id)>=r.level));}
 export function sectorProgress(s,chapter){const nodes=MAP_LAYOUT.sectors[chapter].members;const total=nodes.reduce((a,n)=>a+n.max,0),done=nodes.reduce((a,n)=>a+level(s,n),0);return {done,total,complete:done===total};}
-export function defaultState(){const now=Date.now();return {version:2,economyEpoch:ECONOMY_EPOCH,contentVersion:4,layoutVersion:3,currencies:{money:0,coin:0},levels:{},stats:{earned:0,spent:0,coinEarned:0,coinSpent:0,purchases:0,seconds:0,peak:1,coinPeak:0,offlineSeconds:0,offlineEarned:0,offlineCoinEarned:0,offlineEffectiveSeconds:0},timers:{cache:0},settings:{motion:true,touch:true,haptic:true,format:'short',purchaseCheat:false,mapControls:false,hudCollapsed:false,panelCollapsed:false},camera:null,offline:{since:now,through:now,rate:1,coinRate:0},savedAt:now};}
+export function defaultState(){const now=Date.now();return {version:2,economyEpoch:ECONOMY_EPOCH,contentVersion:4,layoutVersion:3,currencies:{money:0,coin:0},levels:{},stats:{earned:0,spent:0,coinEarned:0,coinSpent:0,purchases:0,seconds:0,peak:1,coinPeak:0,offlineSeconds:0,offlineEarned:0,offlineCoinEarned:0,offlineEffectiveSeconds:0},timers:{cache:0},settings:{motion:true,touch:true,haptic:true,format:'short',purchaseCheat:false,mapControls:false,hudCollapsed:false,panelCollapsed:false},camera:null,map:'main',world:{seconds:0,weather:'clear',weatherUntil:WEATHER_INTERVAL},offline:{since:now,through:now,rate:1,coinRate:0},savedAt:now};}
 export function economy(s){
  const owned=NODES.filter(n=>level(s,n)>0),count=owned.length,total=owned.reduce((a,n)=>a+level(s,n),0),coinUnlocked=level(s,22)>0;
  const v={money:{base:1,mul:1,baseMul:1,discount:1,scaling:1,cache:0,cacheMul:1},coin:{base:0,mul:1,baseMul:1,discount:1,scaling:1,cache:0,cacheMul:1}};
@@ -102,6 +129,8 @@ export function purchase(s,n){
 export function tick(s,dt){
  if(!Number.isFinite(dt)||dt<=0)return [];dt=Math.min(dt,5);
  const e=economy(s),events=[],gains={money:e.rate*dt,coin:e.coinRate*dt};s.stats.seconds+=dt;
+ if(!s.world)s.world={seconds:0,weather:'clear',weatherUntil:WEATHER_INTERVAL};
+ s.world.seconds+=dt;while(s.world.seconds>=s.world.weatherUntil){s.world.weather=rollWeather();s.world.weatherUntil+=WEATHER_INTERVAL;}
  if(e.burst||e.coinBurst){s.timers.cache+=dt;while(s.timers.cache>=e.interval){s.timers.cache-=e.interval;const money=e.rate*e.burst,coin=e.coinRate*e.coinBurst;gains.money+=money;gains.coin+=coin;events.push({type:'cache',amount:money,money,coin});}}
  for(const k of CURRENCIES){const earned=k==='money'?'earned':'coinEarned',peak=k==='money'?'peak':'coinPeak';s.currencies[k]=Math.min(MAX_VALUE,s.currencies[k]+gains[k]);s.stats[earned]=Math.min(MAX_VALUE,s.stats[earned]+gains[k]);s.stats[peak]=Math.max(s.stats[peak],e.rates[k]);}
  return events;
@@ -138,6 +167,8 @@ export function validateSave(input,now=Date.now()){
  if(!input.stats||!Object.keys(s.stats).every(k=>num(input.stats[k])))throw Error('통계가 올바르지 않습니다.');
  for(const k of Object.keys(s.stats))s.stats[k]=input.stats[k];
  if(num(input.timers?.cache,30))s.timers.cache=input.timers.cache;
+ if(MAPS.some(m=>m.id===input.map))s.map=input.map;
+ const w=input.world;if(w&&num(w.seconds)&&num(w.weatherUntil)&&w.weatherUntil>w.seconds&&w.weatherUntil-w.seconds<=WEATHER_INTERVAL&&WEATHERS[w.weather])s.world={seconds:w.seconds,weather:w.weather,weatherUntil:w.weatherUntil};
  if(input.layoutVersion===3&&input.camera&&['x','y','scale'].every(k=>Number.isFinite(input.camera[k]))&&input.camera.scale>=.035&&input.camera.scale<=1.7&&Math.abs(input.camera.x)<1e6&&Math.abs(input.camera.y)<1e6)s.camera={...input.camera};
  const stamp=v=>num(v,now);s.savedAt=stamp(input.savedAt)?input.savedAt:now;
  const e=economy(s);s.offline={since:s.savedAt,through:s.savedAt,rate:e.rate*(1+e.burst/e.interval),coinRate:e.coinRate*(1+e.coinBurst/e.interval)};

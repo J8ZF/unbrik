@@ -1,4 +1,4 @@
-# UNBRIK — 2.1 (2.0 economy, mainland map, compact header)
+# UNBRIK — 2.2 (2.0 economy, mainland map, paged header)
 
 A portrait incremental game with 105 research nodes across the original eight sectors, 316 finite research levels, dollars and coins. The center is navigation, not a purchasable research. AXIOM is research 105.
 
@@ -54,9 +54,23 @@ Preserve the accepted non-header design: green research execution button; white 
 
 Nodes have stable button hit targets across their complete area. Lower-node taps cannot trigger a compatibility click on a newly raised panel. Hidden sectors, their edges, headings, navigator rows and statistics stay undisclosed. Connection strokes use the target sector color, including purchase flashes.
 
+## 2.2 preparation for the next major update
+
+Requested as groundwork; none of it changes research, prices or the economy.
+
+- **Currency registry** (`CURRENCY_DEFS` in `data.js`): symbol, name, color and a `shown(state, econ)` rule per currency. Up to eight currencies are planned. Adding one means adding a registry entry (and its economy fields); the ledger picks it up automatically. The page-1 windows and the collapsed header still have hand-written markup for `money` and `coin` (`moneyCard`/`coinCard`, `compactMoneyCard`/`compactCoinCard`), so a new currency that should appear on page 1 or in the collapsed header needs a window in `index.html` plus the two id lists in `renderChrome`.
+- **Maps** (`MAPS`, `currentMap(state)`, `state.map`): the current map decides which currencies page 1 and the collapsed header show, and whether the cache strip is visible (any map currency with cache production) and in which color (`--cache-color`, the first such currency). A future prestige map adds `{id, name, currencies:['token']}`; with no token cache production its strip stays hidden until an upgrade provides it.
+- **Header pages** (`#hudPages`, `createHeader` in `app.js`): page 1 = current map (game clock, weather, the map's currency windows); following pages = currency ledger, four rows per page (`LEDGER_PER_PAGE`), page count = 1 + ceil(shown / 4). Native horizontal scroll with snap gives swiping; `hudPrev`/`hudNext` and the dots (`pageDots`) sit over the top-right corner. The page is not saved; the site opens on page 1. Expanded height at 412 px with both currencies and the cache strip: 172 CSS px (2.1: 154; the extra line is the clock row).
+- **Game clock and weather** (`state.world`, `worldState(state)`): one game day = 24 minutes of play, one real minute per game hour, independent of wall-clock time and not advanced offline. A new run starts at 07:00. Phases: dawn 05–07, day 07–17, dusk 17–19, night 19–05 (`PHASES`). Weather rolls every 600 s of play (`WEATHER_INTERVAL`): rain 20 %, snow 10 %, otherwise clear; stored in the save so a reload keeps it. Neither has any effect yet; they are recorded for later systems.
+- **Cache strip yield** (`cacheYield`): per-cycle award for each map currency with cache production (`rate × burst`), updated every render.
+- **Research panel icon** (`.panel-symbol`): background and border follow the sector color via `--sector-color`; sector 8 is plain white (no opal), the center selection stays neutral.
+- Settings → 정보 sentence under the logo is now “절대성은 사랑입니다”.
+
+Design notes stated for the next major update (not implemented): a main-menu system reachable from the header; up to eight currencies across two ledger pages; a separate prestige-upgrade map whose page 1 and collapsed header show prestige tokens; the cache strip per map, possibly in another color; the clock and weather will gain gameplay uses.
+
 ## Save boundary
 
-Current key: `unbrik-save-v2`, schema version 2, economy epoch `unbrik-2.0-rework`, layout version 3 (2.0 saves load; only their camera is dropped). Old `axiom-save-v1` progress is not converted or imported. On first load, preferences are copied and a new run starts, then the normal autosave uses the new key. The old key is left untouched so an old open tab cannot overwrite new progress. A reload of valid v2 data does not reset it. The UI's existing manual RESET safeguard is retained.
+Current key: `unbrik-save-v2`, schema version 2, economy epoch `unbrik-2.0-rework`, layout version 3 (2.0 and 2.1 saves load; 2.0 saves only drop their camera). `map` and `world` are optional on load and default to the main map at 07:00, clear. Old `axiom-save-v1` progress is not converted or imported. On first load, preferences are copied and a new run starts, then the normal autosave uses the new key. The old key is left untouched so an old open tab cannot overwrite new progress. A reload of valid v2 data does not reset it. The UI's existing manual RESET safeguard is retained.
 
 ## Source map
 
@@ -68,13 +82,13 @@ Current key: `unbrik-save-v2`, schema version 2, economy epoch `unbrik-2.0-rewor
 - `icons.js`: 80 existing embedded Lucide icons plus 25 distinct geometric icons.
 - `hub.js`, `camera.js`: dodecahedron projection and cancellable movement.
 - `effects.js`, `notifications.js`: selection guard, opal motion, toast deadlines.
-- `index.html`, `style.css`: game interface; the 2.1 header is the last block of `style.css`.
+- `index.html`, `style.css`: game interface; the 2.1 header and the 2.2 header pages are the last blocks of `style.css`.
 - `UNBRIK_2.1.html` (repository root, optional): single-file build of `dist/` (inline CSS, bundled script) that runs from `file://`; regenerate with `scripts/bundle-single.mjs` after changing `dist/`.
 
 ## Verification
 
 Run `npm run check`, `node balance-check.mjs`, `node ui-check.mjs`, `node offline-check.mjs`, `node layout-check.mjs`, `node effects-check.mjs`, `node motion-check.mjs`, `node notification-check.mjs`.
 
-Checks cover reachable prerequisites; finite costs and distinct icons; exact initial coin production; both-currency shortages with no partial debit; cheat guards; cache snapshot consistency; split, duplicate and reloaded offline settlements; save epoch rejection; row plans, upstream-only prerequisites and non-crossing links; every card inside its own sector polygon and outside the others, headings off the land, all eight sectors forming one connected mainland; hidden-sector boundaries; complete-card re-selection; gesture cancellation; navigator state; settings and reduced-motion combinations; original color/opal constraints.
+Checks cover the world clock, weather roll, ledger pages, pager controls and map-aware cache strip; reachable prerequisites; finite costs and distinct icons; exact initial coin production; both-currency shortages with no partial debit; cheat guards; cache snapshot consistency; split, duplicate and reloaded offline settlements; save epoch rejection; row plans, upstream-only prerequisites and non-crossing links; every card inside its own sector polygon and outside the others, headings off the land, all eight sectors forming one connected mainland; hidden-sector boundaries; complete-card re-selection; gesture cancellation; navigator state; settings and reduced-motion combinations; original color/opal constraints.
 
 The current managed environment does not provide browser preview for plain static Sites. Controlled real-handler tests and geometry checks are not a claim of Android Chrome or visual browser QA. Physical-device typography, compositing and browser touch behavior require device validation.

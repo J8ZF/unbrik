@@ -19,7 +19,7 @@ const slice=(start,end)=>{const a=app.indexOf(start),b=app.indexOf(end,a);assert
 const source=[slice('const CENTER_SELECTION','const KEY='),slice('function compactFormat(', 'function time('),slice('function syncOpalMotion(){','function save('),slice('function sectorUnlocked(','const visibility='),slice('function createGraph(){','function animatePanel('),slice('function animatePanel(','function ripple('),slice('function buySelected(){','const pointers='),slice('const pointers=',"$('zoomIn').onclick="),slice('let previousWidth=','new ResizeObserver(reframeViewport)'),slice('function renderUpdates(','function suspend('),
  slice("$('toggleHud').onclick=", "$('settings').onclick="),slice("for(const k of ['motion','touch','haptic','mapControls'])", "$('format').onchange="),slice("$('purchaseCheat').onchange=", "$('saveNow').onclick=")].join('\n');
 const createUI=new Function('deps','$','document',`
- const {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,purchase,effectText,validateSave,MAP_LAYOUT,sectorProgress,BRANCHES,CENTER,boundsOf,connectionPath,centerPath,iconSvg,setIcon,UPDATES,updatePage,interpolateCamera,overviewMode,mapFrames,fitCamera}=deps;
+ const {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,purchase,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,BRANCHES,CENTER,boundsOf,connectionPath,centerPath,iconSvg,setIcon,UPDATES,updatePage,interpolateCamera,overviewMode,mapFrames,fitCamera}=deps;
  let sessionSeconds=0;let state=defaultState(),selected=1,econ=economy(state),saved=null,camera={x:0,y:0,scale:1},cameraMoving=false,updatesPage=1;
  let suspended=false,opalMotion={refresh(){}},motionPreference={matches:false};
  let selectionPending=false,selectionEpoch=0,navigationFrame=0,panelAnimation=null,navigatorCloseTimer=0,cameraIntent=null;
@@ -233,3 +233,24 @@ ui.render();const awarded=structuredClone(ui.state.currencies);ui.showCacheRewar
 for(const collapsed of [true,false]){ui.state.settings.hudCollapsed=collapsed;ui.render();assert(!$('cacheMeter').hidden);assert($('cacheCoin').classList.contains('is-visible'));assert($('compactCacheCoin').classList.contains('is-visible'));assert.deepEqual(ui.state.currencies,awarded);}
 ui.selectNode(22);ui.selectCenter();ui.selectNode(22);assert.equal($('panelCost').innerHTML,'완료','Panel markup cache must survive center/research switching');
 console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',headerTogglePreservesReward:'passed',centerPanelMarkup:'passed'}));
+// 2.2: world clock, ledger pages and the map-aware cache strip.
+{
+ const map=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,element()])),get=id=>{assert(map.has(id),`Missing ${id}`);return map.get(id);};
+ const doc={...element(),createElement:element,createElementNS:element,body:element()};
+ const ui2=createUI({...data,...layout,...updates,...cameraHelpers,iconSvg,setIcon},get,doc);
+ ui2.render();
+ assert.equal(get('worldClock').textContent,'07:00');assert.equal(get('worldPhase').textContent,'낮');assert.equal(get('worldWeather').textContent,'맑음');
+ assert.equal(get('pageDots').children.length,2,'Main page plus one ledger page');
+ assert.equal(get('ledger').children.filter(r=>!r.hidden).length,1,'Only dollars before BASIS');
+ for(let i=0;i<130;i++)data.tick(ui2.state,5);ui2.render();
+ assert.equal(get('worldClock').textContent,'17:50');assert.equal(get('worldPhase').textContent,'석양');assert(['맑음','비','눈'].includes(get('worldWeather').textContent));
+ assert.equal(ui2.state.world.weatherUntil,1200);
+ ui2.state.levels=Object.fromEntries(data.NODES.filter(n=>n.id<=22).map(n=>[n.id,1]));ui2.render();
+ assert.equal(get('ledger').children.filter(r=>!r.hidden).length,2,'Coins join the ledger on unlock');
+ assert(!get('cacheMeter').hidden);assert.equal(get('cacheMeter').style['--cache-color'],data.CURRENCY_DEFS.money.color);
+ assert(get('cacheYield').innerHTML.includes('$')&&get('cacheYield').innerHTML.includes('¢'),'Both cache yields are listed');
+ get('hudNext').onclick();assert.equal(get('pageDots').children[1].className,'is-current');assert(get('hudNext').disabled);
+ get('hudPrev').onclick();assert.equal(get('pageDots').children[0].className,'is-current');assert(get('hudPrev').disabled);
+ const saved=data.validateSave(JSON.parse(JSON.stringify(ui2.state)));assert.equal(saved.world.seconds,650);assert.equal(saved.map,'main');
+ console.log(JSON.stringify({worldClock:'passed',weatherRoll:'passed',ledgerPages:'passed',mapAwareCache:'passed',pagerControls:'passed',worldSaved:'passed'}));
+}

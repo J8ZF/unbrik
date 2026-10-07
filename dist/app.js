@@ -1,12 +1,12 @@
-import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress} from './data.js?v=2.1-island';
-import {iconSvg,setIcon} from './icons.js?v=2.1-island';
-import {checkpointOffline,settleOffline} from './offline.js?v=2.1-island';
-import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=2.1-island';
-import {wireframePaths} from './hub.js?v=2.1-island';
-import {UPDATES,updatePage} from './updates.js?v=2.1-island';
-import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=2.1-island';
-import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=2.1-island';
-import {createNotification} from './notifications.js?v=2.1-island';
+import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState} from './data.js?v=2.2-prep';
+import {iconSvg,setIcon} from './icons.js?v=2.2-prep';
+import {checkpointOffline,settleOffline} from './offline.js?v=2.2-prep';
+import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=2.2-prep';
+import {wireframePaths} from './hub.js?v=2.2-prep';
+import {UPDATES,updatePage} from './updates.js?v=2.2-prep';
+import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=2.2-prep';
+import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=2.2-prep';
+import {createNotification} from './notifications.js?v=2.2-prep';
 const $=id=>document.getElementById(id);
 const CENTER_SELECTION=-1;
 const setText=(el,value)=>{const next=String(value);if(el.textContent!==next)el.textContent=next;};
@@ -60,11 +60,14 @@ function renderChrome(){
  const compact=state.settings.hudCollapsed;
  $('hud').classList.toggle('is-collapsed',compact);$('hudDetails').hidden=compact;
  $('toggleHud').setAttribute('aria-expanded',String(!compact));$('toggleHud').setAttribute('aria-label',compact?'상단 펼치기':'상단 접기');
- $('hud').classList.toggle('has-coin',econ.coinUnlocked);
- for(const id of ['coinCard','compactCoinCard'])$(id).hidden=!econ.coinUnlocked;
+ const mapCurrencies=currentMap(state).currencies,showCoin=mapCurrencies.includes('coin')&&econ.coinUnlocked;
+ $('hud').classList.toggle('has-coin',showCoin);
+ for(const id of ['moneyCard','compactMoneyCard'])$(id).hidden=!mapCurrencies.includes('money');
+ for(const id of ['coinCard','compactCoinCard'])$(id).hidden=!showCoin;
  setText($('compactMoney'),'$'+compactFormat(state.currencies.money));setText($('compactRate'),'+'+compactFormat(econ.rate)+' /s');
  setText($('compactCoin'),compactFormat(state.currencies.coin));setText($('compactCoinRate'),'+'+compactFormat(econ.coinRate)+' /s');
  renderCacheHud();
+ if(!compact){renderWorld();renderLedger();}
  $('cheatBadge').hidden=!state.settings.purchaseCheat;
 }
 function showCacheReward({money=0,coin=0}){
@@ -76,8 +79,11 @@ function showCacheReward({money=0,coin=0}){
  renderCacheHud();
 }
 function renderCacheHud(){
- const active=econ.burst>0||econ.coinBurst>0;
+ // The cache strip belongs to the current map: it shows when one of the
+ // map's currencies has cache production and takes that currency's color.
+ const bursts={money:econ.burst,coin:econ.coinUnlocked?econ.coinBurst:0},cached=currentMap(state).currencies.filter(k=>bursts[k]>0),active=cached.length>0;
  $('cacheMeter').hidden=!active;
+ if(active)$('cacheMeter').style.setProperty('--cache-color',CURRENCY_DEFS[cached[0]].color);
  if(active){
   const progress=Math.max(0,Math.min(1,state.timers.cache/econ.interval));
   const bar=$('cacheProgress'),previous=Number(bar.dataset.progress||0);
@@ -87,6 +93,7 @@ function renderCacheHud(){
   }
   const remaining=Math.max(0,econ.interval-state.timers.cache);
   setText($('cacheInfo'),remaining.toFixed(1)+'s');
+  const yields=cached.map(k=>`<b style="--yield-color:${CURRENCY_DEFS[k].color}">+${compactFormat(econ.rates[k]*bursts[k])} ${CURRENCY_DEFS[k].symbol}</b>`);setHtml($('cacheYield'),yields.join('<span class="cache-sep">·</span>'));
   $('cacheTrack').setAttribute('aria-valuenow',String(Math.round(progress*100)));
   $('cacheTrack').setAttribute('aria-valuetext',`다음 캐시까지 ${remaining.toFixed(1)}초`);
  }
@@ -128,6 +135,61 @@ function createGraph(){
  }
  for(const branch of BRANCHES){const root=MAP_LAYOUT.sectors[branch.chapters[0]].members[0],path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',centerPath(root));path.setAttribute('class','center-spoke');path.style.display='none';path.style.setProperty('--sector-color',CHAPTERS[root.chapter].color);$('spokes').append(path);spokeEls.push({el:path,root});}
  $('centerNode').addEventListener('click',ev=>handleMapClick(ev,CENTER_SELECTION));
+ createHeader();
+}
+// Header pages: page 1 is the current map (clock, weather, its currencies);
+// the following pages list every shown currency, four per page. Swiping the
+// header or the arrows move between pages; the dots show the position.
+const LEDGER_PER_PAGE=4,ledgerEls=new Map();let hudPage=0,hudPageCount=2;
+const WORLD_ICONS={
+ dawn:'<svg viewBox="0 0 24 24"><path d="M12 10V3"/><path d="m9 6 3-3 3 3"/><path d="M3 20h18"/><path d="M6 17a6 6 0 0 1 12 0"/></svg>',
+ day:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+ dusk:'<svg viewBox="0 0 24 24"><path d="M12 3v7"/><path d="m9 7 3 3 3-3"/><path d="M3 20h18"/><path d="M6 17a6 6 0 0 1 12 0"/></svg>',
+ night:'<svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>',
+ clear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/></svg>',
+ rain:'<svg viewBox="0 0 24 24"><path d="M6.5 15a4.5 4.5 0 1 1 .9-8.9A6 6 0 0 1 19 8a3.5 3.5 0 0 1-.5 7z"/><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3"/></svg>',
+ snow:'<svg viewBox="0 0 24 24"><path d="M6.5 15a4.5 4.5 0 1 1 .9-8.9A6 6 0 0 1 19 8a3.5 3.5 0 0 1-.5 7z"/><path d="M8 18v3M6.7 19.5h2.6M12 18v3M10.7 19.5h2.6M16 18v3M14.7 19.5h2.6"/></svg>',
+};
+function createHeader(){
+ const ledger=$('ledger');ledger.replaceChildren();ledgerEls.clear();
+ for(const [key,def] of Object.entries(CURRENCY_DEFS)){
+  const row=document.createElement('div');row.className='ledger-row';row.hidden=true;row.style.setProperty('--currency-color',def.color);row.setAttribute('aria-label',def.name);
+  const symbol=document.createElement('span'),balance=document.createElement('span'),rate=document.createElement('span');
+  symbol.className='ledger-symbol';symbol.textContent=def.symbol;balance.className='ledger-balance';rate.className='ledger-rate';
+  row.append(symbol);row.append(balance);row.append(rate);ledger.append(row);ledgerEls.set(key,{row,balance,rate});
+ }
+ const pages=$('hudPages');
+ pages.addEventListener('scroll',()=>{const width=pages.clientWidth||1,page=Math.round((pages.scrollLeft||0)/width);if(page!==hudPage){hudPage=page;renderPageDots();}},{passive:true});
+ $('hudPrev').onclick=()=>goToPage(hudPage-1);$('hudNext').onclick=()=>goToPage(hudPage+1);
+ renderPageDots();
+}
+function goToPage(page){
+ const pages=$('hudPages');hudPage=Math.max(0,Math.min(hudPageCount-1,page));
+ if(typeof pages.scrollTo==='function')pages.scrollTo({left:hudPage*(pages.clientWidth||0),behavior:state.settings.motion&&!motionPreference.matches?'smooth':'auto'});
+ renderPageDots();
+}
+function renderPageDots(){
+ const dots=$('pageDots'),key=hudPage+'/'+hudPageCount;if(dots.dataset.key===key)return;dots.dataset.key=key;
+ dots.replaceChildren();for(let i=0;i<hudPageCount;i++){const dot=document.createElement('i');if(i===hudPage)dot.className='is-current';dots.append(dot);}
+ $('hudPrev').disabled=hudPage===0;$('hudNext').disabled=hudPage>=hudPageCount-1;
+}
+function renderWorld(){
+ const w=worldState(state),line=$('worldLine');
+ setText($('worldClock'),w.clock);setText($('worldPhase'),w.phaseKo);setText($('worldWeather'),w.weatherKo);
+ if(line.dataset.phase!==w.phase){line.dataset.phase=w.phase;setHtml($('worldIcon'),WORLD_ICONS[w.phase]);}
+ if(line.dataset.weather!==w.weather){line.dataset.weather=w.weather;setHtml($('weatherIcon'),WORLD_ICONS[w.weather]);}
+ line.setAttribute('aria-label',`${w.day}일째 ${w.clock}, ${w.phaseKo}, ${w.weatherKo}`);
+}
+function renderLedger(){
+ let shown=0;
+ for(const [key,def] of Object.entries(CURRENCY_DEFS)){
+  const els=ledgerEls.get(key);if(!els)continue;
+  const visible=def.shown(state,econ);els.row.hidden=!visible;if(!visible)continue;shown++;
+  setText(els.balance,format(state.currencies[key]));setText(els.rate,'+'+compactFormat(econ.rates[key])+' /s');
+ }
+ setText($('ledgerTitle'),`재화 목록 · ${shown}`);
+ hudPageCount=1+Math.max(1,Math.ceil(shown/LEDGER_PER_PAGE));
+ renderPageDots();
 }
 function graph(){
  for(const n of NODES){
@@ -167,9 +229,9 @@ function renderPanel(){
  setText($('collapsedName'),n.name);$('collapsedName').hidden=!collapsed;setIcon($('panelToggleIcon'),collapsed?'ChevronUp':'ChevronDown');
  if(collapsed)return;
  $('requirements').hidden=center;$('purchaseTrack').hidden=center;$('panelEffect').hidden=center;
- if(center){const complete=CHAPTERS.filter((_,i)=>sectorProgress(state,i).complete).length;setIcon($('panelSymbol'),'brand');$('panelSymbol').style.color='#f2f4f7';setText($('panelMeta'),'CENTER / 00');setText($('panelName'),'UNBRIK');setText($('costLabel'),'완료한 섹터');setHtml($('panelCost'),`${complete} / 8`);setBuyState('navigator','내비게이터','열기',false);return;}
+ if(center){const complete=CHAPTERS.filter((_,i)=>sectorProgress(state,i).complete).length;setIcon($('panelSymbol'),'brand');$('panelSymbol').style.color='#f2f4f7';$('panelSymbol').style.setProperty('--sector-color','#f2f4f7');setText($('panelMeta'),'CENTER / 00');setText($('panelName'),'UNBRIK');setText($('costLabel'),'완료한 섹터');setHtml($('panelCost'),`${complete} / 8`);setBuyState('navigator','내비게이터','열기',false);return;}
  const l=level(state,n),p=cost(state,n,econ),can=unlocked(state,n),max=l>=n.max,afford=affordable(state,n,econ);
- setIcon($('panelSymbol'),n.icon);$('panelSymbol').style.color=CHAPTERS[n.chapter].color;
+ setIcon($('panelSymbol'),n.icon);$('panelSymbol').style.color=CHAPTERS[n.chapter].color;$('panelSymbol').style.setProperty('--sector-color',CHAPTERS[n.chapter].color);
  setText($('panelMeta'),`${String(n.id).padStart(3,'0')} / ${CHAPTERS[n.chapter].name}${n.max>1?` · LV.${l}/${n.max}`:''}${n.longTerm?' · 장기 연구':''}`);
  setText($('panelName'),n.name);setText($('panelEffect'),effectText(n));
  const reqKey=n.req.map(r=>`${r.id}:${level(state,r.id)>=r.level}`).join(',')+n.any;
