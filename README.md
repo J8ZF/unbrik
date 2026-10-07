@@ -1,4 +1,4 @@
-# UNBRIK — 2.2 (2.0 economy, mainland map, paged header)
+# UNBRIK — 2.2.1 (2.0 economy, mainland map, paged header, stacked notices)
 
 A portrait incremental game with 105 research nodes across the original eight sectors, 316 finite research levels, dollars and coins. The center is navigation, not a purchasable research. AXIOM is research 105.
 
@@ -68,6 +68,23 @@ Requested as groundwork; none of it changes research, prices or the economy.
 
 Design notes stated for the next major update (not implemented): a main-menu system reachable from the header; up to eight currencies across two ledger pages; a separate prestige-upgrade map whose page 1 and collapsed header show prestige tokens; the cache strip per map, possibly in another color; the clock and weather will gain gameplay uses.
 
+## 2.2.1 notices, headings, small fixes
+
+- **Notices** (`notifications.js`, `#toasts`): notices stack downward under the header; a notice with the same text and kind refreshes in place; at most four timed notices are kept. Kinds: `info` (green, timed), `important` (white frame, no deadline, closed only by its X — used for finishing the tree, starting a new run, the 2.0 migration notice) and `weather-rain` / `weather-snow` / `weather-clear` (ultramarine, snow white, sky blue; shown when the weather changes, from `tick` events; day/night changes are not announced).
+- **Sector headings** follow play: until a sector is complete its heading sits 135 units past the farthest visible row (left- or right-aligned on sideways branches), then it moves to its place outside the coast with a short tween (`placeHeading` in `app.js`).
+- Cache-strip yields sit next to the CACHE label; the `$` unit tab is green like the coin tab is ochre.
+
+## Roadmap stated for the next major update: 환생 (prestige)
+
+As dictated by the user; nothing below is implemented.
+
+- Trigger: all research complete, then a set amount of dollars accumulated → prestige. Progress restarts from the beginning; the run yields prestige tokens.
+- Prestige map: a separate menu with its own theme. Mood: dreamy, romantic night — dark night sky, a rain-like background effect, the existing grid kept, cherry blossoms drifting (the key visual). Logo wordmark green → pink, background dark green tone → dark blue-gray; the change is tweened. Every interface part (header, research panel, settings, notices, map tools) must follow the map's theme; there is no separate theme setting — theme is a property of the map.
+- Prestige tree: flower-shaped; pentagon center node; five branches: (1) offline reward up, (2) base production up, (3) upgrade automation, (4) new upgrade unlocks, (5) undecided. Node names use AI terminology. Tokens are spent on these nodes. The tree shares the main map's gimmicks (sector completion lighting, navigator).
+- Automation nodes: one per chapter; owning one adds a check box next to that chapter's heading outside the coast; when checked, the chapter's upgrades are bought automatically whenever money allows.
+- Switching maps: through each map's center node, and through a map button next to the settings button in the header that opens a map tab (like the navigator).
+- Open points to settle before building: the dollar threshold, the token formula per prestige, what resets (coins, the world clock?), the fifth branch.
+
 ## Save boundary
 
 Current key: `unbrik-save-v2`, schema version 2, economy epoch `unbrik-2.0-rework`, layout version 3 (2.0 and 2.1 saves load; 2.0 saves only drop their camera). `map` and `world` are optional on load and default to the main map at 07:00, clear. Old `axiom-save-v1` progress is not converted or imported. On first load, preferences are copied and a new run starts, then the normal autosave uses the new key. The old key is left untouched so an old open tab cannot overwrite new progress. A reload of valid v2 data does not reset it. The UI's existing manual RESET safeguard is retained.
@@ -89,6 +106,6 @@ Current key: `unbrik-save-v2`, schema version 2, economy epoch `unbrik-2.0-rewor
 
 Run `npm run check`, `node balance-check.mjs`, `node ui-check.mjs`, `node offline-check.mjs`, `node layout-check.mjs`, `node effects-check.mjs`, `node motion-check.mjs`, `node notification-check.mjs`.
 
-Checks cover the world clock, weather roll, ledger pages, pager controls and map-aware cache strip; reachable prerequisites; finite costs and distinct icons; exact initial coin production; both-currency shortages with no partial debit; cheat guards; cache snapshot consistency; split, duplicate and reloaded offline settlements; save epoch rejection; row plans, upstream-only prerequisites and non-crossing links; every card inside its own sector polygon and outside the others, headings off the land, all eight sectors forming one connected mainland; hidden-sector boundaries; complete-card re-selection; gesture cancellation; navigator state; settings and reduced-motion combinations; original color/opal constraints.
+Checks cover stacked and sticky notices, weather kinds, the world clock, weather roll, ledger pages, pager controls and map-aware cache strip; reachable prerequisites; finite costs and distinct icons; exact initial coin production; both-currency shortages with no partial debit; cheat guards; cache snapshot consistency; split, duplicate and reloaded offline settlements; save epoch rejection; row plans, upstream-only prerequisites and non-crossing links; every card inside its own sector polygon and outside the others, headings off the land, all eight sectors forming one connected mainland; hidden-sector boundaries; complete-card re-selection; gesture cancellation; navigator state; settings and reduced-motion combinations; original color/opal constraints.
 
 The current managed environment does not provide browser preview for plain static Sites. Controlled real-handler tests and geometry checks are not a claim of Android Chrome or visual browser QA. Physical-device typography, compositing and browser touch behavior require device validation.

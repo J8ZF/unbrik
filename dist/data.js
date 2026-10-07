@@ -1,6 +1,6 @@
-import {createRadialLayout} from './layout.js?v=2.2-prep';
-import {RESEARCH} from './research.js?v=2.2-prep';
-import {PRICES} from './prices.js?v=2.2-prep';
+import {createRadialLayout} from './layout.js?v=2.2.1-notices';
+import {RESEARCH} from './research.js?v=2.2.1-notices';
+import {PRICES} from './prices.js?v=2.2.1-notices';
 export const CHAPTERS = [
  {name:'INITIALIZATION',ko:'초기화',color:'#b9f36d'},
  {name:'ARITHMETIC',ko:'산술',color:'#65e2cc'},
@@ -130,7 +130,7 @@ export function tick(s,dt){
  if(!Number.isFinite(dt)||dt<=0)return [];dt=Math.min(dt,5);
  const e=economy(s),events=[],gains={money:e.rate*dt,coin:e.coinRate*dt};s.stats.seconds+=dt;
  if(!s.world)s.world={seconds:0,weather:'clear',weatherUntil:WEATHER_INTERVAL};
- s.world.seconds+=dt;while(s.world.seconds>=s.world.weatherUntil){s.world.weather=rollWeather();s.world.weatherUntil+=WEATHER_INTERVAL;}
+ s.world.seconds+=dt;while(s.world.seconds>=s.world.weatherUntil){const previous=s.world.weather;s.world.weather=rollWeather();s.world.weatherUntil+=WEATHER_INTERVAL;if(s.world.weather!==previous)events.push({type:'weather',weather:s.world.weather,previous});}
  if(e.burst||e.coinBurst){s.timers.cache+=dt;while(s.timers.cache>=e.interval){s.timers.cache-=e.interval;const money=e.rate*e.burst,coin=e.coinRate*e.coinBurst;gains.money+=money;gains.coin+=coin;events.push({type:'cache',amount:money,money,coin});}}
  for(const k of CURRENCIES){const earned=k==='money'?'earned':'coinEarned',peak=k==='money'?'peak':'coinPeak';s.currencies[k]=Math.min(MAX_VALUE,s.currencies[k]+gains[k]);s.stats[earned]=Math.min(MAX_VALUE,s.stats[earned]+gains[k]);s.stats[peak]=Math.max(s.stats[peak],e.rates[k]);}
  return events;

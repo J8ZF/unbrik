@@ -1,12 +1,12 @@
-import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState} from './data.js?v=2.2-prep';
-import {iconSvg,setIcon} from './icons.js?v=2.2-prep';
-import {checkpointOffline,settleOffline} from './offline.js?v=2.2-prep';
-import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=2.2-prep';
-import {wireframePaths} from './hub.js?v=2.2-prep';
-import {UPDATES,updatePage} from './updates.js?v=2.2-prep';
-import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=2.2-prep';
-import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=2.2-prep';
-import {createNotification} from './notifications.js?v=2.2-prep';
+import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState} from './data.js?v=2.2.1-notices';
+import {iconSvg,setIcon} from './icons.js?v=2.2.1-notices';
+import {checkpointOffline,settleOffline} from './offline.js?v=2.2.1-notices';
+import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=2.2.1-notices';
+import {wireframePaths} from './hub.js?v=2.2.1-notices';
+import {UPDATES,updatePage} from './updates.js?v=2.2.1-notices';
+import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=2.2.1-notices';
+import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=2.2.1-notices';
+import {createNotifications} from './notifications.js?v=2.2.1-notices';
 const $=id=>document.getElementById(id);
 const CENTER_SELECTION=-1;
 const setText=(el,value)=>{const next=String(value);if(el.textContent!==next)el.textContent=next;};
@@ -40,8 +40,19 @@ function compactFormat(n,digits=3){if(n<1000)return format(n,n<10?1:0);n=Number(
 function priceMarkup(prices){return Object.entries(prices).map(([k,v])=>'<span class="price-'+k+'">'+(k==='money'?'$':'¢')+format(v)+'</span>').join('');}
 function priceText(prices){return Object.entries(prices).map(([k,v])=>(k==='money'?'$':'¢')+format(v)).join(' · ');}
 function time(n){if(!Number.isFinite(n))return '생산 해금 필요';if(n<1)return '곧';if(n<60)return `${Math.ceil(n)}초`;if(n<3600)return `${Math.floor(n/60)}분 ${Math.floor(n%60)}초`;if(n<86400)return `${(n/3600).toFixed(1)}시간`;return `${(n/86400).toFixed(1)}일`;}
-const notification=createNotification({element:$('toast'),message:$('toastMessage'),bar:$('toastProgress'),closeButton:$('closeToast')},()=>state.settings.motion&&!motionPreference.matches);
-function toast(message,duration=4000){notification.show(message,duration);}
+// Notices stack downward under the header. 'important' notices (finishing the
+// tree, starting over) stay until closed; weather notices take the weather's
+// color.
+const notification=createNotifications({container:$('toasts'),build(){
+ const element=document.createElement('div'),message=document.createElement('div'),closeButton=document.createElement('button'),track=document.createElement('div'),bar=document.createElement('i');
+ message.className='toast-message';message.setAttribute('role','status');message.setAttribute('aria-live','polite');message.setAttribute('aria-atomic','true');
+ closeButton.className='toast-close';closeButton.type='button';closeButton.setAttribute('aria-label','알림 닫기');setIcon(closeButton,'X');
+ track.className='toast-track';track.setAttribute('aria-hidden','true');track.append(bar);
+ element.append(message);element.append(closeButton);element.append(track);
+ return {element,message,closeButton,bar};
+}},()=>state.settings.motion&&!motionPreference.matches);
+function toast(message,duration=4000,kind='info'){notification.show(message,{duration,kind,sticky:kind==='important'});}
+const WEATHER_NOTICES={rain:'날씨 · 비가 내리기 시작합니다.',snow:'날씨 · 눈이 내리기 시작합니다.',clear:'날씨 · 하늘이 맑게 갰습니다.'};
 function syncOpalMotion(){document.body.classList.toggle('effects-paused',document.hidden||suspended);opalMotion?.refresh();}
 function applySettings(){
  const reduced=!state.settings.motion||motionPreference.matches;document.body.classList.toggle('reduced-motion',reduced);
@@ -191,6 +202,23 @@ function renderLedger(){
  hudPageCount=1+Math.max(1,Math.ceil(shown/LEDGER_PER_PAGE));
  renderPageDots();
 }
+// Sector headings follow the unlocked frontier: until a sector is complete the
+// heading sits just past its farthest visible row, then moves to its place
+// outside the coast.
+const HEADING_LEAD=135;
+function placeHeading(i,sector,complete){
+ const el=chapterEls[i];let {x,y,align}=sector.label;
+ if(!complete){
+  const visible=sector.members.filter(n=>visibility.get(n.id)>0);
+  if(visible.length){
+   const row=Math.max(...visible.map(n=>n.row)),front=visible.filter(n=>n.row===row);
+   const cx=front.reduce((sum,n)=>sum+n.x,0)/front.length,cy=front.reduce((sum,n)=>sum+n.y,0)/front.length,d=sector.direction;
+   x=Math.round(cx+d.x*HEADING_LEAD);y=Math.round(cy+d.y*HEADING_LEAD-15);align=Math.abs(d.x)>.55?(d.x>0?'left':'right'):'center';
+  }
+ }
+ const posKey=`${x},${y},${align}`;if(el.dataset.posKey===posKey)return;el.dataset.posKey=posKey;
+ el.style.left=x+'px';el.style.top=y+'px';el.style.transform=align==='left'?'none':align==='right'?'translateX(-100%)':'';
+}
 function graph(){
  for(const n of NODES){
  const d=discovery(n);visibility.set(n.id,d);const el=nodeEls.get(n.id);el.hidden=!d;if(!d)continue;
@@ -210,7 +238,7 @@ function graph(){
  for(const {el,from,to,cross}of edgeEls){const visible=visibility.get(from.id)>1&&visibility.get(to.id)>1&&(!cross||selected===from.id||selected===to.id);const flash=el.classList.contains('flashing'),cls=`edge ${cross?'cross-link ':''}${level(state,to)?'researched':level(state,from)?'active':'ghost'}${flash?' flashing':''}`,key=visible+cls;if(el.dataset.viewKey===key)continue;el.dataset.viewKey=key;el.style.display=visible?'':'none';if(visible)el.setAttribute('class',cls);}
  let finished=0;
  $('centerNode').classList.toggle('selected',selected===CENTER_SELECTION);$('centerNode').setAttribute('aria-pressed',String(selected===CENTER_SELECTION));
- MAP_LAYOUT.sectors.forEach((sector,i)=>{const found=sectorUnlocked(i),progress=sectorProgress(state,i);if(progress.complete)finished++;const key=`${found}:${progress.done}:${byId.get(selected)?.chapter===i}`;if(sectorEls[i].dataset.viewKey===key)return;sectorEls[i].dataset.viewKey=key;chapterEls[i].hidden=!found;chapterEls[i].classList.toggle('complete',progress.complete);chapterEls[i].textContent=`0${i+1} / ${CHAPTERS[i].name}${progress.complete?' · COMPLETE':''}`;sectorEls[i].style.display=progress.complete?'':'none';$('hubSector'+i).classList.toggle('complete',progress.complete);
+ MAP_LAYOUT.sectors.forEach((sector,i)=>{const found=sectorUnlocked(i),progress=sectorProgress(state,i);if(progress.complete)finished++;const key=`${found}:${progress.done}:${byId.get(selected)?.chapter===i}`;if(sectorEls[i].dataset.viewKey===key)return;sectorEls[i].dataset.viewKey=key;chapterEls[i].hidden=!found;placeHeading(i,sector,progress.complete);chapterEls[i].classList.toggle('complete',progress.complete);chapterEls[i].textContent=`0${i+1} / ${CHAPTERS[i].name}${progress.complete?' · COMPLETE':''}`;sectorEls[i].style.display=progress.complete?'':'none';$('hubSector'+i).classList.toggle('complete',progress.complete);
  const button=$('sectorMenu').children[i];button.hidden=!found;button.disabled=!found;button.classList.toggle('complete',progress.complete);button.classList.toggle('is-current',byId.get(selected)?.chapter===i);button.setAttribute('aria-current',byId.get(selected)?.chapter===i?'true':'false');setText(button.querySelector('.sector-jump-progress'),progress.complete?'완료':found?`${progress.done} / ${progress.total} 레벨`:'미발견');setIcon(button.querySelector('.sector-jump-state'),progress.complete?'Check':found?'Circle':'LockKeyhole');button.setAttribute('aria-label',`${CHAPTERS[i].ko} 섹터. ${progress.complete?'완료':found?`연구 레벨 ${progress.done}/${progress.total}. 남은 연구로 이동`:'미발견'}`);
  });
  for(const {el,root}of spokeEls){const found=visibility.get(root.id)>1;el.classList.toggle('discovered',found);el.style.display=found?'':'none';}
@@ -297,7 +325,7 @@ function buySelected(){if(selectionPending)return false;if(selected===CENTER_SEL
  if(state.settings.haptic&&navigator.vibrate)navigator.vibrate(14);
  const el=nodeEls.get(n.id);if(state.settings.motion){el.classList.add('pop');setTimeout(()=>el.classList.remove('pop'),550);for(const edge of edgeEls.filter(e=>e.from.id===n.id)){edge.el.classList.add('flashing');setTimeout(()=>edge.el.classList.remove('flashing'),1250);}}
  if(n.id===22&&level(state,n)===1)toast('코인 해금 · 1 ¢/s 생산을 시작합니다.');
- render();save();if(econ.count===NODES.length&&before<NODES.length)toast(`${NODES.length}개 노드 연구 완료. AXIOM에 도달했습니다.`);return true;
+ render();save();if(econ.count===NODES.length&&before<NODES.length)toast(`${NODES.length}개 노드 연구 완료. AXIOM에 도달했습니다.`,0,'important');return true;
 }
 // Pointer-up handles captured taps. Native clicks are a fallback, with no duplicate
 // activation or accidental selection after a drag, pinch or canceled contact.
@@ -342,7 +370,7 @@ $('loadFile').onclick=()=>$('saveFile').click();$('saveFile').onchange=async()=>
 function restore(input){cacheReward={money:0,coin:0,until:0};cancelSelection();cameraIntent=null;const next=validateSave(input);checkpointOffline(next);state=next;suspended=document.hidden;econ=economy(state);selected=NODES.filter(n=>level(state,n)).at(-1)?.id||1;camera=state.camera||initialCamera();applySettings();render();transform();lastFrame=performance.now();save();}
 $('applySave').onclick=()=>{try{const txt=$('saveText').value;if(txt.length>1000000)throw Error('저장 데이터가 너무 큽니다.');restore(JSON.parse(txt));setText($('transferStatus'),'저장 데이터를 복원했습니다.');toast('저장 데이터를 복원했습니다.');}catch(e){setText($('transferStatus'),e instanceof SyntaxError?'JSON 형식을 확인해 주세요.':e.message);}};
 $('resetButton').onclick=()=>{$('resetConfirm').hidden=!$('resetConfirm').hidden;$('resetInput').value='';$('confirmReset').disabled=true;};$('resetInput').oninput=()=>$('confirmReset').disabled=$('resetInput').value!=='RESET';
-$('confirmReset').onclick=()=>{if($('resetInput').value!=='RESET')return;restore(defaultState());try{localStorage.removeItem(BACKUP);}catch{}sessionSeconds=0;$('resetConfirm').hidden=true;$('transfer').hidden=true;$('saveText').value='';$('settingsDialog').close();toast('새 연구를 시작합니다.');focusNode(1);};
+$('confirmReset').onclick=()=>{if($('resetInput').value!=='RESET')return;restore(defaultState());try{localStorage.removeItem(BACKUP);}catch{}sessionSeconds=0;$('resetConfirm').hidden=true;$('transfer').hidden=true;$('saveText').value='';$('settingsDialog').close();toast('새 연구를 시작합니다.',0,'important');focusNode(1);};
 function renderUpdates(page=updatesPage){const result=updatePage(page);updatesPage=result.current;$('updateEntries').replaceChildren();for(const update of result.entries){const article=document.createElement('article');article.className='update-entry';const heading=document.createElement('h3');heading.textContent=`v${update.version} · ${update.title}`;const list=document.createElement('ul');for(const text of update.items){const item=document.createElement('li');item.textContent=text;list.append(item);}article.append(heading,list);$('updateEntries').append(article);}$('updatePages').replaceChildren();for(let page=1;page<=result.pages;page++){const button=document.createElement('button');button.textContent=String(page);button.setAttribute('aria-label',`${page}페이지`);if(page===result.current)button.setAttribute('aria-current','page');button.onclick=()=>renderUpdates(page);$('updatePages').append(button);}$('updatesPrev').disabled=result.current===1;$('updatesNext').disabled=result.current===result.pages;}
 $('toggleUpdates').onclick=()=>{const open=$('updateContents').hidden;$('updateContents').hidden=!open;$('toggleUpdates').setAttribute('aria-expanded',String(open));};
 $('updatesPrev').onclick=()=>renderUpdates(updatesPage-1);$('updatesNext').onclick=()=>renderUpdates(updatesPage+1);
@@ -374,14 +402,14 @@ function reframeViewport(){
 new ResizeObserver(reframeViewport).observe(viewport);
 $('sectorDialog').querySelector('.navigator-content').addEventListener('scroll',updateNavigatorScroll,{passive:true});
 function animateHub(now){if(now-lastHubFrame<33||cameraMoving||document.hidden||suspended||document.body.classList.contains('reduced-motion')||camera.scale<.32)return;const r=205*camera.scale;if(camera.x+r<0||camera.x-r>viewport.clientWidth||camera.y+r<0||camera.y-r>viewport.clientHeight)return;lastHubFrame=now;const p=wireframePaths(now/1000);$('hubWireBack').setAttribute('d',p.back);$('hubWireFront').setAttribute('d',p.front);$('hubWireOutline').setAttribute('d',p.outline);}
-function frame(now){animateHub(now);const dt=Math.max(0,Math.min(1,(now-lastFrame)/1000));lastFrame=now;if(!document.hidden&&!suspended){sessionSeconds+=dt;const events=tick(state,dt);for(const e of events){if(e.type==='cache')showCacheReward({money:e.money,coin:e.coin});}
+function frame(now){animateHub(now);const dt=Math.max(0,Math.min(1,(now-lastFrame)/1000));lastFrame=now;if(!document.hidden&&!suspended){sessionSeconds+=dt;const events=tick(state,dt);for(const e of events){if(e.type==='cache')showCacheReward({money:e.money,coin:e.coin});else if(e.type==='weather')toast(WEATHER_NOTICES[e.weather],6000,'weather-'+e.weather);}
  if(now-lastRender>160){render();lastRender=now;}if(now-lastSave>10000){save();lastSave=now;}}
  requestAnimationFrame(frame);
 }
 motionPreference.addEventListener?.('change',applySettings);
 installGameSelectionGuard();
 for(const el of document.querySelectorAll('[data-ui-icon]'))setIcon(el,el.dataset.uiIcon);
-createGraph();setupOpalMotion();renderUpdates();applySettings();render();if(!state.camera)camera=initialCamera();transform();resume();requestAnimationFrame(frame);if(loadNotice)setTimeout(()=>toast(loadNotice),500);if(!storageOK)setText($('saveState'),'저장 불가 · 설정에서 내보내기');
+createGraph();setupOpalMotion();renderUpdates();applySettings();render();if(!state.camera)camera=initialCamera();transform();resume();requestAnimationFrame(frame);if(loadNotice)setTimeout(()=>toast(loadNotice,0,'important'),500);if(!storageOK)setText($('saveState'),'저장 불가 · 설정에서 내보내기');
 // Optional browser agent tools use exactly the same state and purchase guard as the UI.
 if(document.modelContext?.registerTool){const lifecycle=new AbortController();const register=tool=>{try{Promise.resolve(document.modelContext.registerTool(tool,{signal:lifecycle.signal})).catch(()=>{});}catch{}};
  register({name:'read_research_state',title:'연구 상태 읽기',description:'현재 자원, 생산량, 발견한 연구와 구매 조건을 읽습니다.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute(){const e=economy(state);return {money:state.currencies.money,coin:state.currencies.coin,rate:e.rate,coinRate:e.coinRate,purchased:e.count,nodes:NODES.filter(n=>discovery(n)>1).map(n=>({id:n.id,name:n.name,level:level(state,n),max:n.max,cost:cost(state,n,e),unlocked:unlocked(state,n)}))};}});

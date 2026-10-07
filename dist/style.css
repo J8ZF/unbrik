@@ -357,3 +357,30 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 @media(max-width:350px){.page-line{font-size:9px}.ledger-balance{font-size:12px}.ledger-rate{font-size:9px}}
 #cacheProgress{background:var(--cache-color,var(--accent))}
 .cache-label svg{stroke:var(--cache-color,var(--accent))}
+
+/* 2.2.1: stacked notices, weather colors; cache yield at the left; green $;
+   sector headings follow the unlocked frontier until the sector completes. */
+#toasts{position:absolute;top:calc(var(--hud-height,66px) + 10px);left:16px;right:16px;z-index:30;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{position:relative;background:#243729;border:1px solid #698c52;border-radius:9px;color:#ddf4c7;padding:12px 46px 15px 16px;font-size:13px;line-height:1.5;opacity:0;transform:translateY(-12px);transition:opacity .25s,transform .25s;pointer-events:none;box-shadow:0 10px 28px #0007;overflow:hidden}
+.toast.show{opacity:1;transform:none;pointer-events:auto}
+.toast-message{white-space:pre-line;overflow-wrap:anywhere}
+.toast-close{position:absolute;right:5px;top:5px;width:36px;height:36px;display:grid;place-items:center;padding:0;border:0;border-radius:6px;background:transparent;color:inherit}
+.toast-close:active{background:#ffffff12}
+.toast-close .glyph{width:18px;height:18px}
+.toast .toast-track{position:absolute;left:0;right:0;bottom:0;height:2px;background:#0003;pointer-events:none}
+.toast .toast-track i{display:block;width:100%;height:100%;background:#c3e5a8;transform-origin:left;transform:scaleX(0)}
+.toast.sticky .toast-track{display:none}
+.toast.kind-important{background:#18222c;border-color:#e6edf1;color:#f2f4f7;box-shadow:0 10px 28px #000a,inset 0 0 0 1px #ffffff14}
+.toast.kind-weather-rain{background:#1a2350;border-color:#4a62c8;color:#d8dfff}
+.toast.kind-weather-rain .toast-track i{background:#8ea2ff}
+.toast.kind-weather-snow{background:#e6ecf3;border-color:#ffffff;color:#1b2430}
+.toast.kind-weather-snow .toast-close:active{background:#00000012}
+.toast.kind-weather-snow .toast-track{background:#0002}
+.toast.kind-weather-snow .toast-track i{background:#5b6b7d}
+.toast.kind-weather-clear{background:#1c2e3a;border-color:#8fd3ff;color:#dcf1ff}
+.toast.kind-weather-clear .toast-track i{background:#8fd3ff}
+.reduced-motion .toast{transition:none}
+.cache-yield{flex:1;justify-content:flex-start;margin-left:2px}
+.currency-card.currency-cash .currency-symbol{color:var(--accent)}
+.chapter-mark{transition:left .45s ease,top .45s ease}
+.reduced-motion .chapter-mark{transition:none}
