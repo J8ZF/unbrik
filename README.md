@@ -40,7 +40,7 @@ These are controlled strategies, not guaranteed human play times. Dollar figures
 
 The original engineering-style palette remains: background #0b1017, panels #111922, separators #29343e, white #e6edf1, muted #8b9da9, green #b9f36d. Coin production highlights use #d4ae68; both header currency symbols use muted #8b9da9. Coin uses literal `¢`, not SVG.
 
-Expanded header: original brand/action frame, recessed outer housing with a RUNNING indicator and decorative scale, separate double-framed currency panels, balance and production with transient cache awards below. Collapsed header: currencies side by side, awards next to balances, controls to the right. Coins appear on unlock. The old chapter/count/progress strip is removed. A single cache strip occupies that boundary and remains visible while collapsed. Research count and progress are under the center wordmark; outer center segments still indicate fully maxed sectors.
+Expanded header: original brand/action frame, RUNNING within the existing brand subtitle line, compact double-framed currency panels, balance and production with transient cache awards below. Dollar cache awards use green and coin cache awards use ochre. The extra ornament row and outer-frame padding are removed; at a 390px viewport the expanded header is about 161 CSS pixels rather than 241. Collapsed header: currencies side by side, awards next to balances, controls to the right. Coins appear on unlock. The old chapter/count/progress strip is removed. A single cache strip occupies that boundary and remains visible while collapsed. Research count and progress are under the center wordmark; outer center segments still indicate fully maxed sectors.
 
 Preserve the accepted non-header design: green research execution button; white affordable map nodes; original selected rings; no “가능” badge or corner marks. Sector 7 yellow, sector 8 white. Only purchased sector-8 borders have smoothly blended, clockwise opal colors. Their interiors stay gray/white. Animation settings, OS reduced motion, offscreen and suspended states continue to control movement. CHEAT is small yellow text under RESEARCH NETWORK. Main map tools remain two vertical buttons, with three additional tools behind the existing setting. Toasts retain X dismissal and a deadline bar.
 
@@ -48,13 +48,13 @@ Nodes have stable button hit targets across their complete area. Lower-node taps
 
 ## Save boundary
 
-Current key: `unbrik-save-v2`, schema version 2, economy epoch `unbrik-2.0-rework`, layout version 3. Old `axiom-save-v1` progress is not converted or imported. On first load, preferences are copied and a new run starts, then the normal autosave uses the new key. The old key is left untouched so an old open tab cannot overwrite new progress. A reload of valid v2 data does not reset it. The UI's existing manual RESET safeguard is retained.
+Current key: `unbrik-save-v2`, schema version 2, economy epoch `unbrik-2.0-rework`, layout version 4. Old `axiom-save-v1` progress is not converted or imported. On first load, preferences are copied and a new run starts, then the normal autosave uses the new key. The old key is left untouched so an old open tab cannot overwrite new progress. A reload of valid v2 data does not reset it. The UI's existing manual RESET safeguard is retained.
 
 ## Compact tree layout patch
 
-Research conditions, prices and effects are unchanged. Five radial arms now hold broad clusters with 3–5 nodes across and at most five rows, instead of long two-node columns. Sector depth is 720–960 map units (previously 820–1640). Sectors remain separated, with open space at their shoulders and between arms for future bonus research. Links use card-aware routing with rounded bends. No bonus nodes are added in this patch.
+Research conditions, prices and effects are unchanged. Five radial arms retain broad clusters in sectors 1–5 and 7–8. Sector 6 is a narrower two-branch sequence with varying width, intentionally longer than the other clusters: local width 380 and depth 1330 versus the previous 750 and 960. Its origin is shifted outward to keep the heading clear of sector 7. Sector 4’s heading is offset slightly below sector 3. Other node coordinates are unchanged. Sectors remain separated, with open space at their shoulders and between arms for future bonus research. Links use card-aware routing with rounded bends. No bonus nodes are added in this patch.
 
-Layout-v2 saves preserve currencies, levels, timers and preferences; only the obsolete camera coordinates are discarded. The economy epoch and save key are unchanged.
+Layout-v3 saves preserve currencies, levels, timers and preferences; only the obsolete camera coordinates are discarded. The economy epoch and save key are unchanged.
 
 ## Source map
 

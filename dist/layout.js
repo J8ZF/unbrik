@@ -15,11 +15,19 @@ const SECTOR_ORDER={
  2:[0,3,1,2,4,5,8,6,7,10,12,11,9,13],
  3:[0,3,2,4,1,5,6,7,8,9,11,10,12],
  4:[0,2,3,4,1,7,6,8,5,11,10,9,12,13],
- 5:[0,2,3,4,1,7,6,8,5,11,10,9,12,13],
  6:[0,2,3,4,1,7,6,8,5,9,10,11,13,12,14],
  7:[0,2,3,4,1,7,6,8,5,9,10,11,13,12,14]
 };
 export function arrangeSector(members){
+ if(members[0].chapter===5){
+  // ALGORITHMS follows its two-branch dependency levels. A narrow, gently
+  // varying spine separates its heading from ARCHITECTURE above it.
+  const widths=[0,165,185,170,190,170,180,0];let index=0;
+  for(let row=0;row<widths.length;row++){
+   const count=row===0||row===widths.length-1?1:2;
+   for(let col=0;col<count;col++){const n=members[index++];n.localX=count===1?0:(col?1:-1)*widths[row];n.localY=row*190;}
+  }return;
+ }
  const rows=SECTOR_ROWS[members.length];if(!rows)throw Error('Missing sector layout');
  const order=SECTOR_ORDER[members[0].chapter],arranged=order?order.map(i=>members[i]):members;
  let i=0;rows.forEach((count,row)=>{for(let col=0;col<count;col++){
@@ -35,14 +43,14 @@ function hull(points){
 export function createRadialLayout(nodes){
  const sectors=[];
  BRANCHES.forEach((branch,branchIndex)=>{
-  const a=branch.angle*Math.PI/180,direction={x:Math.cos(a),y:Math.sin(a)},side={x:-direction.y,y:direction.x};let radius=480;
+  const a=branch.angle*Math.PI/180,direction={x:Math.cos(a),y:Math.sin(a)},side={x:-direction.y,y:direction.x};let radius=branchIndex===3?600:480;
   for(const chapter of branch.chapters){
    const members=nodes.filter(n=>n.chapter===chapter);
    arrangeSector(members);
    for(const n of members){n.x=Math.round(direction.x*(radius+n.localY)+side.x*n.localX);n.y=Math.round(direction.y*(radius+n.localY)+side.y*n.localX);n.branch=branchIndex;}
    const points=members.flatMap(n=>[-108,108].flatMap(dx=>[-91,91].map(dy=>({x:n.x+dx,y:n.y+dy}))));
    const polygon=hull(points),bounds=boundsOf(polygon,0,0);
-   sectors[chapter]={chapter,branch:branchIndex,direction,members,bounds,polygon,path:polygon.map((p,i)=>`${i?'L':'M'} ${p.x} ${p.y}`).join(' ')+' Z',label:{x:(bounds.minX+bounds.maxX)/2,y:bounds.minY-46}};
+   sectors[chapter]={chapter,branch:branchIndex,direction,members,bounds,polygon,path:polygon.map((p,i)=>`${i?'L':'M'} ${p.x} ${p.y}`).join(' ')+' Z',label:{x:(bounds.minX+bounds.maxX)/2,y:bounds.minY-(chapter===3?30:46)}};
    radius+=Math.max(...members.map(n=>n.localY))+340;
   }
  });

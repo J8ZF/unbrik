@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {NODES,MAP_LAYOUT,defaultState,validateSave,sectorProgress} from './dist/data.js';
+import {NODES,CHAPTERS,MAP_LAYOUT,defaultState,validateSave,sectorProgress} from './dist/data.js';
 import {BRANCHES,CENTER,connectionPath,centerPath,segmentHitsBox} from './dist/layout.js';
 assert.equal(NODES.length,105);assert.equal(NODES.at(-1).name,'AXIOM');
 assert.deepEqual(BRANCHES.map(b=>b.chapters),[[0,1],[2],[3,4],[5],[6,7]]);
@@ -13,6 +13,17 @@ for(let i=0;i<NODES.length;i++)for(let j=i+1;j<NODES.length;j++){const a=NODES[i
 for(const sector of MAP_LAYOUT.sectors){
  for(const n of sector.members){assert(Math.hypot(n.x,n.y)>CENTER.radius+100);for(const dx of [-73,73])for(const dy of [-59,59])assert(within({x:n.x+dx,y:n.y+dy},sector.polygon));}
  for(const other of MAP_LAYOUT.sectors)if(sector.chapter<other.chapter)assert(separated(sector.polygon,other.polygon),`Sector regions overlap: ${sector.chapter}, ${other.chapter}`);
+}
+// Overview doubles caption type to 30px. Reserve the complete caption, not
+// just its anchor, including the decorative rule and some metric tolerance.
+const captions=MAP_LAYOUT.sectors.map(s=>{
+ const text=`0${s.chapter+1} / ${CHAPTERS[s.chapter].name} · COMPLETE`,half=text.length*21/2+8,{x,y}=s.label;
+ return {chapter:s.chapter,polygon:[{x:x-half,y:y-4},{x:x+half,y:y-4},{x:x+half,y:y+52},{x:x-half,y:y+52}]};
+});
+for(const a of captions){
+ for(const s of MAP_LAYOUT.sectors)if(s.chapter!==a.chapter)assert(separated(a.polygon,s.polygon),`Caption ${a.chapter+1} overlaps sector ${s.chapter+1}`);
+ for(const b of captions)if(a.chapter<b.chapter)assert(separated(a.polygon,b.polygon),`Captions overlap: ${a.chapter+1}, ${b.chapter+1}`);
+ for(const n of NODES){const box=[{x:n.x-77,y:n.y-63},{x:n.x+77,y:n.y-63},{x:n.x+77,y:n.y+63},{x:n.x-77,y:n.y+63}];assert(separated(a.polygon,box),`Caption ${a.chapter+1} overlaps card ${n.id}`);}
 }
 // Sample the rendered cubic/rounded paths, not just their endpoints. A valid
 // node layout can still route research links straight through another card.
@@ -34,7 +45,7 @@ for(const n of NODES)for(const req of n.req){
   assert(!points.some((p,i)=>i&&segmentHitsBox(points[i-1],p,box)),`Link ${req.id} → ${n.id} crosses card ${other.id}`);
  }
 }
-for(const sector of MAP_LAYOUT.sectors){assert(Math.max(...sector.members.map(n=>n.localY))<=960,'Do not extend the old long arms');assert(new Set(sector.members.map(n=>n.localY)).size<=5);}
+for(const sector of MAP_LAYOUT.sectors){assert(Math.max(...sector.members.map(n=>n.localY))<=(sector.chapter===5?1330:960),'Keep non-06 sector depth');assert(new Set(sector.members.map(n=>n.localY)).size<=(sector.chapter===5?8:5));}
 for(const branch of BRANCHES)assert(!/NaN|Infinity/.test(centerPath(MAP_LAYOUT.sectors[branch.chapters[0]].members[0])));
 const state=defaultState();assert.equal(state.settings.hudCollapsed,false);
 for(const n of MAP_LAYOUT.sectors[0].members)state.levels[n.id]=1;
@@ -44,8 +55,8 @@ assert(sectorProgress(state,0).complete);assert(!sectorProgress(state,1).complet
 for(const n of NODES)state.levels[n.id]=n.max;
 for(let i=0;i<8;i++)assert(sectorProgress(state,i).complete);
 state.levels[41]--;assert(!sectorProgress(state,3).complete,'Long-term levels count toward completion');
-const old=defaultState();old.layoutVersion=2;old.camera={x:100,y:-9000,scale:.8};old.settings.hudCollapsed=true;old.currencies={money:3456,coin:789};for(const n of NODES.filter(n=>n.id<=22))old.levels[n.id]=1;old.timers.cache=11;
+const old=defaultState();old.layoutVersion=3;old.camera={x:100,y:-9000,scale:.8};old.settings.hudCollapsed=true;old.currencies={money:3456,coin:789};for(const n of NODES.filter(n=>n.id<=22))old.levels[n.id]=1;old.timers.cache=11;
 const migrated=validateSave(old);assert.equal(migrated.camera,null);assert.deepEqual(migrated.settings,old.settings);assert.deepEqual(migrated.currencies,old.currencies);assert.deepEqual(migrated.levels,old.levels);assert.deepEqual(migrated.timers,old.timers);
 const current=defaultState();current.camera={x:-200,y:400,scale:.6};current.settings.hudCollapsed=true;
 const restored=validateSave(current);assert.deepEqual(restored.camera,current.camera);assert.equal(restored.settings.hudCollapsed,true);
-console.log(JSON.stringify({radialLayout:'passed',branches:5,sectors:8,cardOverlap:false,regionOverlap:false,linksChecked:links,linkCardOverlap:false,completionRequiresAllLevels:'passed',oldSaveMigration:'passed'}));
+console.log(JSON.stringify({radialLayout:'passed',branches:5,sectors:8,cardOverlap:false,regionOverlap:false,overviewCaptionOverlap:false,linksChecked:links,linkCardOverlap:false,completionRequiresAllLevels:'passed',oldSaveMigration:'passed'}));

@@ -209,31 +209,29 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 
 /* Layered instrument housing; balances remain readouts, not extra controls. */
 .hud{--coin:#d4ae68;position:relative;z-index:5;background:var(--bg)}
-.hud .topbar{min-height:62px;height:auto;padding:9px 18px;gap:12px}
-.resource-deck{margin:9px 12px 10px;padding:8px;border:1px solid #28353f;border-radius:11px;background:linear-gradient(180deg,#101820,#0b1219);box-shadow:inset 0 1px 0 #ffffff05,0 2px 6px #0003}
-.resource-rail{height:12px;margin:0 3px 8px;display:flex;align-items:center;gap:10px}
-.instrument-rule{position:relative;flex:1;height:1px;background:linear-gradient(90deg,#5c718055,#283640)}
-.instrument-rule:before{content:'';position:absolute;left:0;top:-2px;width:26px;height:5px;background:repeating-linear-gradient(90deg,#64798888 0 1px,transparent 1px 5px)}
-.resource-rail .running{font-size:9px;letter-spacing:.12em;line-height:12px;flex-shrink:0}
-.resource-rail .running i{width:4px;height:4px}
+.hud .topbar{min-height:54px;height:auto;padding:5px 12px;gap:10px}
+.wordmark div>.brand-status{display:flex;align-items:center;gap:9px;white-space:nowrap;font-size:9px;letter-spacing:.06em;line-height:14px;margin-top:3px}
+.brand-status .running{font-size:9px;letter-spacing:.06em;line-height:14px;gap:4px}
+.brand-status .running i{width:4px;height:4px}
+.resource-deck{margin:0;padding:6px 12px;background:linear-gradient(180deg,#0b1219,#101820);box-shadow:inset 0 -1px 0 #ffffff04}
 .hud .resources{display:grid;grid-template-columns:minmax(0,1fr);padding:0;gap:8px;align-items:stretch}
 .hud.has-coin .resources{grid-template-columns:repeat(2,minmax(0,1fr))}
-.currency-card{position:relative;min-width:0;padding:14px 12px 12px;border:1px solid #35434e;border-radius:8px;background:linear-gradient(135deg,#1a2630,#121b23 75%);box-shadow:inset 0 1px 0 #ffffff07,0 2px 4px #0004;--currency-color:var(--accent)}
+.currency-card{position:relative;min-width:0;padding:8px 12px 6px;border:1px solid #35434e;border-radius:8px;background:linear-gradient(135deg,#1a2630,#121b23 75%);box-shadow:inset 0 1px 0 #ffffff07,0 2px 4px #0004;--currency-color:var(--accent)}
 .currency-card:before{content:'';position:absolute;inset:3px;border:1px solid #43545f30;border-radius:5px;pointer-events:none}
 .currency-card.currency-coin{--currency-color:var(--coin)}
-.currency-card .balance{display:flex;gap:7px;align-items:baseline;font:500 30px/1.2 var(--mono);letter-spacing:-.045em;white-space:nowrap;margin:0;color:var(--text);font-variant-numeric:tabular-nums}
-.hud:not(.has-coin) .balance{font-size:38px}
+.currency-card .balance{display:flex;gap:7px;align-items:baseline;font:500 28px/1.2 var(--mono);letter-spacing:-.045em;white-space:nowrap;margin:0;color:var(--text);font-variant-numeric:tabular-nums}
+.hud:not(.has-coin) .balance{font-size:30px}
 .currency-symbol{font-size:.8em;letter-spacing:0;color:var(--muted);flex-shrink:0}
 .currency-coin .currency-symbol,.coin-symbol{color:var(--muted)}
-.currency-secondary{position:relative;margin-top:9px;display:flex;flex-direction:row;align-items:baseline;justify-content:space-between;gap:4px;min-height:20px}
+.currency-secondary{position:relative;margin-top:5px;display:flex;flex-direction:row;align-items:baseline;justify-content:space-between;gap:4px;min-height:19px}
 .currency-rate{color:var(--currency-color);font:400 14px/1.4 var(--mono);white-space:nowrap;font-variant-numeric:tabular-nums}
 .currency-rate>span{font-size:12px;color:var(--muted)}
-.cache-gain{display:inline-block;font:400 12px/1.2 var(--mono);color:var(--accent);opacity:0;transform:translateY(3px);transition:opacity .18s ease,transform .22s ease;white-space:nowrap;pointer-events:none}
+.cache-gain{display:inline-block;font:400 12px/1.2 var(--mono);color:var(--currency-color,var(--accent));opacity:0;transform:translateY(3px);transition:opacity .18s ease,transform .22s ease;white-space:nowrap;pointer-events:none}
 .cache-gain.is-visible{opacity:1;transform:none}
 .hud .compact-resources{grid-template-columns:minmax(0,1fr);align-items:center;gap:10px;min-width:0}
 .hud.has-coin .compact-resources{grid-template-columns:repeat(2,minmax(0,1fr))}
 .hud.is-collapsed .compact-resources{display:grid}
-.hud.is-collapsed .topbar{min-height:62px;padding:8px 12px;gap:10px}
+.hud.is-collapsed .topbar{min-height:54px;padding:5px 12px;gap:10px}
 .compact-currency{min-width:0;--currency-color:var(--accent)}
 .compact-currency.currency-coin{--currency-color:var(--coin);padding-left:10px;border-left:1px solid var(--line)}
 .compact-value-line{display:flex;align-items:baseline;gap:5px;min-width:0;position:relative}
@@ -244,14 +242,14 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 .compact-coin-balance{display:flex!important;align-items:baseline;gap:2px}
 .hud .hud-actions{gap:6px}
 .hud .hud-actions .icon-button,.hud #toggleHud{width:38px;height:44px}
-.cache-meter{height:32px;position:relative;flex-shrink:0;background:#0e151e;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.cache-meter-meta{height:29px;display:flex;justify-content:space-between;align-items:center;padding:0 18px;font:11px/1 var(--mono);letter-spacing:.08em;color:var(--muted);font-variant-numeric:tabular-nums}
+.cache-meter{height:24px;position:relative;flex-shrink:0;background:#0e151e;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.cache-meter-meta{height:21px;display:flex;justify-content:space-between;align-items:center;padding:0 14px;font:11px/1 var(--mono);letter-spacing:.08em;color:var(--muted);font-variant-numeric:tabular-nums}
 .cache-label{display:flex;align-items:center;gap:7px}
 .cache-label svg{width:13px;height:13px;stroke:var(--accent);stroke-width:1.7;fill:none}
 .cache-track{position:absolute;bottom:-1px;left:0;right:0;height:2px;background:#253139;overflow:hidden}
 #cacheProgress{display:block;width:100%;height:100%;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .16s linear}
-.hud.is-collapsed .cache-meter{height:26px}
-.hud.is-collapsed .cache-meter-meta{height:23px;padding-inline:12px}
+.hud.is-collapsed .cache-meter{height:24px}
+.hud.is-collapsed .cache-meter-meta{height:21px;padding-inline:12px}
 .hub-research-track{display:block;width:106px;height:2px;margin:9px auto 0;background:#363b42;overflow:hidden}
 #centerResearchProgress{display:block;width:0;height:100%;background:#dce3e8;transition:width .25s}
 #toast{top:calc(var(--hud-height,66px) + 10px)}
@@ -265,7 +263,7 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 .currency-secondary .cache-gain{font-size:11px;letter-spacing:-.04em}
 #panelCost{font-size:clamp(16px,4.6vw,23px);line-height:1.4;overflow-wrap:anywhere}
 @media(max-width:400px){
- .currency-card{padding:13px 10px 11px}
+ .currency-card{padding:8px 10px 6px}
  .currency-card .balance{font-size:clamp(20px,6.4vw,26px);gap:6px}
  .currency-card .currency-rate{font-size:13px}
  .currency-card .currency-rate>span{font-size:11px}
@@ -278,10 +276,8 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
  .hud .hud-actions .icon-button,.hud #toggleHud{width:34px}
 }
 @media(max-width:350px){
- .resource-deck{margin-inline:10px;padding:7px}
+ .resource-deck{padding:6px 10px}
  .currency-card{padding-inline:8px}
- .currency-secondary{flex-direction:column;gap:3px;min-height:33px}
- .currency-secondary .cache-gain{line-height:12px;height:12px}
  .hud .topbar{padding-inline:10px}
  .hud.is-collapsed .topbar{padding-inline:8px;gap:6px}
  .hud .compact-resources{gap:5px}
