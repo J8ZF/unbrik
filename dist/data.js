@@ -1,6 +1,6 @@
-import {createRadialLayout} from './layout.js?v=2.0-rework';
-import {RESEARCH} from './research.js?v=2.0-rework';
-import {PRICES} from './prices.js?v=2.0-rework';
+import {createRadialLayout} from './layout.js?v=2.1-island';
+import {RESEARCH} from './research.js?v=2.1-island';
+import {PRICES} from './prices.js?v=2.1-island';
 export const CHAPTERS = [
  {name:'INITIALIZATION',ko:'초기화',color:'#b9f36d'},
  {name:'ARITHMETIC',ko:'산술',color:'#65e2cc'},
@@ -15,26 +15,50 @@ export const MAX_VALUE=1e100;
 export const ECONOMY_EPOCH='unbrik-2.0-rework';
 export const CURRENCIES=['money','coin'];
 export const NODES=RESEARCH.map(n=>({...n,effects:n.effects.map(e=>({...e})),costs:PRICES[n.id]||Array.from({length:n.max},()=>Object.fromEntries(n.payment.map(k=>[k,10])))}));
-// A root, alternating branch rows, and a shared gate. Geometry remains separate
-// from prices; every branch rejoins before the next sector can be discovered.
+// Each sector is a flow: one root fans out into rows of two or three parallel
+// studies, then narrows back into a single gate that opens the next sector.
+// A study requires the parents directly "upstream" of it (the ones whose span
+// in the previous row overlaps its own), so links never cross. Sector 3 keeps
+// BASIS alone in row 2 because every coin study must descend from it.
+// Row widths per sector; sums equal the sector sizes 8/12/14/13/14/14/15/15.
+export const SECTOR_ROWS=[
+ [1,2,2,2,1],
+ [1,2,3,3,2,1],
+ [1,1,2,3,3,3,1],
+ [1,2,3,3,3,1],
+ [1,2,3,3,2,2,1],
+ [1,2,2,3,3,2,1],
+ [1,2,3,3,3,2,1],
+ [1,2,3,3,3,2,1],
+];
+export const ROW_PITCH=190,COLUMN_PITCH=252;
+const upstream=(j,width,previousWidth)=>{
+ const lo=j/width,hi=(j+1)/width,parents=[];
+ for(let i=0;i<previousWidth;i++){const a=i/previousWidth,b=(i+1)/previousWidth;if(Math.min(hi,b)-Math.max(lo,a)>1e-9)parents.push(i);}
+ return parents;
+};
 for(let chapter=0;chapter<8;chapter++){
- const members=NODES.filter(n=>n.chapter===chapter),previous=NODES.filter(n=>n.chapter===chapter-1).at(-1);
- let frontier=[],index=0,row=0;
- const place=(count)=>{const parents=frontier;frontier=[];for(let j=0;j<count;j++){
-  const n=members[index++];n.localX=count===1?0:(j?126:-126);n.localY=row*205;
-  n.req=(parents.length?parents:previous?[previous.id]:[]).map(id=>({id,level:1}));n.any=n.name==='OR GATE';n.gate=index===members.length;n.currency=n.payment.length===1?n.payment[0]:'both';n.baseCost=n.costs[0];frontier.push(n.id);
- }row++;};
- place(1);
- if(chapter===2)place(1); // BASIS precedes every coin purchase / coin production node.
- while(index<members.length-1)place(Math.min(2,members.length-1-index));
- place(1);
+ const members=NODES.filter(n=>n.chapter===chapter),previous=NODES.filter(n=>n.chapter===chapter-1).at(-1),rows=SECTOR_ROWS[chapter];
+ if(rows.reduce((a,b)=>a+b,0)!==members.length)throw Error(`Sector ${chapter+1} row plan does not match ${members.length} studies.`);
+ let index=0,lastRow=[];
+ rows.forEach((width,row)=>{
+  const current=[];
+  for(let j=0;j<width;j++){
+   const n=members[index++];
+   n.localX=Math.round((j-(width-1)/2)*COLUMN_PITCH);n.localY=row*ROW_PITCH;n.row=row;n.column=j;
+   const parents=row?upstream(j,width,lastRow.length).map(i=>lastRow[i].id):previous?[previous.id]:[];
+   n.req=parents.map(id=>({id,level:1}));n.any=n.name==='OR GATE';n.gate=index===members.length;n.currency=n.payment.length===1?n.payment[0]:'both';n.baseCost=n.costs[0];
+   current.push(n);
+  }
+  lastRow=current;
+ });
 }
 export const byId=new Map(NODES.map(n=>[n.id,n]));
 export const MAP_LAYOUT=createRadialLayout(NODES);
 export const level=(s,n)=>s.levels[typeof n==='number'?n:n.id]||0;
 export function unlocked(s,n){return n.req.length===0||(n.any?n.req.some(r=>level(s,r.id)>=r.level):n.req.every(r=>level(s,r.id)>=r.level));}
 export function sectorProgress(s,chapter){const nodes=MAP_LAYOUT.sectors[chapter].members;const total=nodes.reduce((a,n)=>a+n.max,0),done=nodes.reduce((a,n)=>a+level(s,n),0);return {done,total,complete:done===total};}
-export function defaultState(){const now=Date.now();return {version:2,economyEpoch:ECONOMY_EPOCH,contentVersion:4,layoutVersion:2,currencies:{money:0,coin:0},levels:{},stats:{earned:0,spent:0,coinEarned:0,coinSpent:0,purchases:0,seconds:0,peak:1,coinPeak:0,offlineSeconds:0,offlineEarned:0,offlineCoinEarned:0,offlineEffectiveSeconds:0},timers:{cache:0},settings:{motion:true,touch:true,haptic:true,format:'short',purchaseCheat:false,mapControls:false,hudCollapsed:false,panelCollapsed:false},camera:null,offline:{since:now,through:now,rate:1,coinRate:0},savedAt:now};}
+export function defaultState(){const now=Date.now();return {version:2,economyEpoch:ECONOMY_EPOCH,contentVersion:4,layoutVersion:3,currencies:{money:0,coin:0},levels:{},stats:{earned:0,spent:0,coinEarned:0,coinSpent:0,purchases:0,seconds:0,peak:1,coinPeak:0,offlineSeconds:0,offlineEarned:0,offlineCoinEarned:0,offlineEffectiveSeconds:0},timers:{cache:0},settings:{motion:true,touch:true,haptic:true,format:'short',purchaseCheat:false,mapControls:false,hudCollapsed:false,panelCollapsed:false},camera:null,offline:{since:now,through:now,rate:1,coinRate:0},savedAt:now};}
 export function economy(s){
  const owned=NODES.filter(n=>level(s,n)>0),count=owned.length,total=owned.reduce((a,n)=>a+level(s,n),0),coinUnlocked=level(s,22)>0;
  const v={money:{base:1,mul:1,baseMul:1,discount:1,scaling:1,cache:0,cacheMul:1},coin:{base:0,mul:1,baseMul:1,discount:1,scaling:1,cache:0,cacheMul:1}};
@@ -114,7 +138,7 @@ export function validateSave(input,now=Date.now()){
  if(!input.stats||!Object.keys(s.stats).every(k=>num(input.stats[k])))throw Error('통계가 올바르지 않습니다.');
  for(const k of Object.keys(s.stats))s.stats[k]=input.stats[k];
  if(num(input.timers?.cache,30))s.timers.cache=input.timers.cache;
- if(input.layoutVersion===2&&input.camera&&['x','y','scale'].every(k=>Number.isFinite(input.camera[k]))&&input.camera.scale>=.035&&input.camera.scale<=1.7&&Math.abs(input.camera.x)<1e6&&Math.abs(input.camera.y)<1e6)s.camera={...input.camera};
+ if(input.layoutVersion===3&&input.camera&&['x','y','scale'].every(k=>Number.isFinite(input.camera[k]))&&input.camera.scale>=.035&&input.camera.scale<=1.7&&Math.abs(input.camera.x)<1e6&&Math.abs(input.camera.y)<1e6)s.camera={...input.camera};
  const stamp=v=>num(v,now);s.savedAt=stamp(input.savedAt)?input.savedAt:now;
  const e=economy(s);s.offline={since:s.savedAt,through:s.savedAt,rate:e.rate*(1+e.burst/e.interval),coinRate:e.coinRate*(1+e.coinBurst/e.interval)};
  const o=input.offline;if(o&&stamp(o.since)&&stamp(o.through)&&o.through>=o.since&&num(o.rate)&&num(o.coinRate))s.offline={since:o.since,through:o.through,rate:o.rate,coinRate:e.coinUnlocked?o.coinRate:0};

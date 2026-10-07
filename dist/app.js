@@ -1,12 +1,12 @@
-import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress} from './data.js?v=2.0-rework';
-import {iconSvg,setIcon} from './icons.js?v=2.0-rework';
-import {checkpointOffline,settleOffline} from './offline.js?v=2.0-rework';
-import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=2.0-rework';
-import {wireframePaths} from './hub.js?v=2.0-rework';
-import {UPDATES,updatePage} from './updates.js?v=2.0-rework';
-import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=2.0-rework';
-import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=2.0-rework';
-import {createNotification} from './notifications.js?v=2.0-rework';
+import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress} from './data.js?v=2.1-island';
+import {iconSvg,setIcon} from './icons.js?v=2.1-island';
+import {checkpointOffline,settleOffline} from './offline.js?v=2.1-island';
+import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=2.1-island';
+import {wireframePaths} from './hub.js?v=2.1-island';
+import {UPDATES,updatePage} from './updates.js?v=2.1-island';
+import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=2.1-island';
+import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=2.1-island';
+import {createNotification} from './notifications.js?v=2.1-island';
 const $=id=>document.getElementById(id);
 const CENTER_SELECTION=-1;
 const setText=(el,value)=>{const next=String(value);if(el.textContent!==next)el.textContent=next;};
@@ -122,7 +122,7 @@ function createGraph(){
  path.style.display='none';path.setAttribute('d',connectionPath(p,n,MAP_LAYOUT.sectors));path.style.setProperty('--edge-color',CHAPTERS[n.chapter].color);$('edges').append(path);edgeEls.push({el:path,from:p,to:n,cross:p.branch!==n.branch});}
  }
  for(const sector of MAP_LAYOUT.sectors){
- const i=sector.chapter,c=CHAPTERS[i],el=document.createElement('div');el.className='chapter-mark';el.hidden=true;el.style.left=sector.label.x+'px';el.style.top=sector.label.y+'px';el.style.setProperty('--sector-color',c.color);el.textContent=`0${i+1} / ${c.name}`;$('chapterMarks').append(el);chapterEls.push(el);
+ const i=sector.chapter,c=CHAPTERS[i],el=document.createElement('div');el.className='chapter-mark';el.hidden=true;el.style.left=sector.label.x+'px';el.style.top=sector.label.y+'px';if(sector.label.align==='left')el.style.transform='none';else if(sector.label.align==='right')el.style.transform='translateX(-100%)';el.style.setProperty('--sector-color',c.color);el.textContent=`0${i+1} / ${c.name}`;$('chapterMarks').append(el);chapterEls.push(el);
  const region=document.createElementNS('http://www.w3.org/2000/svg','path');region.setAttribute('d',sector.path);region.setAttribute('class','sector-region');region.style.setProperty('--sector-color',c.color);region.style.display='none';$('sectorRegions').append(region);sectorEls.push(region);
  const jump=document.createElement('button');jump.className='sector-jump';jump.hidden=true;jump.style.setProperty('--sector-color',c.color);jump.innerHTML=`<span class="sector-jump-icon">${iconSvg(sector.members[0].icon)}</span><span class="sector-jump-copy"><span class="sector-jump-name">${c.name}</span><span class="sector-jump-progress"></span></span><span class="sector-jump-state" aria-hidden="true"></span>`;jump.onclick=()=>jumpToSector(i);$('sectorMenu').append(jump);
  }
