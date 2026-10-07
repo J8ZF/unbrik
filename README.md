@@ -1,4 +1,4 @@
-# UNBRIK · Upgrade Tree — v1.7.3
+# UNBRIK · Upgrade Tree — v2.0
 
 Portrait incremental game with 80 math/computer-science nodes, 19 repeatable studies and 261 total research levels.
 
@@ -28,9 +28,19 @@ Checks: `node check.mjs`, `node balance-check.mjs`, `node offline-check.mjs`, `n
 - Use Sites to open this existing project and fetch its latest source with a fresh authorized credential. Do not create a replacement project or assume the scratch checkout persists. Follow the Sites skills for source opening, checks, commit/push, packaging, version saving and publication. Never store credentials in the repository.
 - `dist/` is served directly as static HTML/CSS/JavaScript. No application build step is required. Browser-local player progress is separate from source code and is exported/imported through existing settings.
 
+## Header and cache display 2.0
+
+Expanded balances occupy two columns on the existing dark surface. The collapsed header also keeps dollar and coin side by side. Redundant currency names, AVAILABLE CAPITAL and RUNNING labels are removed. Existing white balances, gray secondary text and green dollar highlights are retained; the coin SVG and coin highlights use ochre (#d4ae68). The C-shaped symbol with a vertical stroke is embedded SVG.
+
+The actual UI renderer is checked for cache unlock visibility, elapsed-time progress, cycle reset, award expiry across collapse/expand, and four animation/OS-setting combinations. A simultaneous two-currency award is exercised only as renderer input and verified not to mutate game data.
+
+Coin is an explicitly requested display-only placeholder: zero balance and zero production, no save field, no purchase path and no automatic credit. The cache renderer can display separate dollar and coin gains, but production currently emits dollar gains only. Future coin payouts must come from the economy rather than an invented UI amount.
+
+After cache unlock, a shared progress bar and remaining-time label remain visible in both header states. Real cache awards appear below their expanded balance or beside the collapsed balance for 2.4 seconds, with reserved space so payouts do not resize the map. Reduced-motion settings disable transitions while the timer continues to report actual progress. Suspending clears stale award feedback. Existing notifications sit below the measured header. Research balance, SCHEDULER, offline income, save schema and all non-header controls are unchanged.
+
 ## Accepted interface and patch scope
 
-The user accepted version 1.7.2. Version 1.7.3 fixes input handling only; preserve that design and game balance for any future work unless the user explicitly changes the scope. A future 2.0 update has been mentioned but is not specified or authorized here. Do not add badges, text, corner brackets, colors or new controls as incidental improvements.
+The user accepted version 1.7.2. Version 1.7.3 fixes input handling only; preserve that design and game balance for any future work unless the user explicitly changes the scope. Version 2.0 is now authorized only for the header and cache display described below; coin economy and coin research remain unimplemented. Do not add badges, text, corner brackets, colors or new controls as incidental improvements.
 
 The 1.6 layout, selected rings, panel progress, prerequisite chips and navigator remain. Purchase-ready **map nodes** use white. The bottom **research action** uses the original theme green `#B9F36D`; do not conflate the two. Header UNBRIK text uses that same theme green. The center navigator action remains neutral as in 1.6.
 

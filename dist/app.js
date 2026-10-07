@@ -1,16 +1,18 @@
-import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress} from './data.js?v=1.7.3-r2';
-import {iconSvg,setIcon} from './icons.js?v=1.7.3-r2';
-import {checkpointOffline,settleOffline} from './offline.js?v=1.7.3-r2';
-import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=1.7.3-r2';
-import {wireframePaths} from './hub.js?v=1.7.3-r2';
-import {UPDATES,updatePage} from './updates.js?v=1.7.3-r2';
-import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=1.7.3-r2';
-import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=1.7.3-r2';
-import {createNotification} from './notifications.js?v=1.7.3-r2';
+import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress} from './data.js?v=2.0';
+import {iconSvg,setIcon} from './icons.js?v=2.0';
+import {checkpointOffline,settleOffline} from './offline.js?v=2.0';
+import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=2.0';
+import {wireframePaths} from './hub.js?v=2.0';
+import {UPDATES,updatePage} from './updates.js?v=2.0';
+import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=2.0';
+import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=2.0';
+import {createNotification} from './notifications.js?v=2.0';
 const $=id=>document.getElementById(id);
 const CENTER_SELECTION=-1;
 const setText=(el,value)=>{const next=String(value);if(el.textContent!==next)el.textContent=next;};
 const setHtml=(el,value)=>{if(el.dataset.html!==value){el.innerHTML=value;el.dataset.html=value;}};
+// Presentation only: coin has no balance, production or save fields in 2.0.
+let cacheReward={money:0,coin:0,until:0};
 const KEY='axiom-save-v1',BACKUP=KEY+'-backup';
 let loadNotice='',storageOK=true;
 function load(){
@@ -21,7 +23,7 @@ let state=load(),selected=NODES.filter(n=>level(state,n)).at(-1)?.id||1,econ=eco
 const viewport=$('viewport'),world=$('world'),nodeEls=new Map(),edgeEls=[],chapterEls=[],sectorEls=[],spokeEls=[];
 function initialCamera(){const n=byId.get(selected)||NODES[0];if(econ.count)return {x:viewport.clientWidth/2-n.x*.78,y:viewport.clientHeight*.4-n.y*.78,scale:.78};const scale=Math.max(.22,Math.min(.55,(viewport.clientHeight-65)/600));return {x:viewport.clientWidth/2,y:viewport.clientHeight*.78,scale};}
 let camera=state.camera||initialCamera();
-let burstTimer,gestureUsed=false,suspended=true,cameraMoving=false,lastHubFrame=0,updatesPage=1;
+let gestureUsed=false,suspended=true,cameraMoving=false,lastHubFrame=0,updatesPage=1;
 const motionPreference=matchMedia('(prefers-reduced-motion: reduce)');
 let opalMotion=null;
 let selectionPending=false,selectionEpoch=0,navigationFrame=0,panelAnimation=null,navigatorCloseTimer=0,cameraIntent=null;
@@ -55,8 +57,46 @@ function renderChrome(){
  const compact=state.settings.hudCollapsed;
  $('hud').classList.toggle('is-collapsed',compact);$('hudDetails').hidden=compact;
  $('toggleHud').setAttribute('aria-expanded',String(!compact));$('toggleHud').setAttribute('aria-label',compact?'상단 펼치기':'상단 접기');
- setText($('compactMoney'),'$'+format(state.currencies.money));setText($('compactRate'),'+'+format(econ.rate)+' /s');
+ const money=state.currencies.money,formatted=format(money);
+ // Reduce mantissa precision only when an engineering value would crowd the award.
+ const compactMoney=formatted.length>8&&money>=1000?`${(money/10**(Math.floor(Math.log10(money)/3)*3)).toFixed(0)}e${Math.floor(Math.log10(money)/3)*3}`:formatted;
+ setText($('compactMoney'),'$'+compactMoney);setText($('compactRate'),'+'+format(econ.rate)+' /s');
+ renderCacheHud();
  $('cheatBadge').hidden=!state.settings.purchaseCheat;
+}
+function showCacheReward({money=0,coin=0}){
+ cacheReward={money,coin,until:performance.now()+2400};
+ const amounts=[];
+ if(money>0)amounts.push(`달러 ${format(money)}`);
+ if(coin>0)amounts.push(`코인 ${format(coin)}`);
+ setText($('cacheAnnouncement'),amounts.length?'캐시 획득: '+amounts.join(', '):'');
+ renderCacheHud();
+}
+function renderCacheHud(){
+ const active=econ.burst>0;
+ $('cacheMeter').hidden=!active;
+ if(active){
+  const progress=Math.max(0,Math.min(1,state.timers.cache/econ.interval));
+  const bar=$('cacheProgress'),previous=Number(bar.dataset.progress||0);
+  if(progress!==previous){
+   bar.style.transition=progress<previous?'none':'';
+   bar.style.transform=`scaleX(${progress})`;bar.dataset.progress=String(progress);
+  }
+  const remaining=Math.max(0,econ.interval-state.timers.cache);
+  setText($('cacheInfo'),remaining.toFixed(1)+'s');
+  $('cacheTrack').setAttribute('aria-valuenow',String(Math.round(progress*100)));
+  $('cacheTrack').setAttribute('aria-valuetext',`다음 캐시까지 ${remaining.toFixed(1)}초`);
+ }
+ const visible=performance.now()<cacheReward.until;
+ for(const [currency,ids]of [['money',['cacheMoney','compactCacheMoney']],['coin',['cacheCoin','compactCacheCoin']]]){
+  const amount=cacheReward[currency],show=visible&&amount>0;
+  for(const id of ids){
+   const el=$(id),compact=id.startsWith('compact');
+   // Compact gains stay beside the balance even with late-game exponents.
+   const value=compact&&amount>=1000?amount.toExponential(0).replace('+',''):format(amount,0);
+   if(show)setText(el,'+'+value);el.classList.toggle('is-visible',show);
+  }
+ }
 }
 function save(notify=false){
  state.camera={...camera};state.savedAt=Date.now();if(!suspended)checkpointOffline(state,state.savedAt);
@@ -139,7 +179,6 @@ function renderPanel(){
 }
 function render(){
  econ=economy(state);setText($('money'),format(state.currencies.money));setHtml($('rate'),`+${format(econ.rate)}<span> /s</span>`);
- setText($('cacheInfo'),econ.burst?`CACHE ${Math.floor(state.timers.cache)} / ${Math.round(econ.interval)}s`:'BASE CLOCK · 1 Hz');
  setHtml($('progressLabel'),`${String(econ.count).padStart(2,'0')} <em>/ 80</em>`);$('progressBar').style.width=`${econ.count/80*100}%`;
  const active=NODES.filter(n=>level(state,n)).at(-1);setText($('chapterLabel'),CHAPTERS[active?.chapter||0].name);
  $('autoSetting').hidden=!econ.auto;$('autoNote').hidden=!econ.auto;
@@ -247,6 +286,7 @@ $('updatesPrev').onclick=()=>renderUpdates(updatesPage-1);$('updatesNext').oncli
 function renderStats(){const e=economy(state);const entries=[['구매한 노드',`${e.count} / 80`],['총 연구 레벨',format(e.total,0)],['구매 횟수',format(state.stats.purchases,0)],['총 획득','$'+format(state.stats.earned)],['총 사용','$'+format(state.stats.spent)],['현재 생산','$'+format(e.rate)+' /s'],['최고 생산','$'+format(state.stats.peak)+' /s'],['캐시 보너스',e.burst?`${format(e.rate*e.burst)} / ${Math.round(e.interval)}s`:'미해금'],['총 플레이 시간',time(state.stats.seconds)],['오프라인 경과',time(state.stats.offlineSeconds)],['오프라인 수입','$'+format(state.stats.offlineEarned)],['오프라인 환산 생산',time(state.stats.offlineEffectiveSeconds)],['현재 세션',time(sessionSeconds)],['비용 할인',`${((1-e.discount)*100).toFixed(1)}%`]];$('stats').replaceChildren();for(const [a,b]of entries){const div=document.createElement('div');div.className='stat';const span=document.createElement('span'),strong=document.createElement('strong');span.textContent=a;strong.textContent=b;div.append(span,strong);$('stats').append(div);}$('sectorStats').innerHTML=CHAPTERS.flatMap((c,i)=>{if(!sectorUnlocked(i))return [];const nodes=NODES.filter(n=>n.chapter===i),count=nodes.filter(n=>level(state,n)).length;return `<div class="sector-row" style="--sector-color:${c.color}"><div><span>${c.name}</span><span>${count} / ${nodes.length}</span></div><span class="bar"><i style="width:${count/nodes.length*100}%"></i></span></div>`;}).join('');}
 function suspend(){
  if(suspended)return;
+ cacheReward={money:0,coin:0,until:0};renderCacheHud();
  checkpointOffline(state);suspended=true;syncOpalMotion();pointers.clear();gesture=null;save();
 }
 function resume(){
@@ -262,6 +302,8 @@ window.addEventListener('blur',suspend);window.addEventListener('focus',resume);
 window.addEventListener('storage',ev=>{if(ev.key!==KEY||!ev.newValue)return;try{const incoming=validateSave(JSON.parse(ev.newValue));const settings=state.settings;state=incoming;state.settings=settings;if(!suspended)checkpointOffline(state);render();lastFrame=performance.now();}catch{}});
 let previousWidth=viewport.clientWidth,previousHeight=viewport.clientHeight;
 function reframeViewport(){
+ const hudHeight=$('hud').getBoundingClientRect().height;
+ if(hudHeight>0)$('game').style.setProperty('--hud-height',hudHeight+'px');
  const w=viewport.clientWidth,h=viewport.clientHeight,dw=w-previousWidth,dh=h-previousHeight;previousWidth=w;previousHeight=h;
  if(dw||dh){if(cameraIntent){const done=cameraComplete;moveCamera(cameraForIntent(),done);}else{camera.x+=dw/2;camera.y+=dh/2;constrain();transform();}}
  if($('sectorDialog').open)updateNavigatorScroll();
@@ -269,7 +311,7 @@ function reframeViewport(){
 new ResizeObserver(reframeViewport).observe(viewport);
 $('sectorDialog').querySelector('.navigator-content').addEventListener('scroll',updateNavigatorScroll,{passive:true});
 function animateHub(now){if(now-lastHubFrame<33||cameraMoving||document.hidden||suspended||document.body.classList.contains('reduced-motion')||camera.scale<.32)return;const r=205*camera.scale;if(camera.x+r<0||camera.x-r>viewport.clientWidth||camera.y+r<0||camera.y-r>viewport.clientHeight)return;lastHubFrame=now;const p=wireframePaths(now/1000);$('hubWireBack').setAttribute('d',p.back);$('hubWireFront').setAttribute('d',p.front);$('hubWireOutline').setAttribute('d',p.outline);}
-function frame(now){animateHub(now);const dt=Math.max(0,Math.min(1,(now-lastFrame)/1000));lastFrame=now;if(!document.hidden&&!suspended){sessionSeconds+=dt;const events=tick(state,dt);for(const e of events){if(e.type==='cache'){setText($('burstToast'),`CACHE +$${format(e.amount)}`);$('burstToast').classList.add('show');clearTimeout(burstTimer);burstTimer=setTimeout(()=>$('burstToast').classList.remove('show'),1800);}}
+function frame(now){animateHub(now);const dt=Math.max(0,Math.min(1,(now-lastFrame)/1000));lastFrame=now;if(!document.hidden&&!suspended){sessionSeconds+=dt;const events=tick(state,dt);for(const e of events){if(e.type==='cache')showCacheReward({money:e.amount});}
  if(now-lastRender>160){render();lastRender=now;}if(now-lastSave>10000){save();lastSave=now;}}
  requestAnimationFrame(frame);
 }

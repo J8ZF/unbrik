@@ -32,7 +32,7 @@ const createUI=new Function('deps','$','document',`
  function save(){saved=validateSave(JSON.parse(JSON.stringify(state)));}
  ${source}
  createGraph();renderUpdates();
- return {sectorUnlocked,renderStats,fit,render,selectNode,selectCenter,buySelected,openCenter,openNavigator,jumpToSector,interruptMapMotion,renderUpdates,sectorEls,chapterEls,nodeEls,edgeEls,spokeEls,visibility,applySettings,osReduce(value){motionPreference.matches=value;applySettings();},
+ return {sectorUnlocked,renderStats,fit,render,showCacheReward,selectNode,selectCenter,buySelected,openCenter,openNavigator,jumpToSector,interruptMapMotion,renderUpdates,sectorEls,chapterEls,nodeEls,edgeEls,spokeEls,visibility,applySettings,osReduce(value){motionPreference.matches=value;applySettings();},
  advance(now){clock=now;for(const [id,timer]of timers){if(timer.at<=clock){timers.delete(id);timer.fn();}}const pending=[...frames.values()];frames.clear();for(const frame of pending)frame(now);},
  resize(width,height){viewport.clientWidth=width;viewport.clientHeight=height;reframeViewport();},reduced(value){document.body.classList.toggle('reduced-motion',value)},get activePointers(){return pointers.size},get moving(){return cameraMoving},get pending(){return selectionPending},get state(){return state},get selected(){return selected},get saved(){return saved}};
 `);
@@ -185,4 +185,39 @@ for(const restoredCollapsed of [true,false]){
  doc.emit('click',click);if(!click.stopped)get('togglePanel').onclick();
  assert(click.defaultPrevented);assert(!get('panelDetails').hidden);assert.equal(fresh.selected,1);
 }
-console.log(JSON.stringify({uiControls:'passed',nativeClickReopens:'passed',lowerTapClickThrough:'blocked',targetBeforeRepaint:'passed',initialPanelLayoutCases:8,freshSessionCases:2,lostCaptureRecovery:'passed',dragPinchCancellation:'passed',inputSettingsCombinations:24,saveCompatibility:'passed',originalNodeMarkup:'restored',sectorBoundaryCases:12,lockedSectorMenuAndStats:'hidden',crossPrerequisiteLeaks:'blocked',invalidNavigation:'blocked',atomicFinalButton:'passed',motionToggleDuringNavigation:'passed'}));
+// 2.0: the real cache award is visible through header toggles and expires
+// without moving progress or inventing a second currency in the save.
+{
+ const map=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,element()]));
+ const get=id=>{assert(map.has(id),`Missing ${id}`);return map.get(id);};
+ const doc={...element(),createElement:element,createElementNS:element,body:element()};
+ const hud=createUI({...data,...layout,...updates,...cameraHelpers,iconSvg,setIcon},get,doc);
+ hud.render();assert(get('cacheMeter').hidden);assert.deepEqual(hud.state.currencies,{money:0});
+ hud.state.levels=Object.fromEntries(data.NODES.filter(n=>n.id<=13).map(n=>[n.id,1]));
+ hud.state.timers.cache=7.5;hud.render();
+ assert(!get('cacheMeter').hidden);assert.equal(get('cacheInfo').textContent,'22.5s');
+ assert.equal(get('cacheTrack').attributes['aria-valuenow'],'25');
+ get('toggleHud').onclick();assert(get('hudDetails').hidden);assert(!get('cacheMeter').hidden);
+ hud.state.timers.cache=29.9;
+ const events=data.tick(hud.state,.2),award=events.find(e=>e.type==='cache');assert(award);
+ hud.render();hud.showCacheReward({money:award.amount});
+ assert.equal(get('cacheProgress').style.transition,'none','A new cache cycle must reset without sweeping backward');
+ assert(get('cacheMoney').classList.contains('is-visible'));
+ assert(get('compactCacheMoney').classList.contains('is-visible'));
+ assert(!get('cacheCoin').classList.contains('is-visible'));
+ get('toggleHud').onclick();assert(get('cacheMoney').classList.contains('is-visible'));
+ hud.advance(2399);hud.render();assert(get('compactCacheMoney').classList.contains('is-visible'));
+ hud.advance(2401);hud.render();assert(!get('cacheMoney').classList.contains('is-visible'));
+ const before=JSON.stringify(hud.state);
+ // Rendering future simultaneous awards must itself never credit a currency.
+ hud.showCacheReward({money:100,coin:12});
+ assert(get('cacheCoin').classList.contains('is-visible'));assert.equal(get('compactCacheCoin').textContent,'+12');
+ assert.equal(JSON.stringify(hud.state),before);assert(!('coin' in hud.state.currencies));
+ hud.advance(4802);hud.render();assert(!get('compactCacheCoin').classList.contains('is-visible'));
+ for(const motion of [true,false])for(const os of [true,false]){
+  hud.state.settings.motion=motion;hud.osReduce(os);hud.state.timers.cache=15;hud.render();
+  assert.equal(get('cacheTrack').attributes['aria-valuenow'],'50');
+  assert.equal(doc.body.classList.contains('reduced-motion'),!motion||os);
+ }
+}
+console.log(JSON.stringify({uiControls:'passed',cacheHud:'passed',coinPlaceholder:'no economy mutations',cacheSettingsCases:4,nativeClickReopens:'passed',lowerTapClickThrough:'blocked',targetBeforeRepaint:'passed',initialPanelLayoutCases:8,freshSessionCases:2,lostCaptureRecovery:'passed',dragPinchCancellation:'passed',inputSettingsCombinations:24,saveCompatibility:'passed',originalNodeMarkup:'restored',sectorBoundaryCases:12,lockedSectorMenuAndStats:'hidden',crossPrerequisiteLeaks:'blocked',invalidNavigation:'blocked',atomicFinalButton:'passed',motionToggleDuringNavigation:'passed'}));

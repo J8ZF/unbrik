@@ -23,12 +23,12 @@ const saveCode=app.slice(app.indexOf('function save('),app.indexOf('function dis
 const lifecycleCode=app.slice(app.indexOf('function suspend('),app.indexOf("document.addEventListener('visibilitychange'"));
 const createSession=new Function('deps','initial','clock','storage',`
  const {format:unused,...helpers}=deps;
- let state=helpers.validateSave(initial,clock.now),suspended=true,lastFrame=0,gesture=null,storageOK=true;
+ let state=helpers.validateSave(initial,clock.now),suspended=true,lastFrame=0,gesture=null,storageOK=true,cacheReward={};
  let camera=state.camera;const KEY='axiom-save-v1',BACKUP=KEY+'-backup';const document={hidden:false};const pointers=new Map();
  const Date={now:()=>clock.now},performance={now:()=>clock.now};
  const localStorage={getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)};
  const validateSave=s=>helpers.validateSave(s,clock.now),checkpointOffline=s=>helpers.checkpointOffline(s,clock.now),settleOffline=s=>helpers.settleOffline(s,clock.now);
- const syncOpalMotion=()=>{},applySettings=()=>{};const el={};const $=()=>el;const toast=()=>{};const render=()=>{};const format=String,time=String;
+ const syncOpalMotion=()=>{},applySettings=()=>{},renderCacheHud=()=>{};const el={};const $=()=>el;const toast=()=>{};const render=()=>{};const format=String,time=String;
  ${saveCode}\n${lifecycleCode}
  return {resume,suspend,save,get state(){return state},get suspended(){return suspended},set hidden(v){document.hidden=v}};
 `);
