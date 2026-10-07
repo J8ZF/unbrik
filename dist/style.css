@@ -384,3 +384,18 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 .currency-card.currency-cash .currency-symbol{color:var(--accent)}
 .chapter-mark{transition:left .45s ease,top .45s ease}
 .reduced-motion .chapter-mark{transition:none}
+
+/* 2.2.2: one rule for currency symbols — in numeric displays the symbol
+   carries its currency color ($ green, ¢ ochre) and the number stays white.
+   Prose keeps plain symbols. */
+.cash-symbol{color:var(--accent)}
+.compact-cash-balance{display:flex!important;align-items:baseline;gap:2px}
+.compact-currency .cache-gain{color:var(--currency-color)}
+.sym{font-style:normal}
+.sym-money,.price-money .sym{color:var(--accent)}
+.sym-coin,.price-coin .sym{color:#d4ae68}
+.price-coin{color:inherit}
+.node-price .sym{margin-right:1px}
+.node-price>span:first-child{white-space:nowrap}
+.node-price .locked{font-size:10px;letter-spacing:-.02em}
+#panelEffect .sym{font-weight:600}

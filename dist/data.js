@@ -1,6 +1,6 @@
-import {createRadialLayout} from './layout.js?v=2.2.1-notices';
-import {RESEARCH} from './research.js?v=2.2.1-notices';
-import {PRICES} from './prices.js?v=2.2.1-notices';
+import {createRadialLayout} from './layout.js?v=2.2.2-symbols';
+import {RESEARCH} from './research.js?v=2.2.2-symbols';
+import {PRICES} from './prices.js?v=2.2.2-symbols';
 export const CHAPTERS = [
  {name:'INITIALIZATION',ko:'초기화',color:'#b9f36d'},
  {name:'ARITHMETIC',ko:'산술',color:'#65e2cc'},

@@ -1,12 +1,12 @@
-import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState} from './data.js?v=2.2.1-notices';
-import {iconSvg,setIcon} from './icons.js?v=2.2.1-notices';
-import {checkpointOffline,settleOffline} from './offline.js?v=2.2.1-notices';
-import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=2.2.1-notices';
-import {wireframePaths} from './hub.js?v=2.2.1-notices';
-import {UPDATES,updatePage} from './updates.js?v=2.2.1-notices';
-import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=2.2.1-notices';
-import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=2.2.1-notices';
-import {createNotifications} from './notifications.js?v=2.2.1-notices';
+import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState} from './data.js?v=2.2.2-symbols';
+import {iconSvg,setIcon} from './icons.js?v=2.2.2-symbols';
+import {checkpointOffline,settleOffline} from './offline.js?v=2.2.2-symbols';
+import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=2.2.2-symbols';
+import {wireframePaths} from './hub.js?v=2.2.2-symbols';
+import {UPDATES,updatePage} from './updates.js?v=2.2.2-symbols';
+import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=2.2.2-symbols';
+import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=2.2.2-symbols';
+import {createNotifications} from './notifications.js?v=2.2.2-symbols';
 const $=id=>document.getElementById(id);
 const CENTER_SELECTION=-1;
 const setText=(el,value)=>{const next=String(value);if(el.textContent!==next)el.textContent=next;};
@@ -37,7 +37,9 @@ function format(n,decimals=2){
  const k=Math.floor(Math.log10(n)/3);return k<units.length?`${(n/1000**k).toFixed(2).replace(/\.00$/,'')}${units[k]}`:n.toExponential(2).replace('+','');
 }
 function compactFormat(n,digits=3){if(n<1000)return format(n,n<10?1:0);n=Number(n.toPrecision(digits));const exp=Math.floor(Math.log10(n)/3)*3,m=n/10**exp,decimals=Math.max(0,digits-1-Math.floor(Math.log10(m)));if(state.settings.format==='scientific')return n.toExponential(digits-1).replace('+','');if(state.settings.format==='engineering')return m.toFixed(decimals)+'e'+exp;const units=['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];return exp/3<units.length?m.toFixed(decimals)+units[exp/3]:n.toExponential(digits-1).replace('+','');}
-function priceMarkup(prices){return Object.entries(prices).map(([k,v])=>'<span class="price-'+k+'">'+(k==='money'?'$':'¢')+format(v)+'</span>').join('');}
+function priceMarkup(prices){return Object.entries(prices).map(([k,v])=>'<span class="price-'+k+'"><i class="sym sym-'+k+'">'+(k==='money'?'$':'¢')+'</i>'+format(v)+'</span>').join('');}
+// Currency symbols in numeric displays take their currency color.
+function symbolMarkup(text){return String(text).replace(/\$(?=[0-9])/g,'<i class="sym sym-money">$</i>').replace(/¢(?=[0-9])/g,'<i class="sym sym-coin">¢</i>');}
 function priceText(prices){return Object.entries(prices).map(([k,v])=>(k==='money'?'$':'¢')+format(v)).join(' · ');}
 function time(n){if(!Number.isFinite(n))return '생산 해금 필요';if(n<1)return '곧';if(n<60)return `${Math.ceil(n)}초`;if(n<3600)return `${Math.floor(n/60)}분 ${Math.floor(n%60)}초`;if(n<86400)return `${(n/3600).toFixed(1)}시간`;return `${(n/86400).toFixed(1)}일`;}
 // Notices stack downward under the header. 'important' notices (finishing the
@@ -75,7 +77,7 @@ function renderChrome(){
  $('hud').classList.toggle('has-coin',showCoin);
  for(const id of ['moneyCard','compactMoneyCard'])$(id).hidden=!mapCurrencies.includes('money');
  for(const id of ['coinCard','compactCoinCard'])$(id).hidden=!showCoin;
- setText($('compactMoney'),'$'+compactFormat(state.currencies.money));setText($('compactRate'),'+'+compactFormat(econ.rate)+' /s');
+ setText($('compactMoneyValue'),compactFormat(state.currencies.money));setText($('compactRate'),'+'+compactFormat(econ.rate)+' /s');
  setText($('compactCoin'),compactFormat(state.currencies.coin));setText($('compactCoinRate'),'+'+compactFormat(econ.coinRate)+' /s');
  renderCacheHud();
  if(!compact){renderWorld();renderLedger();}
@@ -230,7 +232,7 @@ function graph(){
  setIcon(el.querySelector('.symbol'),d===1?'LockKeyhole':n.icon);
  el.querySelector('.node-id').textContent=d===1?'???':String(n.id).padStart(3,'0');
  el.querySelector('.node-name').textContent=d===1?'UNEXPLORED':n.name;
- const priceEl=el.querySelector('.node-price>span');el.classList.toggle('dual-cost',n.payment.length>1&&l<n.max&&can);setHtml(priceEl,d===1?'미발견':l>=n.max?'완료':can?priceMarkup(p):'선행 연구 필요');
+ const priceEl=el.querySelector('.node-price>span');el.classList.toggle('dual-cost',n.payment.length>1&&l<n.max&&can);setHtml(priceEl,d===1?'미발견':l>=n.max?'완료':can?priceMarkup(p):'<span class="locked">선행 연구 필요</span>');
  const status=el.querySelector('.node-status');if(d!==1&&l>=n.max)setIcon(status,'Check');else{status.textContent=d===1?'':n.max>1?`${l}/${n.max}`:'';delete status.dataset.icon;}
  el.querySelector('.level-dots').style.width=(l/n.max*100)+'%';
  el.setAttribute('aria-label',d===1?'미발견 연구':`${n.name}. ${effectText(n)}. ${l>=n.max?'완료':`레벨 ${l}/${n.max}, 비용 ${priceText(p)}, ${can?'구매 조건 충족':'선행 연구 필요'}`}`);
@@ -261,7 +263,7 @@ function renderPanel(){
  const l=level(state,n),p=cost(state,n,econ),can=unlocked(state,n),max=l>=n.max,afford=affordable(state,n,econ);
  setIcon($('panelSymbol'),n.icon);$('panelSymbol').style.color=CHAPTERS[n.chapter].color;$('panelSymbol').style.setProperty('--sector-color',CHAPTERS[n.chapter].color);
  setText($('panelMeta'),`${String(n.id).padStart(3,'0')} / ${CHAPTERS[n.chapter].name}${n.max>1?` · LV.${l}/${n.max}`:''}${n.longTerm?' · 장기 연구':''}`);
- setText($('panelName'),n.name);setText($('panelEffect'),effectText(n));
+ setText($('panelName'),n.name);setHtml($('panelEffect'),effectText(n).replace(/\$/g,'<i class="sym sym-money">$</i>').replace(/¢/g,'<i class="sym sym-coin">¢</i>'));
  const reqKey=n.req.map(r=>`${r.id}:${level(state,r.id)>=r.level}`).join(',')+n.any;
  if($('requirements').dataset.key!==reqKey){$('requirements').dataset.key=reqKey;$('requirements').replaceChildren();if(n.any){const label=document.createElement('span');label.className='req';label.textContent='둘 중 하나';$('requirements').append(label);}
  for(const r of n.req){const b=document.createElement('button'),done=level(state,r.id)>=r.level;b.className=`req ${done?'done':''}`;b.innerHTML=iconSvg(done?'Check':'Circle');const label=document.createElement('span');label.textContent=byId.get(r.id).name;b.append(label);b.onclick=()=>{if(selectNode(r.id))focusNode(r.id);};$('requirements').append(b);}}
@@ -374,7 +376,7 @@ $('confirmReset').onclick=()=>{if($('resetInput').value!=='RESET')return;restore
 function renderUpdates(page=updatesPage){const result=updatePage(page);updatesPage=result.current;$('updateEntries').replaceChildren();for(const update of result.entries){const article=document.createElement('article');article.className='update-entry';const heading=document.createElement('h3');heading.textContent=`v${update.version} · ${update.title}`;const list=document.createElement('ul');for(const text of update.items){const item=document.createElement('li');item.textContent=text;list.append(item);}article.append(heading,list);$('updateEntries').append(article);}$('updatePages').replaceChildren();for(let page=1;page<=result.pages;page++){const button=document.createElement('button');button.textContent=String(page);button.setAttribute('aria-label',`${page}페이지`);if(page===result.current)button.setAttribute('aria-current','page');button.onclick=()=>renderUpdates(page);$('updatePages').append(button);}$('updatesPrev').disabled=result.current===1;$('updatesNext').disabled=result.current===result.pages;}
 $('toggleUpdates').onclick=()=>{const open=$('updateContents').hidden;$('updateContents').hidden=!open;$('toggleUpdates').setAttribute('aria-expanded',String(open));};
 $('updatesPrev').onclick=()=>renderUpdates(updatesPage-1);$('updatesNext').onclick=()=>renderUpdates(updatesPage+1);
-function renderStats(){const e=economy(state);const entries=[['구매한 노드',`${e.count} / ${NODES.length}`],['총 연구 레벨',format(e.total,0)],['구매 횟수',format(state.stats.purchases,0)],['총 달러 획득','$'+format(state.stats.earned)],...(e.coinUnlocked?[['총 코인 획득','¢'+format(state.stats.coinEarned)],['코인 생산','¢'+format(e.coinRate)+' /s']]:[]),['총 사용','$'+format(state.stats.spent)],['현재 생산','$'+format(e.rate)+' /s'],['최고 생산','$'+format(state.stats.peak)+' /s'],['캐시 보너스',e.burst?`${priceText({money:e.rate*e.burst,...(e.coinUnlocked?{coin:e.coinRate*e.coinBurst}:{})})} / ${Math.round(e.interval)}s`:'미해금'],['총 플레이 시간',time(state.stats.seconds)],['오프라인 경과',time(state.stats.offlineSeconds)],['오프라인 수입',priceText({money:state.stats.offlineEarned,...(e.coinUnlocked?{coin:state.stats.offlineCoinEarned}:{})})],['오프라인 환산 생산',time(state.stats.offlineEffectiveSeconds)],['현재 세션',time(sessionSeconds)],['비용 할인',`${((1-e.discount)*100).toFixed(1)}%`]];$('stats').replaceChildren();for(const [a,b]of entries){const div=document.createElement('div');div.className='stat';const span=document.createElement('span'),strong=document.createElement('strong');span.textContent=a;strong.textContent=b;div.append(span,strong);$('stats').append(div);}$('sectorStats').innerHTML=CHAPTERS.flatMap((c,i)=>{if(!sectorUnlocked(i))return [];const nodes=NODES.filter(n=>n.chapter===i),count=nodes.filter(n=>level(state,n)).length;return `<div class="sector-row" style="--sector-color:${c.color}"><div><span>${c.name}</span><span>${count} / ${nodes.length}</span></div><span class="bar"><i style="width:${count/nodes.length*100}%"></i></span></div>`;}).join('');}
+function renderStats(){const e=economy(state);const entries=[['구매한 노드',`${e.count} / ${NODES.length}`],['총 연구 레벨',format(e.total,0)],['구매 횟수',format(state.stats.purchases,0)],['총 달러 획득','$'+format(state.stats.earned)],...(e.coinUnlocked?[['총 코인 획득','¢'+format(state.stats.coinEarned)],['코인 생산','¢'+format(e.coinRate)+' /s']]:[]),['총 사용','$'+format(state.stats.spent)],['현재 생산','$'+format(e.rate)+' /s'],['최고 생산','$'+format(state.stats.peak)+' /s'],['캐시 보너스',e.burst?`${priceText({money:e.rate*e.burst,...(e.coinUnlocked?{coin:e.coinRate*e.coinBurst}:{})})} / ${Math.round(e.interval)}s`:'미해금'],['총 플레이 시간',time(state.stats.seconds)],['오프라인 경과',time(state.stats.offlineSeconds)],['오프라인 수입',priceText({money:state.stats.offlineEarned,...(e.coinUnlocked?{coin:state.stats.offlineCoinEarned}:{})})],['오프라인 환산 생산',time(state.stats.offlineEffectiveSeconds)],['현재 세션',time(sessionSeconds)],['비용 할인',`${((1-e.discount)*100).toFixed(1)}%`]];$('stats').replaceChildren();for(const [a,b]of entries){const div=document.createElement('div');div.className='stat';const span=document.createElement('span'),strong=document.createElement('strong');span.textContent=a;strong.innerHTML=symbolMarkup(b);div.append(span,strong);$('stats').append(div);}$('sectorStats').innerHTML=CHAPTERS.flatMap((c,i)=>{if(!sectorUnlocked(i))return [];const nodes=NODES.filter(n=>n.chapter===i),count=nodes.filter(n=>level(state,n)).length;return `<div class="sector-row" style="--sector-color:${c.color}"><div><span>${c.name}</span><span>${count} / ${nodes.length}</span></div><span class="bar"><i style="width:${count/nodes.length*100}%"></i></span></div>`;}).join('');}
 function suspend(){
  if(suspended)return;
  cacheReward={money:0,coin:0,until:0};renderCacheHud();

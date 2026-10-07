@@ -1,4 +1,4 @@
-# UNBRIK — 2.2.1 (2.0 economy, mainland map, paged header, stacked notices)
+# UNBRIK — 2.2.2 (2.0 economy, mainland map, paged header, stacked notices)
 
 A portrait incremental game with 105 research nodes across the original eight sectors, 316 finite research levels, dollars and coins. The center is navigation, not a purchasable research. AXIOM is research 105.
 
@@ -73,6 +73,10 @@ Design notes stated for the next major update (not implemented): a main-menu sys
 - **Notices** (`notifications.js`, `#toasts`): notices stack downward under the header; a notice with the same text and kind refreshes in place; at most four timed notices are kept. Kinds: `info` (green, timed), `important` (white frame, no deadline, closed only by its X — used for finishing the tree, starting a new run, the 2.0 migration notice) and `weather-rain` / `weather-snow` / `weather-clear` (ultramarine, snow white, sky blue; shown when the weather changes, from `tick` events; day/night changes are not announced).
 - **Sector headings** follow play: until a sector is complete its heading sits 135 units past the farthest visible row (left- or right-aligned on sideways branches), then it moves to its place outside the coast with a short tween (`placeHeading` in `app.js`).
 - Cache-strip yields sit next to the CACHE label; the `$` unit tab is green like the coin tab is ochre.
+
+## 2.2.2 currency symbol rule
+
+One rule everywhere a number is displayed: the symbol carries the currency color (`$` green `--accent`, `¢` ochre `#d4ae68`) and the number stays white. Applied to the page-1 windows and the ledger (unit tabs), the collapsed header (`.cash-symbol`, `.coin-symbol`, and its cache award chips), prices (`priceMarkup` emits `<i class="sym sym-money|sym-coin">`), the research panel's effect line, the statistics tab (`symbolMarkup`) and the cache strip yields. Prose in settings and notices keeps plain symbols. The locked-card label no longer wraps (`.node-price .locked`).
 
 ## Roadmap stated for the next major update: 환생 (prestige)
 
