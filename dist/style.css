@@ -399,3 +399,156 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 .node-price>span:first-child{white-space:nowrap}
 .node-price .locked{font-size:10px;letter-spacing:-.02em}
 #panelEffect .sym{font-weight:600}
+
+/* 3.0 bloom: the prestige token (✿ pink), the flower map and its night theme. */
+:root{--token:#f7a8c4}
+.sym-token,.price-token .sym{color:var(--token)}
+.price-token{color:inherit}
+.currency-card.currency-token{--currency-color:var(--token)}
+.currency-card.currency-token .currency-symbol{color:var(--token)}
+.compact-currency.currency-token{--currency-color:var(--token);padding-left:10px;border-left:1px solid var(--line)}
+.compact-token-balance{display:flex!important;align-items:baseline;gap:2px}
+.token-symbol{color:var(--token)}
+.hud.is-collapsed .compact-currency.currency-token:first-child,.compact-currency.currency-token:first-child{padding-left:0;border-left:0}
+#hudPageMain .currency-token .balance{letter-spacing:-.03em}
+/* Header map button */
+#maps.is-bloom{color:var(--token);border-color:color-mix(in srgb,var(--token) 40%,var(--line))}
+/* Automation checks beside the sector headings */
+.chapter-mark .mark-text{display:inline-block;vertical-align:middle}
+.chapter-mark .auto-toggle{display:inline-flex;align-items:center;gap:.4em;vertical-align:middle;margin-left:.9em;min-height:2.3em;padding:.4em .8em .4em .65em;font:inherit;font-size:1.25em;font-weight:700;letter-spacing:.1em;border:2px solid var(--sector-color);border-radius:.5em;background:#0f1820;color:var(--sector-color);opacity:.95;pointer-events:auto;cursor:pointer;transition:background .18s,color .18s,transform .15s}
+.chapter-mark .auto-toggle .glyph{width:1.15em;height:1.15em;flex-shrink:0;stroke-width:2.2}
+.chapter-mark .auto-toggle.is-on{background:var(--sector-color);color:#0b1017;opacity:1}
+.chapter-mark .auto-toggle:active{transform:scale(.95)}
+#world.overview .chapter-mark .auto-toggle{font-size:.72em}
+/* Prestige layer: regions, spokes, links, the pentagon center and petals */
+#prestigeLayer{position:relative}
+#pRegions,#pSpokes,#pEdges{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none}
+#pRegions{z-index:0}#pSpokes{z-index:1}#pEdges{z-index:2}#pNodes,#pMarks{position:relative;z-index:3}
+.petal-region{display:block;fill-opacity:.07;stroke-opacity:.5;stroke-dasharray:12 10;stroke-width:2.5}
+.petal-region.complete{fill-opacity:.17;stroke-opacity:.85;stroke-dasharray:none;stroke-width:3}
+.petal-mark{opacity:.75}
+.hub-art-wrap{position:absolute;inset:-46px;pointer-events:none}
+.bloom-hub .hub-shell{fill:#141828;stroke:#9aa3c7}
+.bloom-hub .hub-inset{stroke:#aab2d6;stroke-opacity:.26}
+.bloom-hub .hub-wire{transform:translate(0,-26px) scale(.86)}
+.bloom-hub .hub-content{inset:150px 0 auto}
+.bloom-hub .hub-caption{color:#aeb6d4}
+#pCenterProgress{font:12px/1.4 var(--mono);color:#cfd4e6}
+.bloom-hub.selected .hub-shell{stroke:#f7f8fc;fill:#1a1f36}
+.node.bloom.reserved{border-style:dotted;opacity:.7}
+.node.bloom.reserved .node-name{color:#aab3cc}
+/* Center panel: the prestige row */
+.prestige-row{margin:12px 0 2px;padding:12px 14px;border:1px solid color-mix(in srgb,var(--token) 32%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--token) 6%,transparent);display:flex;flex-direction:column;gap:10px}
+.prestige-row p{margin:0;font:12px/1.55 var(--mono);color:#c9d3dc;overflow-wrap:anywhere}
+.prestige-actions{display:flex;gap:8px;flex-wrap:wrap}
+.prestige-actions:empty{display:none}
+.prestige-actions button{min-height:38px;padding:7px 14px;border:1px solid #3a4c58;border-radius:8px;background:#172129;color:#e6edf1;font-size:13px;font-weight:600;transition:background .18s,transform .15s}
+.prestige-actions button:active{transform:scale(.96)}
+#prestigeButton{background:var(--token);border-color:var(--token);color:#3a1226}
+.prestige-row:has(#mapJump[hidden]):has(#prestigeButton[hidden]) .prestige-actions{display:none}
+/* Navigator: map jump */
+#petalMenu{display:grid;gap:10px;padding-bottom:2px}
+.nav-maps{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;min-height:52px;margin-top:12px;padding:12px 14px;border:1px dashed #4a515c;border-radius:9px;background:transparent;color:#d6d9df;font-size:14px;text-align:left}
+.nav-maps:active{background:#22262c}
+.nav-maps-hint{font:11px var(--mono);color:#9b9fa7;letter-spacing:.06em}
+#mapMenu{display:grid;gap:10px;padding:8px 0 4px}
+.map-jump .sector-jump-name{font-size:15px}
+.map-jump .sector-jump-state .glyph{width:18px;height:18px}
+/* Prestige dialog */
+#prestigeDialog{background:#131828;border-color:#3d4868}
+.prestige-summary{margin:4px 0 10px;font:15px/1.6 var(--mono);color:#f1f3fa;overflow-wrap:anywhere}
+.prestige-dialog-actions{display:flex;gap:10px;margin-top:18px}
+.prestige-dialog-actions button{flex:1;min-height:48px;border:1px solid #3b4661;border-radius:10px;background:#1b2135;color:#e9ecf5;font-size:15px;font-weight:600}
+.prestige-dialog-actions .prestige-confirm{background:var(--token);border-color:var(--token);color:#3a1226}
+.prestige-dialog-actions button:active{transform:scale(.97)}
+/* Blackout with the spinning polyhedron */
+.prestige-overlay{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#05060c;color:#f5f6fb;opacity:0;transition:opacity .6s ease;pointer-events:none}
+.prestige-overlay.is-in{opacity:1;pointer-events:auto}
+.prestige-overlay.is-out{opacity:0}
+.prestige-overlay .overlay-art{width:min(62vw,300px);height:min(62vw,300px);overflow:visible}
+.prestige-overlay .wire-back{stroke:#8b93b8;stroke-opacity:.3;stroke-width:1}
+.prestige-overlay .wire-front{stroke:#d6dbf0;stroke-opacity:.85;stroke-width:1.4}
+.prestige-overlay .wire-outline{stroke:#ffffff;stroke-width:2}
+.prestige-overlay .hub-wire{transform:translate(0,46px) scale(1.9);transform-origin:0 0}
+.overlay-title{margin:14px 0 0;font:600 20px/1.3 var(--mono);letter-spacing:.2em;padding-left:.2em;animation:overlayText 1.2s ease-out both}
+.overlay-caption{margin:0;font:13px/1.5 var(--mono);letter-spacing:.14em;color:#c7cdea;animation:overlayText 1.2s .25s ease-out both}
+@keyframes overlayText{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.reduced-motion .prestige-overlay{transition:none}
+.reduced-motion .overlay-title,.reduced-motion .overlay-caption{animation:none}
+/* Map switch: a soft fade of the whole game and a color tween of the chrome */
+#game{transition:opacity .36s ease}
+#game.map-fading{opacity:0;transition-duration:.23s}
+.theme-tween,.theme-tween #viewport,.theme-tween .hud,.theme-tween #nodePanel,.theme-tween footer,.theme-tween .icon-button,.theme-tween .disclosure-button,.theme-tween .currency-card,.theme-tween .ledger-row,.theme-tween .cache-meter,.theme-tween #buy,.theme-tween .wordmark b,.theme-tween .node{transition:background-color .7s ease,border-color .7s ease,color .7s ease}
+/* Falling petals and rain over the flower */
+.bloom-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;display:none}
+.theme-bloom .bloom-canvas{display:block}
+.effects-paused .bloom-canvas{opacity:0}
+/* Night theme: dark blue-gray, pink logo, grid kept */
+body.theme-bloom{--bg:#0e111c;--panel:#141a28;--line:#2a3348;--accent:#f3a1c8;--muted:#95a0bd;--text:#e9ecf5;background:#090b14}
+.theme-bloom #viewport{background-color:#0d111d;background-image:radial-gradient(circle,#2c3552 1px,transparent 1px)}
+.theme-bloom #viewport:before{background:radial-gradient(ellipse at 50% 28%,#1b2246 0%,transparent 48%),radial-gradient(ellipse at 50% 40%,transparent 15%,#070a1480 85%)}
+.theme-bloom .coordinates{color:#6b779d}
+.theme-bloom .map-tools .icon-button{background:#151b2b}
+.theme-bloom .edge{stroke:#3a4568}
+.theme-bloom .node{background:#151b2d;border-color:#344066;color:#e6eaf6}
+.theme-bloom .node:before{border-color:#28314c}
+.theme-bloom .node.locked{background:#111727;border-color:#283150;color:#98a3c2}
+.theme-bloom .node.ghost{background:#10162acc}
+.theme-bloom .node.available{background:#202842;border-color:#f7f8fc}
+.theme-bloom .node.bought{background:color-mix(in srgb,var(--node-color) 10%,#131a2c)}
+.theme-bloom .node.selected{box-shadow:0 0 0 3px #0e111c,0 0 0 4px var(--node-color),0 0 26px color-mix(in srgb,var(--node-color) 26%,transparent)}
+.theme-bloom .node .node-price{color:#aab4cf}.theme-bloom .node .node-id{color:#7784a8}
+.theme-bloom #nodePanel{background:linear-gradient(125deg,#1a2136,#141a2a);border-top-color:#3c4868;box-shadow:0 -10px 40px #05071250}
+.theme-bloom #nodePanel.is-center{background:linear-gradient(125deg,#202842,#171d30);border-color:#4a5478}
+.theme-bloom #nodePanel.is-center .panel-symbol{background:#252c45;border-color:#5b6488}
+.theme-bloom .panel-toggle{border-bottom-color:#2d3650;color:#b8c2de}
+.theme-bloom #panelEffect{color:#c8d0e6}
+.theme-bloom #buy{border-color:#f3a1c8;background:var(--accent);color:#3a1226}
+.theme-bloom #buy.waiting{background:#34243a;color:#d9adc5;border-color:#6d4b60}
+.theme-bloom #buy.blocked,.theme-bloom #buy.completed{background:#1b2135;border-color:#3b4661;color:#97a3c2}
+.theme-bloom #buy.navigator{background:#e9ecf5;border-color:#f7f8fc;color:#1b1e30}
+.theme-bloom #buy.pending{background:#272d44;border-color:#4d5676;color:#d8dcef}
+.theme-bloom .req{border-color:#374266;color:#98a4c6;background:#121a2c}
+.theme-bloom .req.done{color:#f3a1c8;border-color:#6d4a62}
+.theme-bloom .prestige-row{border-color:color-mix(in srgb,var(--token) 36%,#2a3348);background:color-mix(in srgb,var(--token) 7%,transparent)}
+.theme-bloom .prestige-row p{color:#d0d7ea}
+.theme-bloom .prestige-actions button{background:#1b2135;border-color:#3b4661;color:#e9ecf5}
+.theme-bloom footer{background:#0f1322;border-top-color:#262e45;color:#7d88a8}
+.theme-bloom #saveState i{background:#d98bb2}
+.theme-bloom .icon-button,.theme-bloom .disclosure-button{background:#141a2a;border-color:#2c3550}
+.theme-bloom .icon-button:active,.theme-bloom .disclosure-button:active,.theme-bloom .panel-toggle:active{background:#28314a}
+.theme-bloom .currency-card,.theme-bloom .ledger-row{background:#10152a;border-color:#2c3550}
+.theme-bloom .currency-card .currency-symbol,.theme-bloom .ledger-symbol{background:#141a2e;border-color:#2c3550}
+.theme-bloom .currency-card.currency-coin,.theme-bloom .compact-currency.currency-coin,.theme-bloom .compact-currency.currency-token{border-left-color:#2a3348}
+.theme-bloom .cache-meter{background:#0e1322}
+.theme-bloom .cache-track{background:#262e48}
+.theme-bloom .page-arrow:active{background:#1c2338}
+.theme-bloom .page-dots i{background:#333d5c}
+.theme-bloom .world-line[data-phase="day"] #worldIcon{color:#ffd27a}
+.theme-bloom dialog{background:#141a28;border-color:#39456a}
+.theme-bloom dialog::backdrop{background:#04060fa8}
+.theme-bloom #sectorDialog{background:#141826;border-color:#3b4360}
+.theme-bloom .navigator-head{border-bottom-color:#2f3650}
+.theme-bloom .navigator-head .icon-button{background:#1a2033;border-color:#363f5c}
+.theme-bloom .sector-jump{background:#1b2136;border-color:#343d5c}
+.theme-bloom .sector-jump.is-current{background:#252d47;border-color:#5f6a90}
+.theme-bloom .sector-jump:not(:disabled):active{background:#2c3550;border-color:#8c97c0}
+.theme-bloom .navigator-scroll-hint{background:linear-gradient(transparent,#141826 48%)}
+.theme-bloom .nav-maps{border-color:#4a5478;color:#dde2f2}
+.theme-bloom .nav-maps:active{background:#232a44}
+.theme-bloom .tabs{border-bottom-color:#2b3450}
+.theme-bloom .setting{border-bottom-color:#26304a}
+.theme-bloom .setting input{background:#343f5e}
+.theme-bloom .setting input:checked:before{background:#3a1226}
+.theme-bloom .stat{border-bottom-color:#283250}
+.theme-bloom .section-label{color:#95a0bd}
+.theme-bloom .sector-row .bar{background:#263050}
+.theme-bloom .toast{background:#3a2436;border-color:#9a5f82;color:#ffd9ea}
+.theme-bloom .toast .toast-track i{background:#f3a1c8}
+.theme-bloom .toast.kind-important{background:#1b2135;border-color:#e9ecf5;color:#f5f6fb}
+.theme-bloom #updatePages button[aria-current=page]{color:#ffd0e4;border-color:#a06a88;background:#f3a1c814}
+.theme-bloom .hub-shell{fill:#141828;stroke:#9aa3c7}
+.theme-bloom .hub-sector{stroke:#363d58}
+.theme-bloom .cheat-badge{color:#ffd27a}
+.theme-bloom #hint{color:#aab3d0}
+.theme-bloom button:focus-visible,.theme-bloom a:focus-visible,.theme-bloom section:focus-visible{outline-color:var(--accent)}

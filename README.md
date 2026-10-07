@@ -1,4 +1,4 @@
-# UNBRIK — 2.2.2 (2.0 economy, mainland map, paged header, stacked notices)
+# UNBRIK — 3.0 (2.0 economy, mainland map, paged header, 환생 prestige and the bloom map)
 
 A portrait incremental game with 105 research nodes across the original eight sectors, 316 finite research levels, dollars and coins. The center is navigation, not a purchasable research. AXIOM is research 105.
 
@@ -78,16 +78,30 @@ Design notes stated for the next major update (not implemented): a main-menu sys
 
 One rule everywhere a number is displayed: the symbol carries the currency color (`$` green `--accent`, `¢` ochre `#d4ae68`) and the number stays white. Applied to the page-1 windows and the ledger (unit tabs), the collapsed header (`.cash-symbol`, `.coin-symbol`, and its cache award chips), prices (`priceMarkup` emits `<i class="sym sym-money|sym-coin">`), the research panel's effect line, the statistics tab (`symbolMarkup`) and the cache strip yields. Prose in settings and notices keeps plain symbols. The locked-card label no longer wraps (`.node-price .locked`).
 
-## Roadmap stated for the next major update: 환생 (prestige)
+## 3.0 환생 (prestige) and the bloom map
 
-As dictated by the user; nothing below is implemented.
+Built from the roadmap the user dictated (below, kept for reference) plus the follow-up decisions: coins reset too; tokens scale with the dollar balance; the first prestige is worth at least 10 tokens, calibrated to "finish the tree, then wait about five minutes"; a first prestige buys roughly one sector of automation plus a ×2–×3 on production; cheat mode makes prestige nodes free; no new mainland studies (not designed) — only the prestige system and the prestige map, whose undesigned slots are visible reserved nodes; 6–10 nodes per petal with upgradable nodes; the whole prestige tree is meant to take about four hours; the statistics tab was reorganized for the new system; tokens are fractional.
+
+- Trigger (`prestigeReady` in `data.js`): every study at its cap and `money ≥ PRESTIGE_THRESHOLD = $5.00Dc` (5e33; the final study costs about $2.9Dc and late production is ≈ $4No/s, so the threshold is a few minutes of waiting after AXIOM). The center panel shows the condition, the remaining amount with an ETA, and the 환생 button; a confirm dialog states the balance and the tokens.
+- Tokens (`tokensFor` in `prestige.js`): `10 · √(money / $5.00Dc) · (1 + REWARD MODEL) + DISTILLATION`, rounded to two decimals (balances keep two decimals; node costs are whole). At exactly the threshold: 10; four times the threshold: 20.
+- Reset (`prestige` in `data.js`): studies, dollars, coins, cache timer, camera and the automation checks reset; prestige count, tokens, prestige levels, lifetime statistics, settings and the world clock remain. `stats.prestigeRuns / lastRunSeconds / runStart` record runs. The offline snapshot restarts at the base rate.
+- Prestige tree (`prestige.js`): 36 nodes, ids 1001–1036, five petals from a pentagon center with the mainland's row/upstream rule (1-2-2-2-1 ×3, 1-2-2-1 ×2). DORMANT (offline reward), SCALING (production), AGENT (automation, one AUTOPILOT per mainland sector), EXPANSION (6 reserved nodes for studies that are not designed yet), REWARD (REWARD MODEL ×tokens, DISTILLATION +tokens, 4 reserved). Reserved nodes are visible, named and dotted, never purchasable; `petalProgress` ignores them so a petal can still light up. 26 purchasable nodes, 66 levels, 451 tokens in total. Effects aggregate in `prestigeBonuses` and apply in `economy()` (base/multipliers/cache/discount) and `offlineParams()` (full window, decay constant, offline rate).
+- Pacing: `scripts/prestige-sim.mjs` simulates the loop with automation; the whole prestige tree completes in about 3.9 hours over four prestiges (≈135, 52, 37 and 11 minutes).
+- Automation (`autoResearch`): each owned AUTOPILOT shows an AUTO check beside its sector heading on the mainland; while checked, that sector's cheapest affordable unlocked study is bought (up to six per second). A sector cannot run ahead of its gate, so an unopened sector never completes by itself. Checks clear on every prestige.
+- Map (`prestige-layer` in `index.html`, `bloom.js`): the flower shares the viewport and the camera code; `state.map` selects the layer. The flower's land is five separate angular lobes (`buildLand` with no center land) around a bare pentagon hub with the same rotating polyhedron. Discovery, ghost cards, link flashing, petal completion lighting on the hub, the navigator (petal list) and the center panel all mirror the mainland.
+- Theme: `body.theme-bloom` swaps the color tokens (background dark blue-gray, accent pink, grid kept) and restyles every surface — header, cards, ledger, cache strip, panel, buttons, dialogs, navigator, settings, toasts; the whole game cross-fades and colors tween on a map switch. Falling cherry petals and light rain (heavier when the world weather is rain, none in snow) are drawn on a canvas only while the flower is shown and motion is on. There is no theme setting; the theme belongs to the map.
+- Switching maps: the center panel's 지도 button, the header's map button (a map tab like the navigator; the flower is locked until the first prestige) and the navigator's 지도 이동 row. Each map remembers its own selection.
+- Rebirth sequence: confirm → blackout with the spinning UNBRIK polyhedron, "N번째 환생 · ✿tokens" → the mainland resets under the blackout → the flower appears with a sticky notice.
+- Statistics: MAINLAND (nodes, levels, production, cache, lifetime gains), REBIRTH (count, condition, tokens held and earned, nodes, production multiplier, automation, current run, last prestige), TIME (play time, offline). Removed as noise: purchase count, total spent, peak rate, offline-equivalent production, current session, cost discount. A BLOOM PETALS block appears after the first prestige.
+- Save: `currencies.token` (fractional), `prestige {count, tokensEarned, tokensSpent, purchases, levels, auto, last}`, `map`, the new `stats` keys and `offline.full/decay` are all optional on load, so 2.2 saves load unchanged.
+
+### Roadmap as dictated (for reference)
 
 - Trigger: all research complete, then a set amount of dollars accumulated → prestige. Progress restarts from the beginning; the run yields prestige tokens.
-- Prestige map: a separate menu with its own theme. Mood: dreamy, romantic night — dark night sky, a rain-like background effect, the existing grid kept, cherry blossoms drifting (the key visual). Logo wordmark green → pink, background dark green tone → dark blue-gray; the change is tweened. Every interface part (header, research panel, settings, notices, map tools) must follow the map's theme; there is no separate theme setting — theme is a property of the map.
-- Prestige tree: flower-shaped; pentagon center node; five branches: (1) offline reward up, (2) base production up, (3) upgrade automation, (4) new upgrade unlocks, (5) undecided. Node names use AI terminology. Tokens are spent on these nodes. The tree shares the main map's gimmicks (sector completion lighting, navigator).
-- Automation nodes: one per chapter; owning one adds a check box next to that chapter's heading outside the coast; when checked, the chapter's upgrades are bought automatically whenever money allows.
-- Switching maps: through each map's center node, and through a map button next to the settings button in the header that opens a map tab (like the navigator).
-- Open points to settle before building: the dollar threshold, the token formula per prestige, what resets (coins, the world clock?), the fifth branch.
+- Prestige map: a separate menu with its own theme. Mood: dreamy, romantic night — dark night sky, a rain-like background effect, the existing grid kept, cherry blossoms drifting (the key visual). Logo wordmark green → pink, background dark green tone → dark blue-gray; the change is tweened. Every interface part must follow the map's theme; there is no separate theme setting.
+- Prestige tree: flower-shaped; pentagon center node; five branches: offline reward, base production, upgrade automation, new upgrade unlocks, undecided. Node names use AI terminology. The tree shares the main map's gimmicks (completion lighting, navigator).
+- Automation nodes: one per chapter; owning one adds a check box next to that chapter's heading; when checked, the chapter's upgrades are bought automatically whenever money allows.
+- Switching maps: through each map's center node, and through a map button next to the settings button that opens a map tab.
 
 ## Save boundary
 
@@ -103,13 +117,15 @@ Current key: `unbrik-save-v2`, schema version 2, economy epoch `unbrik-2.0-rewor
 - `icons.js`: 80 existing embedded Lucide icons plus 25 distinct geometric icons.
 - `hub.js`, `camera.js`: dodecahedron projection and cancellable movement.
 - `effects.js`, `notifications.js`: selection guard, opal motion, toast deadlines.
-- `index.html`, `style.css`: game interface; the 2.1 header and the 2.2 header pages are the last blocks of `style.css`.
-- `UNBRIK_2.1.html` (repository root, optional): single-file build of `dist/` (inline CSS, bundled script) that runs from `file://`; regenerate with `scripts/bundle-single.mjs` after changing `dist/`.
+- `prestige.js`: the prestige node table, petal layout, token formula, purchases and aggregated bonuses.
+- `bloom.js`: petals-and-rain canvas for the prestige map.
+- `index.html`, `style.css`: game interface; the 2.1 header, the 2.2 header pages and the 3.0 bloom theme/prestige layer are the last blocks of `style.css`.
+- `UNBRIK_3.0.html` (repository root, optional): single-file build of `dist/` (inline CSS, bundled script) that runs from `file://`; regenerate with `scripts/bundle-single.mjs` after changing `dist/`.
 
 ## Verification
 
-Run `npm run check`, `node balance-check.mjs`, `node ui-check.mjs`, `node offline-check.mjs`, `node layout-check.mjs`, `node effects-check.mjs`, `node motion-check.mjs`, `node notification-check.mjs`.
+Run `npm run check`, `node balance-check.mjs`, `node ui-check.mjs`, `node offline-check.mjs`, `node layout-check.mjs`, `node effects-check.mjs`, `node motion-check.mjs`, `node notification-check.mjs`, `node prestige-check.mjs`; `node scripts/prestige-sim.mjs` prints the prestige pacing.
 
-Checks cover stacked and sticky notices, weather kinds, the world clock, weather roll, ledger pages, pager controls and map-aware cache strip; reachable prerequisites; finite costs and distinct icons; exact initial coin production; both-currency shortages with no partial debit; cheat guards; cache snapshot consistency; split, duplicate and reloaded offline settlements; save epoch rejection; row plans, upstream-only prerequisites and non-crossing links; every card inside its own sector polygon and outside the others, headings off the land, all eight sectors forming one connected mainland; hidden-sector boundaries; complete-card re-selection; gesture cancellation; navigator state; settings and reduced-motion combinations; original color/opal constraints.
+Checks cover the prestige node table, petal lobes, token formula, reset semantics, cheat-free prestige, automation gates, offline windows and prestige save round-trips; the prestige row, the rebirth flow, flower discovery, token purchases, reserved nodes, map switching and automation checks against the real renderers; stacked and sticky notices, weather kinds, the world clock, weather roll, ledger pages, pager controls and map-aware cache strip; reachable prerequisites; finite costs and distinct icons; exact initial coin production; both-currency shortages with no partial debit; cheat guards; cache snapshot consistency; split, duplicate and reloaded offline settlements; save epoch rejection; row plans, upstream-only prerequisites and non-crossing links; every card inside its own sector polygon and outside the others, headings off the land, all eight sectors forming one connected mainland; hidden-sector boundaries; complete-card re-selection; gesture cancellation; navigator state; settings and reduced-motion combinations; original color/opal constraints.
 
 The current managed environment does not provide browser preview for plain static Sites. Controlled real-handler tests and geometry checks are not a claim of Android Chrome or visual browser QA. Physical-device typography, compositing and browser touch behavior require device validation.

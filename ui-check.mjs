@@ -5,6 +5,8 @@ import {iconSvg,setIcon} from './dist/icons.js';
 import * as layout from './dist/layout.js';
 import * as updates from './dist/updates.js';
 import * as cameraHelpers from './dist/camera.js';
+import * as prestigeModule from './dist/prestige.js';
+import * as hub from './dist/hub.js';
 
 // Run the actual renderers and controls against a minimal element adapter.
 // This verifies state/DOM wiring, not browser layout or physical touch input.
@@ -17,11 +19,11 @@ const elements=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,el
 const $=id=>{assert(elements.has(id),`Missing element ${id}`);return elements.get(id);};
 const slice=(start,end)=>{const a=app.indexOf(start),b=app.indexOf(end,a);assert(a>=0&&b>a);return app.slice(a,b);};
 const source=[slice('const CENTER_SELECTION','const KEY='),slice('function compactFormat(', 'function time('),slice('function syncOpalMotion(){','function save('),slice('function sectorUnlocked(','const visibility='),slice('function createGraph(){','function animatePanel('),slice('function animatePanel(','function ripple('),slice('function buySelected(){','const pointers='),slice('const pointers=',"$('zoomIn').onclick="),slice('let previousWidth=','new ResizeObserver(reframeViewport)'),slice('function renderUpdates(','function suspend('),
- slice("$('toggleHud').onclick=", "$('settings').onclick="),slice("for(const k of ['motion','touch','haptic','mapControls'])", "$('format').onchange="),slice("$('purchaseCheat').onchange=", "$('saveNow').onclick=")].join('\n');
+ slice("$('toggleHud').onclick=", "$('settings').onclick="),slice("for(const k of ['motion','touch','haptic','mapControls'])", "$('format').onchange="),slice("$('purchaseCheat').onchange=", "$('saveNow').onclick="),slice('let autoClock=0;','function frame(now){'),slice('function applyMapTheme(){',"$('maps').onclick="),slice('function openPrestigeDialog(){','bloom=createBloom(')].join('\n');
 const createUI=new Function('deps','$','document',`
- const {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,purchase,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,BRANCHES,CENTER,boundsOf,connectionPath,centerPath,iconSvg,setIcon,UPDATES,updatePage,interpolateCamera,overviewMode,mapFrames,fitCamera}=deps;
+ const {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,purchase,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,BRANCHES,CENTER,boundsOf,connectionPath,centerPath,iconSvg,setIcon,UPDATES,updatePage,interpolateCamera,overviewMode,mapFrames,fitCamera,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeReady,prestige,autoResearch,PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress,wireframePaths}=deps;
  let sessionSeconds=0;let state=defaultState(),selected=1,econ=economy(state),saved=null,camera={x:0,y:0,scale:1},cameraMoving=false,updatesPage=1;
- let suspended=false,opalMotion={refresh(){}},motionPreference={matches:false};
+ let suspended=false,opalMotion={refresh(){}},bloom=null,motionPreference={matches:false};
  let selectionPending=false,selectionEpoch=0,navigationFrame=0,panelAnimation=null,navigatorCloseTimer=0,cameraIntent=null;
  let clock=0,seed=0;const frames=new Map(),timers=new Map(),performance={now:()=>clock};
  const requestAnimationFrame=fn=>{frames.set(++seed,fn);return seed},cancelAnimationFrame=id=>frames.delete(id);
@@ -32,12 +34,12 @@ const createUI=new Function('deps','$','document',`
  function save(){saved=validateSave(JSON.parse(JSON.stringify(state)));}
  ${source}
  createGraph();renderUpdates();
- return {sectorUnlocked,renderStats,fit,render,showCacheReward,selectNode,selectCenter,buySelected,openCenter,openNavigator,jumpToSector,interruptMapMotion,renderUpdates,sectorEls,chapterEls,nodeEls,edgeEls,spokeEls,visibility,applySettings,osReduce(value){motionPreference.matches=value;applySettings();},
+ return {sectorUnlocked,renderStats,fit,render,showCacheReward,selectNode,selectCenter,buySelected,openCenter,openNavigator,jumpToSector,jumpToPetal,interruptMapMotion,renderUpdates,sectorEls,chapterEls,nodeEls,edgeEls,spokeEls,visibility,applySettings,applyMapTheme,switchMap,openMaps,runPrestige,runAutomation,toggleAuto,pNodeEls,pEdgeEls,petalEls,osReduce(value){motionPreference.matches=value;applySettings();},
  advance(now){clock=now;for(const [id,timer]of timers){if(timer.at<=clock){timers.delete(id);timer.fn();}}const pending=[...frames.values()];frames.clear();for(const frame of pending)frame(now);},
  resize(width,height){viewport.clientWidth=width;viewport.clientHeight=height;reframeViewport();},reduced(value){document.body.classList.toggle('reduced-motion',value)},get activePointers(){return pointers.size},get moving(){return cameraMoving},get pending(){return selectionPending},get state(){return state},get selected(){return selected},get saved(){return saved}};
 `);
 const documentAdapter={...element(),createElement:element,createElementNS:element,body:element()};
-const ui=createUI({...data,...layout,...updates,...cameraHelpers,iconSvg,setIcon},$,documentAdapter);
+const ui=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,iconSvg,setIcon},$,documentAdapter);
 let now=0;function finishNavigation(){ui.advance(now+=16);ui.advance(now+=500);}
 ui.applySettings();ui.render();
 // Actual click and captured-pointer event paths, including reselecting the same node.
@@ -174,7 +176,7 @@ for(const through of [0,7,8,19,20,33,34,46,47,60,61,74,75,89,90,105]){
 for(const restoredCollapsed of [true,false]){
  const freshElements=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,element()])),get=id=>freshElements.get(id);
  const doc={...element(),createElement:element,createElementNS:element,body:element()};
- const fresh=createUI({...data,...layout,...updates,...cameraHelpers,iconSvg,setIcon},get,doc);
+ const fresh=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,iconSvg,setIcon},get,doc);
  const saved=data.defaultState();saved.settings.panelCollapsed=restoredCollapsed;
  Object.assign(fresh.state,data.validateSave(JSON.parse(JSON.stringify(saved))));fresh.applySettings();fresh.render();
  if(!restoredCollapsed)get('togglePanel').onclick();
@@ -191,8 +193,8 @@ for(const restoredCollapsed of [true,false]){
  const map=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,element()]));
  const get=id=>{assert(map.has(id),`Missing ${id}`);return map.get(id);};
  const doc={...element(),createElement:element,createElementNS:element,body:element()};
- const hud=createUI({...data,...layout,...updates,...cameraHelpers,iconSvg,setIcon},get,doc);
- hud.render();assert(get('cacheMeter').hidden);assert.deepEqual(hud.state.currencies,{money:0,coin:0});
+ const hud=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,iconSvg,setIcon},get,doc);
+ hud.render();assert(get('cacheMeter').hidden);assert.deepEqual(hud.state.currencies,{money:0,coin:0,token:0});
  hud.state.levels=Object.fromEntries(data.NODES.filter(n=>n.id<=18).map(n=>[n.id,1]));
  hud.state.timers.cache=7.5;hud.render();
  assert(!get('cacheMeter').hidden);assert.equal(get('cacheInfo').textContent,'22.5s');
@@ -237,7 +239,7 @@ console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',
 {
  const map=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,element()])),get=id=>{assert(map.has(id),`Missing ${id}`);return map.get(id);};
  const doc={...element(),createElement:element,createElementNS:element,body:element()};
- const ui2=createUI({...data,...layout,...updates,...cameraHelpers,iconSvg,setIcon},get,doc);
+ const ui2=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,iconSvg,setIcon},get,doc);
  ui2.render();
  assert.equal(get('worldClock').textContent,'07:00');assert.equal(get('worldPhase').textContent,'낮');assert.equal(get('worldWeather').textContent,'맑음');
  assert.equal(get('pageDots').children.length,2,'Main page plus one ledger page');
@@ -253,4 +255,63 @@ console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',
  get('hudPrev').onclick();assert.equal(get('pageDots').children[0].className,'is-current');assert(get('hudPrev').disabled);
  const saved=data.validateSave(JSON.parse(JSON.stringify(ui2.state)));assert.equal(saved.world.seconds,650);assert.equal(saved.map,'main');
  console.log(JSON.stringify({worldClock:'passed',weatherRoll:'passed',ledgerPages:'passed',mapAwareCache:'passed',pagerControls:'passed',worldSaved:'passed'}));
+}
+// 3.0: prestige row, the rebirth flow, the flower map, buying with tokens, automation checks.
+{
+ const map=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,element()])),get=id=>{assert(map.has(id),`Missing ${id}`);return map.get(id);};
+ const doc={...element(),createElement:element,createElementNS:element,body:element()};
+ const ui3=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,iconSvg,setIcon},get,doc);
+ ui3.reduced(true);ui3.applyMapTheme();ui3.render();
+ assert(get('tokenCard').hidden&&get('compactTokenCard').hidden,'No token card before the first prestige');
+ ui3.selectNode(1);assert(get('prestigeRow').hidden,'The prestige row belongs to the center panel');
+ ui3.selectCenter();assert(!get('prestigeRow').hidden);assert(get('prestigeHint').innerHTML.includes('환생'));assert(get('mapJump').hidden&&get('prestigeButton').hidden);
+ assert.equal(get('tokenNote').textContent,'환생 0회');
+ // Map dialog: the flower is locked until the first prestige.
+ ui3.openMaps();assert.equal(get('mapMenu').children.length,2);assert(get('mapMenu').children[1].disabled);assert(!get('mapMenu').children[0].disabled);
+ assert.equal(ui3.switchMap('prestige'),false,'Locked map cannot be entered');
+ // Finish the tree and clear the threshold: the button appears, the note changes.
+ for(const n of data.NODES)ui3.state.levels[n.id]=n.max;ui3.state.currencies.money=data.PRESTIGE_THRESHOLD*4;ui3.state.currencies.coin=50;
+ ui3.selectCenter();assert(!get('prestigeButton').hidden);assert.equal(get('tokenNote').textContent,'환생 가능');assert(get('prestigeHint').innerHTML.includes('20'),'Four times the threshold doubles the tokens');
+ get('prestigeButton').onclick();assert(get('prestigeDialog').open);assert(get('prestigeSummary').innerHTML.includes('1번째'));
+ get('confirmPrestige').onclick();assert(!get('prestigeDialog').open);assert(!get('prestigeOverlay').hidden);
+ assert.equal(ui3.state.map,'prestige','Reduced motion commits at once');assert.equal(ui3.state.currencies.token,20);assert.deepEqual(ui3.state.levels,{});assert.equal(ui3.state.currencies.money,0);assert.equal(ui3.state.currencies.coin,0);
+ assert(doc.body.classList.contains('theme-bloom'));assert(!get('prestigeLayer').hidden);assert(get('nodes').hidden&&get('centerNode').hidden);
+ assert.equal(get('wordmarkSub').textContent,'BLOOM TREE');assert.equal(ui3.selected,-1);assert(get('pCenter').classList.contains('selected'));
+ ui3.advance(1000);assert(get('prestigeOverlay').hidden,'Overlay lifts after the hold');
+ assert(!get('tokenCard').hidden);assert.equal(get('token').textContent,'20');assert.equal(get('tokenNote').textContent,'환생 1회');
+ assert(get('moneyCard').hidden,'The flower page shows only tokens');
+ // Discovery on the flower: roots open, their children ghosted, the rest hidden.
+ const roots=prestigeModule.PRESTIGE_NODES.filter(n=>n.row===0),second=prestigeModule.PRESTIGE_NODES.filter(n=>n.row===1),third=prestigeModule.PRESTIGE_NODES.filter(n=>n.row===2);
+ for(const n of roots)assert.equal(ui3.visibility.get(n.id),2);for(const n of second)assert.equal(ui3.visibility.get(n.id),1);for(const n of third)assert.equal(ui3.visibility.get(n.id),0);
+ assert(ui3.pEdgeEls.every(e=>e.el.style.display==='none'),'No link is shown before a root is owned');
+ assert(!ui3.selectNode(1),'Mainland nodes are not selectable on the flower');assert(ui3.selectNode(1001));
+ assert.equal(get('panelMeta').textContent,'P01 / DORMANT · LV.0/4');assert.equal(get('buyText').textContent,'개화');
+ assert(ui3.buySelected());assert.equal(prestigeModule.prestigeLevel(ui3.state,1001),1);assert.equal(ui3.state.currencies.token,17);
+ assert(ui3.pNodeEls.get(1001).className.includes('bought'));assert.equal(ui3.visibility.get(1002),2);assert.equal(ui3.visibility.get(1004),1);
+ assert(ui3.pEdgeEls.some(e=>e.from.id===1001&&e.el.style.display===''),'Links appear once the parent is owned');
+ // Reserved nodes are visible but never purchasable; a locked node cannot be bought.
+ const reserved=prestigeModule.PRESTIGE_NODES.find(n=>n.reserved);assert(!ui3.selectNode(reserved.id)||!ui3.buySelected());
+ assert(!ui3.selectNode(1004),'Ghost nodes stay unselectable');
+ // AUTOPILOT I unlocks the sector-1 automation check on the mainland.
+ assert(ui3.selectNode(1017));assert.equal(get('panelName').textContent,'AUTOPILOT I');assert(ui3.buySelected());assert.equal(ui3.state.currencies.token,14);
+ assert(ui3.jumpToPetal(1));assert.equal(ui3.selected,1009,'Petal jump picks the open root');
+ ui3.openNavigator();assert(get('sectorMenu').hidden&&!get('petalMenu').hidden);assert.equal(get('navigatorEyebrow').textContent,'UNBRIK / BLOOM');
+ assert.equal(get('petalMenu').children.length,5);
+ assert(ui3.switchMap('main'));assert.equal(ui3.state.map,'main');assert(!doc.body.classList.contains('theme-bloom'));assert(get('prestigeLayer').hidden&&!get('nodes').hidden);
+ assert.equal(ui3.selected,1,'Mainland selection starts at the first study after a rebirth');
+ assert(get('tokenCard').hidden&&!get('moneyCard').hidden,'Page 1 shows the mainland currencies');assert(!get('ledger').children[2].hidden,'The ledger page still lists tokens');
+ const toggle=ui3.chapterEls[0].querySelector('.auto-toggle'),toggle2=ui3.chapterEls[1].querySelector('.auto-toggle');
+ assert(!toggle.hidden,'Sector 1 shows its automation check');assert(toggle2.hidden,'Sector 2 has no AUTOPILOT yet');
+ assert(ui3.toggleAuto(0));assert.deepEqual(ui3.state.prestige.auto,{0:true});assert(toggle.classList.contains('is-on'));
+ assert(!ui3.toggleAuto(1),'Checks need the matching AUTOPILOT node');
+ ui3.state.currencies.money=1e12;ui3.runAutomation();assert(data.level(ui3.state,1)>0,'Automation buys sector-1 studies');
+ ui3.state.currencies.money=1e30;for(let i=0;i<40;i++)ui3.runAutomation();assert(data.sectorProgress(ui3.state,0).complete,'Sector 1 completes under automation');
+ assert(!data.level(ui3.state,data.MAP_LAYOUT.sectors[1].members[0]),'Automation never crosses into a sector without its own check');
+ assert(toggle.hidden,'A finished sector hides its check');
+ // Stats show the rebirth block; the save round-trips with the prestige data.
+ ui3.renderStats();assert(get('stats').children.some(c=>c.textContent==='REBIRTH'));assert(!get('petalStatsLabel').hidden);
+ const saved=data.validateSave(JSON.parse(JSON.stringify(ui3.state)));assert.equal(saved.prestige.count,1);assert.equal(saved.currencies.token,14);assert.deepEqual(saved.prestige.auto,{0:true});
+ // The flower keeps its selection when the player returns.
+ assert(ui3.switchMap('prestige'));assert.equal(ui3.selected,1009);
+ console.log(JSON.stringify({prestigeRow:'passed',rebirthFlow:'passed',flowerDiscovery:'passed',tokenPurchases:'passed',reservedNodes:'blocked',mapSwitch:'passed',automationChecks:'passed',rebirthStats:'passed',prestigeSaved:'passed'}));
 }

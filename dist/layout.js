@@ -34,37 +34,39 @@ export const PLACEMENT=[
 // land disc around the center and how much the traced outlines are
 // straightened. All in map units.
 const CELL=40,COAST=84,CLOSE=230,CENTER_LAND=520,STRAIGHTEN=46,LABEL_OFFSET=70;
+const DEFAULT_LAND={cell:CELL,coast:COAST,close:CLOSE,centerLand:CENTER_LAND,straighten:STRAIGHTEN,regionOf:n=>n.chapter};
 export function boundsOf(nodes,padX=100,padY=90){
  return {minX:Math.min(...nodes.map(n=>n.x))-padX,maxX:Math.max(...nodes.map(n=>n.x))+padX,minY:Math.min(...nodes.map(n=>n.y))-padY,maxY:Math.max(...nodes.map(n=>n.y))+padY};
 }
 const cardDistance=(x,y,n)=>Math.hypot(Math.max(0,Math.abs(x-n.x)-CARD.halfWidth),Math.max(0,Math.abs(y-n.y)-CARD.halfHeight));
-function offsets(radius){const r=Math.ceil(radius/CELL),list=[];for(let dj=-r;dj<=r;dj++)for(let di=-r;di<=r;di++)if(Math.hypot(di,dj)*CELL<=radius)list.push([di,dj]);return list;}
+function offsets(radius,cell){const r=Math.ceil(radius/cell),list=[];for(let dj=-r;dj<=r;dj++)for(let di=-r;di<=r;di++)if(Math.hypot(di,dj)*cell<=radius)list.push([di,dj]);return list;}
 // Grid of sector ids (-1 is water). Dilate the cards, erode back so only
 // channels narrower than CLOSE stay filled, then keep COAST around the cards.
-function rasterize(nodes){
+function rasterize(nodes,o=DEFAULT_LAND){
+ const CELL=o.cell,COAST=o.coast,CLOSE=o.close,CENTER_LAND=o.centerLand;
  const reach=COAST+CLOSE+CELL*2,b=boundsOf(nodes,CARD.halfWidth+reach,CARD.halfHeight+reach);
  b.minX=Math.min(b.minX,-CENTER_LAND-reach);b.minY=Math.min(b.minY,-CENTER_LAND-reach);b.maxX=Math.max(b.maxX,CENTER_LAND+reach);b.maxY=Math.max(b.maxY,CENTER_LAND+reach);
  const originX=Math.floor(b.minX/CELL)*CELL,originY=Math.floor(b.minY/CELL)*CELL,cols=Math.ceil((b.maxX-originX)/CELL)+1,rows=Math.ceil((b.maxY-originY)/CELL)+1;
  const nearest=new Int16Array(cols*rows),distance=new Float32Array(cols*rows);
  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
   const x=originX+(i+.5)*CELL,y=originY+(j+.5)*CELL;let best=Infinity,who=-1;
-  for(const n of nodes){const d=cardDistance(x,y,n);if(d<best){best=d;who=n.chapter;}}
+  for(const n of nodes){const d=cardDistance(x,y,n);if(d<best){best=d;who=o.regionOf(n);}}
   const k=j*cols+i;nearest[k]=who;distance[k]=Math.hypot(x,y)<=CENTER_LAND?Math.min(best,COAST):best;
  }
  const wide=new Uint8Array(cols*rows);for(let k=0;k<wide.length;k++)wide[k]=distance[k]<=COAST+CLOSE?1:0;
- const erode=offsets(CLOSE),land=new Int16Array(cols*rows).fill(-1);
+ const erode=offsets(CLOSE,CELL),land=new Int16Array(cols*rows).fill(-1);
  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
   const k=j*cols+i;if(!wide[k])continue;let solid=true;
   for(const [di,dj] of erode){const ii=i+di,jj=j+dj;if(ii<0||jj<0||ii>=cols||jj>=rows||!wide[jj*cols+ii]){solid=false;break;}}
   if(solid)land[k]=nearest[k];
  }
- return {originX,originY,cols,rows,land};
+ return {originX,originY,cols,rows,land,cell:CELL};
 }
 // Boundary segments between cells of different ids, chained between junctions
 // (vertices where three or more areas meet) so a border shared by two sectors
 // is straightened once and fits both of them exactly.
 function trace(grid){
- const {originX,originY,cols,rows,land}=grid,at=(i,j)=>(i<0||j<0||i>=cols||j>=rows)?-1:land[j*cols+i];
+ const {originX,originY,cols,rows,land,cell:CELL}=grid,at=(i,j)=>(i<0||j<0||i>=cols||j>=rows)?-1:land[j*cols+i];
  const key=(i,j)=>i+','+j,edges=[];
  for(let j=0;j<=rows;j++)for(let i=0;i<=cols;i++){
   // Horizontal edge from (i,j) to (i+1,j): cells above (j-1) and below (j).
@@ -143,26 +145,34 @@ export function createRadialLayout(nodes){
   }
   sectors[chapter]={chapter,branch,direction,members};
  });
- const grid=rasterize(nodes),chains=trace(grid);
- for(const c of chains)c.points=straighten(c.points,STRAIGHTEN);
- const mainland=[];
- for(const sector of sectors){
-  const loops=assemble(chains,sector.chapter),outline=loops[0];
+ const regions=buildLand(nodes,sectors.map(s=>({key:s.chapter,direction:s.direction})));
+ for(const sector of sectors)Object.assign(sector,regions[sector.chapter]);
+ return {sectors,bounds:boundsOf(nodes,260,240),mainland:sectors.map(s=>s.polygon)};
+}
+// Land for any set of cards: regions keyed by `regionOf(node)`, tiling one
+// landmass, with an angular outline and a heading anchor outside the coast
+// for each region. Used by the mainland and by the prestige flower.
+export function buildLand(nodes,regionList,options={}){
+ const o={...DEFAULT_LAND,...options},grid=rasterize(nodes,o),chains=trace(grid);
+ for(const c of chains)c.points=straighten(c.points,o.straighten);
+ const out={};
+ for(const region of regionList){
+  const loops=assemble(chains,region.key),outline=loops[0];
+  if(!outline){out[region.key]={polygon:[],path:'',bounds:{minX:0,maxX:0,minY:0,maxY:0},label:{x:0,y:0,align:'center'},loops:0};continue;}
   const polygon=outline.points,bounds=boundsOf(polygon,0,0);
-  // Heading: outside the coast, past the sector's farthest coastal point.
+  // Heading: outside the coast, past the region's farthest coastal point.
   const centroid=polygon.reduce((s,p)=>({x:s.x+p.x/polygon.length,y:s.y+p.y/polygon.length}),{x:0,y:0});
   const coast=outline.coast.length?outline.coast:polygon;
   let anchor=coast[0],far=-Infinity;
-  for(const p of coast){const d=p.x*sector.direction.x+p.y*sector.direction.y;if(d>far){far=d;anchor=p;}}
-  const out=Math.hypot(anchor.x-centroid.x,anchor.y-centroid.y)||1,nx=(anchor.x-centroid.x)/out,ny=(anchor.y-centroid.y)/out;
+  for(const p of coast){const d=p.x*region.direction.x+p.y*region.direction.y;if(d>far){far=d;anchor=p;}}
+  const len=Math.hypot(anchor.x-centroid.x,anchor.y-centroid.y)||1,nx=(anchor.x-centroid.x)/len,ny=(anchor.y-centroid.y)/len;
   // Text hangs away from the coast: centered when the coast is above or
   // below, otherwise starting (or ending) at the anchor.
   const sideways=Math.abs(nx)>.55,align=sideways?(nx>0?'left':'right'):'center';
   const label={x:Math.round(anchor.x+nx*LABEL_OFFSET),y:Math.round(anchor.y+ny*LABEL_OFFSET-15),align};
-  Object.assign(sector,{bounds,polygon,path:pathOf(polygon),label,loops:loops.length});
-  mainland.push(polygon);
+  out[region.key]={bounds,polygon,path:pathOf(polygon),label,loops:loops.length};
  }
- return {sectors,bounds:boundsOf(nodes,260,240),mainland};
+ return out;
 }
 // Where a link leaves a card: on the card border, aimed at the other card.
 function port(node,towards){

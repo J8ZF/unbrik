@@ -17,7 +17,7 @@ const elements=new Map(),$=id=>{if(!elements.has(id))elements.set(id,element());
 const app=readFileSync('dist/app.js','utf8');
 const actual=app.slice(app.indexOf('function syncOpalMotion(){'),app.indexOf('function renderChrome(){'));
 const setup=new Function('createOpalMotion','NODES','defaultState','$','element',`
- let state=defaultState(),opalMotion=null,suspended=false,panelAnimation=null,cameraMoving=false,cameraIntent=null;
+ let state=defaultState(),opalMotion=null,bloom=null,suspended=false,panelAnimation=null,cameraMoving=false,cameraIntent=null;
  const motionPreference={matches:false},document={hidden:false,body:element()},viewport=element();
  const nodeEls=new Map(NODES.map(n=>[n.id,element()])),sectorEls=Array.from({length:8},element);
  ${actual}
@@ -85,5 +85,5 @@ assert(css.includes("@property --opal-angle{syntax:'<angle>';inherits:false;init
 assert(css.includes('@keyframes opalBorderFlow{from{--opal-angle:0deg}to{--opal-angle:360deg}}'),'One positive turn, with no dwell keyframes');
 const buy=css.match(/#buy\{([^}]+)\}/)[1];assert(buy.includes('background:var(--accent)'));assert(buy.includes('border:1px solid #b9f36d'));assert(buy.includes('color:#1c2b10'));
 assert(css.includes('.cheat-badge{color:#f5d58b;font:inherit;letter-spacing:inherit}'));
-assert(html.includes('<span class="network-meta"><span>RESEARCH NETWORK</span><span id="cheatBadge" class="cheat-badge" hidden>CHEAT</span></span>'));
+assert(html.includes('<span class="network-meta"><span id="networkLabel">RESEARCH NETWORK</span><span id="cheatBadge" class="cheat-badge" hidden>CHEAT</span></span>'));
 console.log(JSON.stringify({opalVisibility:'passed',borderOnly:'passed',continuousClockwiseSpectrum:'passed',originalResearchButton:'passed',cheatMetadataAlignment:'passed',motionAndOSSettings:'passed',independentTouchPreference:'passed',backgroundPause:'passed',staticFallback:'passed',selectionProtection:'passed',saveInputsAndLinks:'preserved'}));
