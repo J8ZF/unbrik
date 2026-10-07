@@ -1,4 +1,6 @@
-import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,tick,effectText,validateSave} from './data.js?v=1.1.0';
+import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,purchase,tick,effectText,validateSave} from './data.js?v=1.2.0';
+import {iconSvg,setIcon} from './icons.js?v=1.2.0';
+import {checkpointOffline,settleOffline} from './offline.js?v=1.2.0';
 const $=id=>document.getElementById(id);
 const KEY='axiom-save-v1',BACKUP=KEY+'-backup';
 let loadNotice='',storageOK=true;
@@ -9,7 +11,7 @@ function load(){
 let state=load(),selected=NODES.filter(n=>level(state,n)).at(-1)?.id||1,econ=economy(state),lastRender=0,lastSave=0,lastFrame=performance.now(),sessionSeconds=0;
 const viewport=$('viewport'),world=$('world'),nodeEls=new Map(),edgeEls=[],chapterEls=[];
 let camera=state.camera||{x:viewport.clientWidth/2,y:100,scale:.84};
-let toastTimer,burstTimer,gestureUsed=false;
+let toastTimer,burstTimer,gestureUsed=false,suspended=true;
 function format(n,decimals=2){
  if(!Number.isFinite(n))return '∞';
  if(n<1000)return n.toLocaleString('en-US',{minimumFractionDigits:n<10?decimals:0,maximumFractionDigits:n<100?decimals:0});
@@ -20,10 +22,10 @@ function format(n,decimals=2){
  const k=Math.floor(Math.log10(n)/3);return k<units.length?`${(n/1000**k).toFixed(2).replace(/\.00$/,'')}${units[k]}`:n.toExponential(2).replace('+','');
 }
 function time(n){if(n<1)return '곧';if(n<60)return `${Math.ceil(n)}초`;if(n<3600)return `${Math.floor(n/60)}분 ${Math.floor(n%60)}초`;if(n<86400)return `${(n/3600).toFixed(1)}시간`;return `${(n/86400).toFixed(1)}일`;}
-function toast(message){$('toast').textContent=message;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),4000);}
+function toast(message,duration=4000){$('toast').textContent=message;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),duration);}
 function applySettings(){document.body.classList.toggle('reduced-motion',!state.settings.motion||matchMedia('(prefers-reduced-motion: reduce)').matches);for(const k of ['motion','touch','haptic','auto'])$(k).checked=state.settings[k];$('format').value=state.settings.format;}
 function save(notify=false){
- state.camera={...camera};state.savedAt=Date.now();
+ state.camera={...camera};state.savedAt=Date.now();if(!suspended)checkpointOffline(state,state.savedAt);
  try{const previous=localStorage.getItem(KEY);if(previous){try{validateSave(JSON.parse(previous));localStorage.setItem(BACKUP,previous);}catch{}}
  localStorage.setItem(KEY,JSON.stringify(state));storageOK=true;$('saveState').innerHTML='<i></i> 자동 저장';if(notify)toast('진행 상황을 저장했습니다.');}
  catch{storageOK=false;$('saveState').textContent='저장 불가 · 설정에서 내보내기';if(notify)toast('브라우저 저장에 실패했습니다. 저장 데이터를 내보내 주세요.');}
@@ -52,11 +54,11 @@ function graph(){
  const cls=`node ${n.gate?'gate ':''}${l?'bought ':''}${can?'unlocked ':'locked '}${afford?'available ':''}${selected===n.id?'selected ':''}${d===1?'ghost ':''}`;
  const popping=el.classList.contains('pop');if(el.className!==cls+(popping?'pop':''))el.className=cls+(popping?'pop':'');
  el.disabled=d===1;el.tabIndex=d>1?0:-1;
- el.querySelector('.symbol').textContent=d===1?'···':n.symbol;
+ setIcon(el.querySelector('.symbol'),d===1?'LockKeyhole':n.id);
  el.querySelector('.node-id').textContent=d===1?'???':String(n.id).padStart(3,'0');
  el.querySelector('.node-name').textContent=d===1?'UNEXPLORED':n.name;
  el.querySelector('.node-price>span').textContent=d===1?'미발견':l>=n.max?'완료':can?'$'+format(p):'선행 연구 필요';
- el.querySelector('.node-status').textContent=d===1?'':l>=n.max?'✓':n.max>1?`${l}/${n.max}`:'';
+ const status=el.querySelector('.node-status');if(d!==1&&l>=n.max)setIcon(status,'Check');else{status.textContent=d===1?'':n.max>1?`${l}/${n.max}`:'';delete status.dataset.icon;}
  el.querySelector('.level-dots').style.width=(l/n.max*100)+'%';
  el.setAttribute('aria-label',d===1?'미발견 연구':`${n.name}. ${effectText(n)}. ${l>=n.max?'완료':`레벨 ${l}/${n.max}, 비용 ${format(p)} 달러, ${can?'구매 조건 충족':'선행 연구 필요'}`}`);
  }
@@ -66,16 +68,16 @@ function graph(){
 function renderPanel(){
  const n=byId.get(selected);$('nodePanel').hidden=!n;if(!n)return;
  const l=level(state,n),p=cost(state,n,econ),can=unlocked(state,n),max=l>=n.max,afford=state.currencies.money>=p;
- $('panelSymbol').textContent=n.symbol;$('panelSymbol').style.color=CHAPTERS[n.chapter].color;
- $('panelMeta').textContent=`${String(n.id).padStart(3,'0')} / ${CHAPTERS[n.chapter].name}${n.max>1?` · LV.${l}/${n.max}`:''}`;
+ setIcon($('panelSymbol'),n.id);$('panelSymbol').style.color=CHAPTERS[n.chapter].color;
+ $('panelMeta').textContent=`${String(n.id).padStart(3,'0')} / ${CHAPTERS[n.chapter].name}${n.max>1?` · LV.${l}/${n.max}`:''}${n.longTerm?' · 장기 연구':''}`;
  $('panelName').textContent=n.name;$('panelEffect').textContent=effectText(n);
  const reqKey=n.req.map(r=>`${r.id}:${level(state,r.id)>=r.level}`).join(',')+n.any;
  if($('requirements').dataset.key!==reqKey){$('requirements').dataset.key=reqKey;$('requirements').replaceChildren();if(n.any){const label=document.createElement('span');label.className='req';label.textContent='둘 중 하나';$('requirements').append(label);}
- for(const r of n.req){const b=document.createElement('button'),done=level(state,r.id)>=r.level;b.className=`req ${done?'done':''}`;b.textContent=`${done?'✓':'○'} ${byId.get(r.id).name}`;b.onclick=()=>{selectNode(r.id);focusNode(r.id);};$('requirements').append(b);}}
+ for(const r of n.req){const b=document.createElement('button'),done=level(state,r.id)>=r.level;b.className=`req ${done?'done':''}`;b.innerHTML=iconSvg(done?'Check':'Circle');const label=document.createElement('span');label.textContent=byId.get(r.id).name;b.append(label);b.onclick=()=>{selectNode(r.id);focusNode(r.id);};$('requirements').append(b);}}
  $('costLabel').textContent=max?'RESEARCH COMPLETE':'RESEARCH COST';$('panelCost').textContent=max?'완료':'$'+format(p);
  $('buy').className=max?'completed':!can?'blocked':afford?'':'waiting';$('buy').disabled=max||!can;
  $('buyText').textContent=max?'연구 완료':!can?'잠김':n.max>1&&l>0?'레벨 업':'연구';
- $('buyDetail').textContent=max?'✓':!can?'조건 미충족':afford?l?`Lv.${l+1}`:'구매 가능':time((p-state.currencies.money)/(econ.rate*(1+econ.burst/econ.interval)))+' 후';
+ $('buyDetail').textContent=max?'MAX':!can?'조건 미충족':afford?l?`Lv.${l+1}`:'구매 가능':time((p-state.currencies.money)/(econ.rate*(1+econ.burst/econ.interval)))+' 후';
  $('purchaseProgress').style.width=(max?100:Math.min(100,state.currencies.money/p*100))+'%';
 }
 function render(){
@@ -124,19 +126,33 @@ $('exportSave').onclick=()=>{const txt=exportText();const blob=new Blob([txt],{t
 $('importSave').onclick=()=>{$('transfer').hidden=false;$('saveText').value='';$('transferStatus').textContent='현재 진행을 교체할 저장 파일을 선택하거나 데이터를 붙여넣으세요.';$('saveText').focus();};
 $('copySave').onclick=async()=>{try{await navigator.clipboard.writeText($('saveText').value);$('transferStatus').textContent='복사했습니다.';}catch{$('saveText').select();$('transferStatus').textContent='선택한 데이터를 직접 복사해 주세요.';}};
 $('loadFile').onclick=()=>$('saveFile').click();$('saveFile').onchange=async()=>{const f=$('saveFile').files[0];if(!f)return;if(f.size>1000000){$('transferStatus').textContent='저장 파일이 너무 큽니다.';return;}$('saveText').value=await f.text();$('transferStatus').textContent='데이터를 읽었습니다. 아래 복원 버튼을 누르면 적용됩니다.';$('saveFile').value='';};
-function restore(input){const next=validateSave(input);state=next;econ=economy(state);selected=NODES.filter(n=>level(state,n)).at(-1)?.id||1;camera=state.camera||{x:viewport.clientWidth/2,y:100,scale:.84};applySettings();render();transform();lastFrame=performance.now();save();}
+function restore(input){const next=validateSave(input);checkpointOffline(next);state=next;suspended=document.hidden;econ=economy(state);selected=NODES.filter(n=>level(state,n)).at(-1)?.id||1;camera=state.camera||{x:viewport.clientWidth/2,y:100,scale:.84};applySettings();render();transform();lastFrame=performance.now();save();}
 $('applySave').onclick=()=>{try{const txt=$('saveText').value;if(txt.length>1000000)throw Error('저장 데이터가 너무 큽니다.');restore(JSON.parse(txt));$('transferStatus').textContent='저장 데이터를 복원했습니다.';toast('저장 데이터를 복원했습니다.');}catch(e){$('transferStatus').textContent=e instanceof SyntaxError?'JSON 형식을 확인해 주세요.':e.message;}};
 $('resetButton').onclick=()=>{$('resetConfirm').hidden=!$('resetConfirm').hidden;$('resetInput').value='';$('confirmReset').disabled=true;};$('resetInput').oninput=()=>$('confirmReset').disabled=$('resetInput').value!=='RESET';
 $('confirmReset').onclick=()=>{if($('resetInput').value!=='RESET')return;restore(defaultState());try{localStorage.removeItem(BACKUP);}catch{}sessionSeconds=0;$('resetConfirm').hidden=true;$('transfer').hidden=true;$('saveText').value='';$('settingsDialog').close();toast('새 연구를 시작합니다.');focusNode(1);};
-function renderStats(){const e=economy(state);const entries=[['구매한 노드',`${e.count} / 80`],['총 연구 레벨',format(e.total,0)],['구매 횟수',format(state.stats.purchases,0)],['총 획득','$'+format(state.stats.earned)],['총 사용','$'+format(state.stats.spent)],['현재 생산','$'+format(e.rate)+' /s'],['최고 생산','$'+format(state.stats.peak)+' /s'],['캐시 보너스',e.burst?`${format(e.rate*e.burst)} / ${Math.round(e.interval)}s`:'미해금'],['총 플레이 시간',time(state.stats.seconds)],['현재 세션',time(sessionSeconds)],['비용 할인',`${((1-e.discount)*100).toFixed(1)}%`]];$('stats').replaceChildren();for(const [a,b]of entries){const div=document.createElement('div');div.className='stat';const span=document.createElement('span'),strong=document.createElement('strong');span.textContent=a;strong.textContent=b;div.append(span,strong);$('stats').append(div);}$('sectorStats').innerHTML=CHAPTERS.map((c,i)=>{const nodes=NODES.filter(n=>n.chapter===i),count=nodes.filter(n=>level(state,n)).length;return `<div class="sector-row" style="--sector-color:${c.color}"><div><span>${c.name}</span><span>${count} / ${nodes.length}</span></div><span class="bar"><i style="width:${count/nodes.length*100}%"></i></span></div>`;}).join('');}
-document.addEventListener('visibilitychange',()=>{lastFrame=performance.now();pointers.clear();gesture=null;if(document.hidden)save();});window.addEventListener('pagehide',()=>save());
-window.addEventListener('storage',ev=>{if(ev.key!==KEY||!ev.newValue)return;try{const incoming=validateSave(JSON.parse(ev.newValue));const settings=state.settings;state=incoming;state.settings=settings;render();lastFrame=performance.now();}catch{}});
+function renderStats(){const e=economy(state);const entries=[['구매한 노드',`${e.count} / 80`],['총 연구 레벨',format(e.total,0)],['구매 횟수',format(state.stats.purchases,0)],['총 획득','$'+format(state.stats.earned)],['총 사용','$'+format(state.stats.spent)],['현재 생산','$'+format(e.rate)+' /s'],['최고 생산','$'+format(state.stats.peak)+' /s'],['캐시 보너스',e.burst?`${format(e.rate*e.burst)} / ${Math.round(e.interval)}s`:'미해금'],['총 플레이 시간',time(state.stats.seconds)],['오프라인 경과',time(state.stats.offlineSeconds)],['오프라인 수입','$'+format(state.stats.offlineEarned)],['오프라인 환산 생산',time(state.stats.offlineEffectiveSeconds)],['현재 세션',time(sessionSeconds)],['비용 할인',`${((1-e.discount)*100).toFixed(1)}%`]];$('stats').replaceChildren();for(const [a,b]of entries){const div=document.createElement('div');div.className='stat';const span=document.createElement('span'),strong=document.createElement('strong');span.textContent=a;strong.textContent=b;div.append(span,strong);$('stats').append(div);}$('sectorStats').innerHTML=CHAPTERS.map((c,i)=>{const nodes=NODES.filter(n=>n.chapter===i),count=nodes.filter(n=>level(state,n)).length;return `<div class="sector-row" style="--sector-color:${c.color}"><div><span>${c.name}</span><span>${count} / ${nodes.length}</span></div><span class="bar"><i style="width:${count/nodes.length*100}%"></i></span></div>`;}).join('');}
+function suspend(){
+ if(suspended)return;
+ checkpointOffline(state);suspended=true;pointers.clear();gesture=null;save();
+}
+function resume(){
+ if(document.hidden||!suspended)return;
+ // Prefer a newer checkpoint if another window saved while this one was away.
+ try{const raw=localStorage.getItem(KEY);if(raw){const input=JSON.parse(raw);if(input.savedAt>state.savedAt)state=validateSave(input);}}catch{}
+ const reward=settleOffline(state);suspended=false;lastFrame=performance.now();checkpointOffline(state);save();render();
+ if(reward.elapsed>=5&&reward.amount>0)toast(`오프라인 생산 +$${format(reward.amount)}\n${time(reward.elapsed)} 경과 · ${time(reward.effectiveSeconds)}에 해당하는 생산`,8500);
+}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)suspend();else resume();});
+window.addEventListener('pagehide',suspend);window.addEventListener('pageshow',resume);
+window.addEventListener('blur',suspend);window.addEventListener('focus',resume);
+window.addEventListener('storage',ev=>{if(ev.key!==KEY||!ev.newValue)return;try{const incoming=validateSave(JSON.parse(ev.newValue));const settings=state.settings;state=incoming;state.settings=settings;if(!suspended)checkpointOffline(state);render();lastFrame=performance.now();}catch{}});
 let previousWidth=viewport.clientWidth;new ResizeObserver(()=>{const w=viewport.clientWidth;camera.x+=(w-previousWidth)/2;previousWidth=w;constrain();transform();}).observe(viewport);
-function frame(now){const dt=Math.max(0,Math.min(1,(now-lastFrame)/1000));lastFrame=now;if(!document.hidden){sessionSeconds+=dt;const events=tick(state,dt);for(const e of events){if(e.type==='cache'){$('burstToast').textContent=`CACHE +$${format(e.amount)}`;$('burstToast').classList.add('show');clearTimeout(burstTimer);burstTimer=setTimeout(()=>$('burstToast').classList.remove('show'),1800);}}
+function frame(now){const dt=Math.max(0,Math.min(1,(now-lastFrame)/1000));lastFrame=now;if(!document.hidden&&!suspended){sessionSeconds+=dt;const events=tick(state,dt);for(const e of events){if(e.type==='cache'){$('burstToast').textContent=`CACHE +$${format(e.amount)}`;$('burstToast').classList.add('show');clearTimeout(burstTimer);burstTimer=setTimeout(()=>$('burstToast').classList.remove('show'),1800);}}
  if(now-lastRender>160){render();lastRender=now;}if(now-lastSave>10000){save();lastSave=now;}}
  requestAnimationFrame(frame);
 }
-createGraph();applySettings();render();transform();requestAnimationFrame(frame);if(loadNotice)setTimeout(()=>toast(loadNotice),500);if(!storageOK)$('saveState').textContent='저장 불가 · 설정에서 내보내기';
+for(const el of document.querySelectorAll('[data-ui-icon]'))setIcon(el,el.dataset.uiIcon);
+createGraph();applySettings();render();transform();resume();requestAnimationFrame(frame);if(loadNotice)setTimeout(()=>toast(loadNotice),500);if(!storageOK)$('saveState').textContent='저장 불가 · 설정에서 내보내기';
 // Optional browser agent tools use exactly the same state and purchase guard as the UI.
 if(document.modelContext?.registerTool){const lifecycle=new AbortController();const register=tool=>{try{Promise.resolve(document.modelContext.registerTool(tool,{signal:lifecycle.signal})).catch(()=>{});}catch{}};
  register({name:'read_research_state',title:'연구 상태 읽기',description:'현재 자원, 생산량, 발견한 연구와 구매 조건을 읽습니다.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute(){const e=economy(state);return {money:state.currencies.money,rate:e.rate,purchased:e.count,nodes:NODES.filter(n=>discovery(n)>1).map(n=>({id:n.id,name:n.name,level:level(state,n),max:n.max,cost:cost(state,n,e),unlocked:unlocked(state,n)}))};}});

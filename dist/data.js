@@ -40,9 +40,22 @@ catalog.forEach((items,chapter)=>{
  });
  yBase+=pattern.at(-1)[1]+310;
 });
+// Finite local research finishes in the following region. Two late studies
+// are intentionally long-term. Legacy maxima also define save migration.
+export const LEGACY_MAX = {2:20,3:15,6:20,7:15,12:20,16:20,19:20,28:20,32:20,36:25,38:25,49:25,52:20,56:30,64:25,71:30,72:20};
+const caps={2:20,3:5,6:10,7:5,12:20,16:10,19:5,28:5,32:10,36:20,38:10,49:10,52:5,56:20,64:5,71:5,72:5};
+for(const n of NODES){
+ n.addGrowth=1.05;n.recursiveStep=.045;
+ if(caps[n.id]){const ratio=n.max/caps[n.id];n.max=caps[n.id];
+  if(n.type==='add'){n.value*=ratio;n.addGrowth=1.05**ratio;}
+  else n.value=n.value**ratio;
+  n.recursiveStep*=ratio;
+ }
+ if(n.id===31||n.id===50){n.longTerm=true;n.max=n.id===31?20:10;n.value=n.id===31?.0015:.004;}
+}
 export const byId=new Map(NODES.map(n=>[n.id,n]));
 export const MAX_VALUE=1e280;
-export function defaultState(){return {version:1,contentVersion:2,currencies:{money:0},levels:{},stats:{earned:0,spent:0,purchases:0,seconds:0,peak:1},timers:{cache:0,auto:0},settings:{motion:true,touch:true,haptic:true,format:'short',auto:false},camera:null,savedAt:Date.now()};}
+export function defaultState(){const now=Date.now();return {version:1,contentVersion:3,currencies:{money:0},levels:{},stats:{earned:0,spent:0,purchases:0,seconds:0,peak:1,offlineSeconds:0,offlineEarned:0,offlineEffectiveSeconds:0},timers:{cache:0,auto:0},settings:{motion:true,touch:true,haptic:true,format:'short',auto:false},camera:null,offline:{since:now,through:now,rate:1},savedAt:now};}
 export const level=(s,n)=>s.levels[typeof n==='number'?n:n.id]||0;
 export function unlocked(s,n){return n.req.length===0||(n.any?n.req.some(r=>level(s,r.id)>=r.level):n.req.every(r=>level(s,r.id)>=r.level));}
 export function economy(s){
@@ -50,13 +63,13 @@ export function economy(s){
  const count=Object.values(s.levels).filter(v=>v>0).length,total=Object.values(s.levels).reduce((a,b)=>a+b,0);
  for(const n of NODES){const l=level(s,n);if(!l)continue;const v=n.value;
  switch(n.type){
- case 'add':add+=v*l;mul*=1.05**l;break;case 'mul':mul*=v**l;break;case 'addBoost':addBoost*=v**l;break;
+ case 'add':add+=v*l;mul*=n.addGrowth**l;break;case 'mul':mul*=v**l;break;case 'addBoost':addBoost*=v**l;break;
  case 'count':mul*=1+count*v*l;break;case 'levels':mul*=1+total*v*l;break;
  case 'balance':mul*=1+Math.log10(1+s.currencies.money)*v*l;break;
  case 'power':power+=((v-1)*l);break;case 'discount':discount*=v**l;break;
  case 'scaling':scaling*=v**l;break;case 'burst':burst+=v*l;break;
  case 'burstBoost':burstBoost*=v**l;break;case 'burstSpeed':interval*=v**l;break;
- case 'recursive':mul*=v**l*(1+l*.045);break;case 'automation':auto=true;break;
+ case 'recursive':mul*=v**l*(1+l*n.recursiveStep);break;case 'automation':auto=true;break;
  }
  }
  const rate=Math.min(MAX_VALUE,(add*addBoost*mul)**power);
@@ -81,15 +94,15 @@ export function tick(s,dt){
 // Price each level at its intended position along the research graph.
 const reference=defaultState();
 const events=[];
-const waits=[5,6,9,13,17,22,26,30];
+const waits=[5,8,14,21,30,37,44,50];
 // Each research has fixed prices. Later repeatable levels target the region
-// two steps after acquisition; buying a new node never requires MAX levels.
+// one step after acquisition; buying a new node never requires MAX levels.
 // This timeline is only used to author prices, never to lock purchases.
 for(const n of NODES){
  n.costs=[];
- const own=NODES.filter(p=>p.chapter===n.chapter),target=NODES.filter(p=>p.chapter===Math.min(7,n.chapter+2));
+ const own=NODES.filter(p=>p.chapter===n.chapter),target=NODES.filter(p=>p.chapter===Math.min(7,n.chapter+1));
  const progress=(n.id-own[0].id)/Math.max(1,own.length-1);
- const finish=Math.max(n.id+.15,Math.min(79.8,target[0].id+(target.length-1)*(.3+.6*progress)));
+ const finish=n.longTerm?(n.id===31?79.2:79.6):Math.max(n.id+.15,Math.min(79.8,target[0].id+(target.length-1)*(.25+.65*progress)));
  for(let l=0;l<n.max;l++)events.push({n,l,at:l===0?n.id:n.id+(finish-n.id)*l/(n.max-1)});
 }
 events.sort((a,b)=>a.at-b.at||a.n.id-b.n.id);
@@ -104,13 +117,13 @@ for(const {n,l,at} of events){
  n.costs[l]=Math.max(l>0?n.costs[l-1]*1.12:1,price);
  n.baseCost=n.costs[0];reference.levels[n.id]=l+1;
 }
-export function effectText(n){const v=n.value;
+export function effectText(n){const v=+n.value.toFixed(3),growth=+n.addGrowth.toFixed(3);
  switch(n.type){
- case 'add':return `기본 생산 +${v.toLocaleString()} $/s · 생산 ×1.05 / Lv.`;
+ case 'add':return `기본 생산 +${v.toLocaleString()} $/s · 생산 ×${growth} / Lv.`;
  case 'mul':return `생산 ×${v}${n.max>1?' / Lv.':''}`;
  case 'addBoost':return `기본 생산 합계 ×${v}`;
  case 'count':return `구매한 노드마다 생산 +${+(v*100).toFixed(1)}%`;
- case 'levels':return `총 연구 레벨마다 생산 +${+(v*100).toFixed(1)}%`;
+ case 'levels':return `총 연구 레벨마다 생산 +${+(n.value*100).toFixed(2)}%${n.max>1?' / Lv.':''}`;
  case 'balance':return `생산 ×(1 + ${v} × log₁₀(1 + $))`;
  case 'power':return `생산식 지수 +${+(v-1).toFixed(3)}`;
  case 'discount':return `모든 연구 비용 −${Math.round((1-v)*100)}%`;
@@ -118,23 +131,39 @@ export function effectText(n){const v=n.value;
  case 'burst':return `캐시 주기마다 생산량 ${v}초분 추가`;
  case 'burstBoost':return `캐시 보너스 ×${v}`;
  case 'burstSpeed':return `캐시 주기 −${Math.round((1-v)*100)}%`;
- case 'recursive':return `생산 ×(${v}^Lv × (1 + 0.045 × Lv))`;
+ case 'recursive':return `생산 ×(${v}^Lv × (1 + ${+n.recursiveStep.toFixed(3)} × Lv))`;
  case 'automation':return '5초마다 구매한 반복 연구 자동 구매';
  }
 }
-export function validateSave(input){
+export function validateSave(input,now=Date.now()){
  if(!input||typeof input!=='object'||input.version!==1)throw Error('지원하지 않는 저장 버전입니다.');
+ const revision=input.contentVersion??1;
+ if(!Number.isInteger(revision)||revision<1||revision>3)throw Error('지원하지 않는 콘텐츠 버전입니다.');
  const s=defaultState();
  const num=(v,max=MAX_VALUE)=>typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=max;
  if(!input.currencies||!num(input.currencies.money)||!input.levels||Array.isArray(input.levels)||typeof input.levels!=='object')throw Error('저장 데이터가 올바르지 않습니다.');
  s.currencies.money=input.currencies.money;
- for(const [key,value] of Object.entries(input.levels)){const n=byId.get(Number(key));if(!n||String(n.id)!==key||!Number.isInteger(value)||value<0||value>n.max)throw Error('연구 레벨이 올바르지 않습니다.');if(value)s.levels[key]=value;}
+ for(const [key,value] of Object.entries(input.levels)){
+  const n=byId.get(Number(key)),previousMax=LEGACY_MAX[Number(key)]||1,limit=revision<3?previousMax:n?.max;
+  if(!n||String(n.id)!==key||!Number.isInteger(value)||value<0||value>limit)throw Error('연구 레벨이 올바르지 않습니다.');
+  if(value){
+   if(revision<3&&n.longTerm)s.levels[key]=Math.min(n.max,Math.ceil((n.id===31?.016:.023)/n.value));
+   else s.levels[key]=revision<3?Math.min(n.max,Math.ceil(value*n.max/previousMax)):value;
+  }
+ }
  for(const n of NODES)if(level(s,n)&&!unlocked(s,n))throw Error('선행 연구가 누락되었습니다.');
- if(!input.stats||!Object.keys(s.stats).every(k=>num(input.stats[k])))throw Error('통계가 올바르지 않습니다.');
- Object.assign(s.stats,input.stats);
+ const required=['earned','spent','purchases','seconds','peak'];
+ if(!input.stats||!required.every(k=>num(input.stats[k])))throw Error('통계가 올바르지 않습니다.');
+ for(const k of required)s.stats[k]=input.stats[k];
+ for(const k of ['offlineSeconds','offlineEarned','offlineEffectiveSeconds']){if(input.stats[k]!==undefined&&!num(input.stats[k]))throw Error('오프라인 통계가 올바르지 않습니다.');s.stats[k]=input.stats[k]??0;}
  for(const k of ['cache','auto'])if(num(input.timers?.[k],30))s.timers[k]=input.timers[k];
  for(const k of ['motion','touch','haptic','auto'])if(typeof input.settings?.[k]==='boolean')s.settings[k]=input.settings[k];
  if(['short','scientific','engineering'].includes(input.settings?.format))s.settings.format=input.settings.format;
  if(input.camera&&['x','y','scale'].every(k=>Number.isFinite(input.camera[k]))&&input.camera.scale>=.035&&input.camera.scale<=1.7&&Math.abs(input.camera.x)<1e6&&Math.abs(input.camera.y)<1e6)s.camera={...input.camera};
+ const stamp=v=>typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=now;
+ s.savedAt=stamp(input.savedAt)?input.savedAt:now;
+ const e=economy(s);s.offline={since:s.savedAt,through:s.savedAt,rate:Math.min(MAX_VALUE,e.rate*(1+e.burst/e.interval))};
+ const o=input.offline;
+ if(revision===3&&o&&stamp(o.since)&&stamp(o.through)&&o.through>=o.since&&num(o.rate))s.offline={since:o.since,through:o.through,rate:o.rate};
  return s;
 }
