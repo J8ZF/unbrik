@@ -293,6 +293,8 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 .hud .topbar .wordmark b{font-size:18px;letter-spacing:.14em}
 .hud .topbar .wordmark div>span{font-size:9px;letter-spacing:.16em;margin-top:2px}
 .hud .hud-actions .icon-button,.hud #toggleHud{width:38px;height:38px}
+/* 3.0.6: the header toggle keeps the same 38px square as the map and settings buttons (the disclosure button's 44px minimum height made it taller). */
+.hud #toggleHud{min-height:0}
 .hud .resources,.hud.has-coin .resources{display:flex;grid-template-columns:none;gap:8px;padding:8px 12px 9px;scroll-padding-inline:12px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .hud .resources::-webkit-scrollbar{display:none}
 .currency-card{flex:1 1 0;min-width:160px;padding:7px 9px 6px 38px;border:1px solid #2c3842;border-radius:5px;background:#0c131b;position:relative;scroll-snap-align:start;box-shadow:inset 0 1px 0 #ffffff08,0 1px 0 #00000055}
