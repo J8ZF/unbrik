@@ -1,4 +1,4 @@
-# UNBRIK — 3.0.8 (2.0 economy, mainland map, paged header, 환생 prestige and the bloom map)
+# UNBRIK — 3.0.9 (2.0 economy, mainland map, paged header, 환생 prestige and the bloom map)
 
 A portrait incremental game with 105 research nodes across the original eight sectors, 316 finite research levels, dollars and coins. The center is navigation, not a purchasable research. AXIOM is research 105.
 
@@ -95,6 +95,12 @@ Built from the roadmap the user dictated (below, kept for reference) plus the fo
 - Statistics: MAINLAND (nodes, levels, production, cache, lifetime gains), REBIRTH (count, condition, tokens held and earned, nodes, production multiplier, automation, current run, last prestige), TIME (play time, offline). Removed as noise: purchase count, total spent, peak rate, offline-equivalent production, current session, cost discount. A BLOOM PETALS block appears after the first prestige.
 - Save: `currencies.token` (fractional), `prestige {count, tokensEarned, tokensSpent, purchases, levels, auto, last}`, `map`, the new `stats` keys and `offline.full/decay` are all optional on load, so 2.2 saves load unchanged.
 
+### 3.0.9 named units
+
+- New default number notation `named` (설정 → 숫자 표기 → 단위), in the style of idle games such as Miner's Haven: `units.js` names every power of 1000 up to centillion — K, M, B, T, Qa, Qi, Sx, Sp, Oc, No, Dc, UDc, DDc, TDc, QaDc … NoDc, Vg, UVg … NoVg, Tg … Qag … Qig … Sxg … Spg … Ocg … Nog … NoNog, Ce (1e303). Above that it falls back to scientific. `formatNamed` keeps two decimals (1.89UDc), `compactNamed` keeps significant digits (42.0DDc).
+- The short, scientific and engineering notations are unchanged and still selectable. Saves that had the old default (short) and predate `settings.formatV2` switch to named once; picking short again sticks.
+- Module queries are `?v=3.0.9`; `check.mjs` covers the unit table, every power of ten up to 1e303 and the save migration.
+
 ### 3.0.8 prestige research names
 
 - The prestige studies carry concrete AI/ML names instead of generic ones (effects, costs, icons and positions unchanged; AUTOPILOT I–VIII kept): DORMANT — RNN, GRU, HOPFIELD NET, KV CACHE, BOLTZMANN MACHINE, NEURAL TURING MACHINE, WAKE-SLEEP, LSTM; SCALING — PERCEPTRON, ADAM, WORD2VEC, BACKPROP, RESNET, BPE, LORA, TRANSFORMER; EXPANSION (reserved) — BERT, RAG, TOOLFORMER, CLIP, DIFFUSION, MIXTURE OF EXPERTS; REWARD — Q-LEARNING, DQN, ALPHAGO (reserved), MCTS (reserved), PPO (reserved), MUZERO (reserved).
@@ -176,6 +182,7 @@ Current key: `unbrik-save-v2`, schema version 2, economy epoch `unbrik-2.0-rewor
 - `hub.js`, `camera.js`: dodecahedron projection and cancellable movement.
 - `effects.js`, `notifications.js`: selection guard, opal motion, toast deadlines.
 - `prestige.js`: the prestige node table, petal layout, token formula, purchases and aggregated bonuses.
+- `units.js`: named large-number units (default notation).
 - `weather.js`: screen weather (rain, snow, flowers) for both maps, driven by the game weather.
 - `index.html`, `style.css`: game interface; the 2.1 header, the 2.2 header pages and the 3.0 bloom theme/prestige layer are the last blocks of `style.css`.
 - `UNBRIK_3.0.html` (repository root, optional): single-file build of `dist/` (inline CSS, bundled script) that runs from `file://`; regenerate with `scripts/bundle-single.mjs` after changing `dist/`.

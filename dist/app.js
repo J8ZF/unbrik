@@ -1,14 +1,15 @@
-import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeReady,prestige,autoResearch} from './data.js?v=3.0.8';
-import {PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress} from './prestige.js?v=3.0.8';
-import {createWeatherFx} from './weather.js?v=3.0.8';
-import {iconSvg,setIcon} from './icons.js?v=3.0.8';
-import {checkpointOffline,settleOffline} from './offline.js?v=3.0.8';
-import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=3.0.8';
-import {wireframePaths} from './hub.js?v=3.0.8';
-import {UPDATES,updatePage} from './updates.js?v=3.0.8';
-import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=3.0.8';
-import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=3.0.8';
-import {createNotifications} from './notifications.js?v=3.0.8';
+import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeReady,prestige,autoResearch} from './data.js?v=3.0.9';
+import {PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress} from './prestige.js?v=3.0.9';
+import {createWeatherFx} from './weather.js?v=3.0.9';
+import {iconSvg,setIcon} from './icons.js?v=3.0.9';
+import {formatNamed,compactNamed} from './units.js?v=3.0.9';
+import {checkpointOffline,settleOffline} from './offline.js?v=3.0.9';
+import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=3.0.9';
+import {wireframePaths} from './hub.js?v=3.0.9';
+import {UPDATES,updatePage} from './updates.js?v=3.0.9';
+import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=3.0.9';
+import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=3.0.9';
+import {createNotifications} from './notifications.js?v=3.0.9';
 const $=id=>document.getElementById(id);
 const CENTER_SELECTION=-1;
 // Two maps share the viewport: the mainland (research ids 1-105) and the
@@ -42,12 +43,13 @@ function format(n,decimals=2){
  if(!Number.isFinite(n))return '∞';
  if(n<1000)return n.toLocaleString('en-US',{minimumFractionDigits:n<10?decimals:0,maximumFractionDigits:n<100?decimals:0});
  const mode=state.settings.format;
+ if(mode==='named')return formatNamed(n);
  if(mode==='scientific')return n.toExponential(2).replace('+','');
  if(mode==='engineering'){const exp=Math.floor(Math.log10(n)/3)*3;return `${(n/10**exp).toFixed(2)}e${exp}`;}
  const units=['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];
  const k=Math.floor(Math.log10(n)/3);return k<units.length?`${(n/1000**k).toFixed(2).replace(/\.00$/,'')}${units[k]}`:n.toExponential(2).replace('+','');
 }
-function compactFormat(n,digits=3){if(n<1000)return format(n,n<10?1:0);n=Number(n.toPrecision(digits));const exp=Math.floor(Math.log10(n)/3)*3,m=n/10**exp,decimals=Math.max(0,digits-1-Math.floor(Math.log10(m)));if(state.settings.format==='scientific')return n.toExponential(digits-1).replace('+','');if(state.settings.format==='engineering')return m.toFixed(decimals)+'e'+exp;const units=['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];return exp/3<units.length?m.toFixed(decimals)+units[exp/3]:n.toExponential(digits-1).replace('+','');}
+function compactFormat(n,digits=3){if(n<1000)return format(n,n<10?1:0);if(state.settings.format==='named')return compactNamed(n,digits);n=Number(n.toPrecision(digits));const exp=Math.floor(Math.log10(n)/3)*3,m=n/10**exp,decimals=Math.max(0,digits-1-Math.floor(Math.log10(m)));if(state.settings.format==='scientific')return n.toExponential(digits-1).replace('+','');if(state.settings.format==='engineering')return m.toFixed(decimals)+'e'+exp;const units=['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];return exp/3<units.length?m.toFixed(decimals)+units[exp/3]:n.toExponential(digits-1).replace('+','');}
 // Tokens keep two decimals (the prestige formula yields fractions).
 function tokenFormat(n){if(!Number.isFinite(n))return '∞';if(n<1000)return n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2});return format(n);}
 const amountFormat=(k,v)=>k==='token'?tokenFormat(v):format(v);

@@ -29,4 +29,15 @@ const html=fs.readFileSync('dist/index.html','utf8'),app=fs.readFileSync('dist/a
 for(const ref of html.matchAll(/(?:src|href)="([^"?#]+)(?:\?[^"#]*)?"/g))if(!/^(https?:|data:|#)/.test(ref[1]))assert(fs.existsSync('dist/'+ref[1]),`Missing ${ref[1]}`);
 for(const [,name]of html.matchAll(/data-ui-icon="([^"]+)"/g))assert.notEqual(iconSvg(name),iconSvg('LockKeyhole'));
 assert(!html.includes('id="progressBar"'));assert(!html.includes('coin-mark'));assert(html.includes('>¢</span>'));assert(!html.includes('autoSetting'));
+// Named units (default notation): K … Dc, UDc, DDc, TDc … Vg … Ce (1e303).
+{const u=await import('./dist/units.js');const S=u.UNIT_SUFFIXES;
+ assert.equal(S.length,102);assert.deepEqual(S.slice(1,12),['K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc']);
+ assert.deepEqual([S[12],S[13],S[14],S[15],S[20],S[21],S[22],S[31],S[100],S[101]],['UDc','DDc','TDc','QaDc','NoDc','Vg','UVg','Tg','NoNog','Ce']);
+ assert.equal(new Set(S).size,S.length,'Every unit is distinct');
+ for(const [n,full,compact]of [[1234,'1.23K','1.23K'],[5e33,'5Dc','5.00Dc'],[1.89e36,'1.89UDc','1.89UDc'],[1e39,'1DDc','1.00DDc'],[4.2e40,'42DDc','42.0DDc'],[1e63,'1Vg','1.00Vg'],[1e303,'1Ce','1.00Ce']]){assert.equal(u.formatNamed(n),full);assert.equal(u.compactNamed(n,3),compact);}
+ for(let e=3;e<303;e++)for(const f of [1,9.99,999.99]){const m=u.formatNamed(f*10**e).match(/^([0-9.]+)[A-Za-z]+$/);assert(m&&+m[1]>=1&&+m[1]<1000,`${f}e${e}`);}
+ assert.equal(defaultState().settings.format,'named','Named units are the default');
+ const old=defaultState();old.settings.format='short';delete old.settings.formatV2;assert.equal(validateSave(JSON.parse(JSON.stringify(old))).settings.format,'named','Old default saves move to named units once');
+ const chosen=defaultState();chosen.settings.format='short';assert.equal(validateSave(JSON.parse(JSON.stringify(chosen))).settings.format,'short','Choosing short again sticks');
+ const sci=defaultState();sci.settings.format='scientific';delete sci.settings.formatV2;assert.equal(validateSave(JSON.parse(JSON.stringify(sci))).settings.format,'scientific');}
 console.log(JSON.stringify({economy:'passed',nodes:105,totalLevels:316,icons:105,dualCurrencyAtomicPurchase:'passed',coinUnlock:'1 per second',cacheSnapshot:'passed',offlineTwoCurrencies:'passed',saveEpoch:'passed',DOMReferences:'passed'}));

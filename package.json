@@ -1,1 +1,1 @@
-{"name":"unbrik-upgrade-tree","version":"3.0.8","private":true,"type":"module","scripts":{"check":"node check.mjs"}}
+{"name":"unbrik-upgrade-tree","version":"3.0.9","private":true,"type":"module","scripts":{"check":"node check.mjs"}}

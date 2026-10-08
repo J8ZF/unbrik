@@ -7,6 +7,7 @@ import * as updates from './dist/updates.js';
 import * as cameraHelpers from './dist/camera.js';
 import * as prestigeModule from './dist/prestige.js';
 import * as hub from './dist/hub.js';
+import * as units from './dist/units.js';
 
 // Run the actual renderers and controls against a minimal element adapter.
 // This verifies state/DOM wiring, not browser layout or physical touch input.
@@ -21,7 +22,7 @@ const slice=(start,end)=>{const a=app.indexOf(start),b=app.indexOf(end,a);assert
 const source=[slice('const CENTER_SELECTION','const KEY='),slice('function compactFormat(', 'function time('),slice('function syncOpalMotion(){','function save('),slice('function sectorUnlocked(','const visibility='),slice('function createGraph(){','function animatePanel('),slice('function animatePanel(','function ripple('),slice('function buySelected(){','const pointers='),slice('const pointers=',"$('zoomIn').onclick="),slice('let previousWidth=','new ResizeObserver(reframeViewport)'),slice('function renderUpdates(','function suspend('),
  slice("$('toggleHud').onclick=", "$('settings').onclick="),slice("for(const k of ['motion','touch','haptic','mapControls'])", "$('format').onchange="),slice("$('purchaseCheat').onchange=", "$('saveNow').onclick="),slice('let autoClock=0;','function frame(now){'),slice('function applyMapTheme(){',"$('maps').onclick="),slice('function openPrestigeDialog(){','function weatherMode(){')].join('\n');
 const createUI=new Function('deps','$','document',`
- const {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,purchase,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,BRANCHES,CENTER,boundsOf,connectionPath,centerPath,iconSvg,setIcon,UPDATES,updatePage,interpolateCamera,overviewMode,mapFrames,fitCamera,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeReady,prestige,autoResearch,PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress,wireframePaths}=deps;
+ const {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,purchase,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,BRANCHES,CENTER,boundsOf,connectionPath,centerPath,iconSvg,setIcon,UPDATES,updatePage,interpolateCamera,overviewMode,mapFrames,fitCamera,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeReady,prestige,autoResearch,PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress,wireframePaths,formatNamed,compactNamed}=deps;
  let sessionSeconds=0;let state=defaultState(),selected=1,econ=economy(state),saved=null,camera={x:0,y:0,scale:1},cameraMoving=false,updatesPage=1;
  let suspended=false,opalMotion={refresh(){}},weatherFx=null,motionPreference={matches:false};
  let selectionPending=false,selectionEpoch=0,navigationFrame=0,panelAnimation=null,navigatorCloseTimer=0,cameraIntent=null;
@@ -39,7 +40,7 @@ const createUI=new Function('deps','$','document',`
  resize(width,height){viewport.clientWidth=width;viewport.clientHeight=height;reframeViewport();},reduced(value){document.body.classList.toggle('reduced-motion',value)},get activePointers(){return pointers.size},get moving(){return cameraMoving},get pending(){return selectionPending},get state(){return state},get selected(){return selected},get saved(){return saved}};
 `);
 const documentAdapter={...element(),createElement:element,createElementNS:element,body:element()};
-const ui=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,iconSvg,setIcon},$,documentAdapter);
+const ui=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,...units,iconSvg,setIcon},$,documentAdapter);
 let now=0;function finishNavigation(){ui.advance(now+=16);ui.advance(now+=500);}
 ui.applySettings();ui.render();
 // Actual click and captured-pointer event paths, including reselecting the same node.
@@ -176,7 +177,7 @@ for(const through of [0,7,8,19,20,33,34,46,47,60,61,74,75,89,90,105]){
 for(const restoredCollapsed of [true,false]){
  const freshElements=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,element()])),get=id=>freshElements.get(id);
  const doc={...element(),createElement:element,createElementNS:element,body:element()};
- const fresh=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,iconSvg,setIcon},get,doc);
+ const fresh=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,...units,iconSvg,setIcon},get,doc);
  const saved=data.defaultState();saved.settings.panelCollapsed=restoredCollapsed;
  Object.assign(fresh.state,data.validateSave(JSON.parse(JSON.stringify(saved))));fresh.applySettings();fresh.render();
  if(!restoredCollapsed)get('togglePanel').onclick();
@@ -193,7 +194,7 @@ for(const restoredCollapsed of [true,false]){
  const map=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,element()]));
  const get=id=>{assert(map.has(id),`Missing ${id}`);return map.get(id);};
  const doc={...element(),createElement:element,createElementNS:element,body:element()};
- const hud=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,iconSvg,setIcon},get,doc);
+ const hud=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,...units,iconSvg,setIcon},get,doc);
  hud.render();assert(get('cacheMeter').hidden);assert.deepEqual(hud.state.currencies,{money:0,coin:0,token:0});
  hud.state.levels=Object.fromEntries(data.NODES.filter(n=>n.id<=18).map(n=>[n.id,1]));
  hud.state.timers.cache=7.5;hud.render();
@@ -239,7 +240,7 @@ console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',
 {
  const map=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,element()])),get=id=>{assert(map.has(id),`Missing ${id}`);return map.get(id);};
  const doc={...element(),createElement:element,createElementNS:element,body:element()};
- const ui2=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,iconSvg,setIcon},get,doc);
+ const ui2=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,...units,iconSvg,setIcon},get,doc);
  ui2.render();
  assert.equal(get('worldClock').textContent,'07:00');assert.equal(get('worldPhase').textContent,'낮');assert.equal(get('worldWeather').textContent,'맑음');
  assert.equal(get('pageDots').children.length,2,'Main page plus one ledger page');
@@ -260,7 +261,7 @@ console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',
 {
  const map=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,element()])),get=id=>{assert(map.has(id),`Missing ${id}`);return map.get(id);};
  const doc={...element(),createElement:element,createElementNS:element,body:element()};
- const ui3=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,iconSvg,setIcon},get,doc);
+ const ui3=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,...units,iconSvg,setIcon},get,doc);
  ui3.reduced(true);ui3.applyMapTheme();ui3.render();
  assert(get('tokenCard').hidden&&get('compactTokenCard').hidden,'No token card before the first prestige');
  ui3.selectNode(1);assert(get('prestigeButton').hidden,'The prestige button belongs to the center panel');

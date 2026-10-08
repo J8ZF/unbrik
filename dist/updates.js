@@ -1,4 +1,5 @@
 export const UPDATES=[
+ {version:'3.0.9',title:'단위 표기',items:['새 기본 표기 "단위": K · M · B · T · Qa · Qi · Sx · Sp · Oc · No · Dc 다음으로 UDc · DDc · TDc … NoDc, Vg · UVg … 센틸리온 Ce(1e303)까지','이제 1e36 같은 지수 대신 1.89UDc처럼 표시','축약 · 과학 · 공학 표기는 설정에서 그대로 선택 가능']},
  {version:'3.0.8',title:'환생 연구 이름',items:['환생 연구 이름을 실제 인공지능 용어로: DORMANT는 RNN · LSTM 같은 기억 모델, SCALING은 PERCEPTRON부터 TRANSFORMER까지, EXPANSION은 BERT · RAG · CLIP, REWARD는 Q-LEARNING · ALPHAGO · MUZERO','AUTOPILOT I~VIII는 그대로']},
  {version:'3.0.7',title:'날씨 효과',items:['화면의 날씨가 게임 날씨를 따름: 비가 올 때만 비, 맑으면 없음','AXIOM은 눈이 올 때 눈, 환생은 눈 대신 꽃','환생은 비가 많이, AXIOM은 훨씬 적게','날씨가 바뀌면 내리던 것은 끝까지 떨어지고 새 날씨가 위에서 들어옴']},
  {version:'3.0.6',title:'상단 버튼 크기',items:['상단바 열기·닫기 버튼을 지도·설정 버튼과 같은 크기로']},

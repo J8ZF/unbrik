@@ -1,7 +1,7 @@
-import {createRadialLayout} from './layout.js?v=3.0.8';
-import {RESEARCH} from './research.js?v=3.0.8';
-import {PRICES} from './prices.js?v=3.0.8';
-import {PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,prestigeLevel} from './prestige.js?v=3.0.8';
+import {createRadialLayout} from './layout.js?v=3.0.9';
+import {RESEARCH} from './research.js?v=3.0.9';
+import {PRICES} from './prices.js?v=3.0.9';
+import {PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,prestigeLevel} from './prestige.js?v=3.0.9';
 export {PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD};
 export const CHAPTERS = [
  {name:'INITIALIZATION',ko:'초기화',color:'#b9f36d'},
@@ -122,7 +122,7 @@ export const MAP_LAYOUT=createRadialLayout(NODES);
 export const level=(s,n)=>s.levels[typeof n==='number'?n:n.id]||0;
 export function unlocked(s,n){return n.req.length===0||(n.any?n.req.some(r=>level(s,r.id)>=r.level):n.req.every(r=>level(s,r.id)>=r.level));}
 export function sectorProgress(s,chapter){const nodes=MAP_LAYOUT.sectors[chapter].members;const total=nodes.reduce((a,n)=>a+n.max,0),done=nodes.reduce((a,n)=>a+level(s,n),0);return {done,total,complete:done===total};}
-export function defaultState(){const now=Date.now();return {version:2,economyEpoch:ECONOMY_EPOCH,contentVersion:5,layoutVersion:3,currencies:{money:0,coin:0,token:0},levels:{},prestige:defaultPrestige(),stats:{earned:0,spent:0,coinEarned:0,coinSpent:0,purchases:0,seconds:0,peak:1,coinPeak:0,offlineSeconds:0,offlineEarned:0,offlineCoinEarned:0,offlineEffectiveSeconds:0},timers:{cache:0},settings:{motion:true,touch:true,haptic:true,format:'short',purchaseCheat:false,mapControls:false,hudCollapsed:false,panelCollapsed:false},camera:null,map:'main',world:{seconds:0,weather:'clear',weatherUntil:WEATHER_INTERVAL},offline:{since:now,through:now,rate:1,coinRate:0},savedAt:now};}
+export function defaultState(){const now=Date.now();return {version:2,economyEpoch:ECONOMY_EPOCH,contentVersion:5,layoutVersion:3,currencies:{money:0,coin:0,token:0},levels:{},prestige:defaultPrestige(),stats:{earned:0,spent:0,coinEarned:0,coinSpent:0,purchases:0,seconds:0,peak:1,coinPeak:0,offlineSeconds:0,offlineEarned:0,offlineCoinEarned:0,offlineEffectiveSeconds:0},timers:{cache:0},settings:{motion:true,touch:true,haptic:true,format:'named',formatV2:true,purchaseCheat:false,mapControls:false,hudCollapsed:false,panelCollapsed:false},camera:null,map:'main',world:{seconds:0,weather:'clear',weatherUntil:WEATHER_INTERVAL},offline:{since:now,through:now,rate:1,coinRate:0},savedAt:now};}
 export function economy(s){
  const owned=NODES.filter(n=>level(s,n)>0),count=owned.length,total=owned.reduce((a,n)=>a+level(s,n),0),coinUnlocked=level(s,22)>0;
  const v={money:{base:1,mul:1,baseMul:1,discount:1,scaling:1,cache:0,cacheMul:1},coin:{base:0,mul:1,baseMul:1,discount:1,scaling:1,cache:0,cacheMul:1}};
@@ -193,7 +193,7 @@ export function effectText(n){return n.effects.map(e=>{
  case 'recursive':return `${symbol} 생산 ×(${v}^Lv × (1 + 0.08 × Lv²))`;
  }
 }).filter(Boolean).join(' · ');}
-export function copyPreferences(input){const s=defaultState();for(const k of ['motion','touch','haptic','purchaseCheat','mapControls','hudCollapsed','panelCollapsed'])if(typeof input?.settings?.[k]==='boolean')s.settings[k]=input.settings[k];if(['short','scientific','engineering'].includes(input?.settings?.format))s.settings.format=input.settings.format;return s;}
+export function copyPreferences(input){const s=defaultState();for(const k of ['motion','touch','haptic','purchaseCheat','mapControls','hudCollapsed','panelCollapsed'])if(typeof input?.settings?.[k]==='boolean')s.settings[k]=input.settings[k];if(['named','short','scientific','engineering'].includes(input?.settings?.format))s.settings.format=input.settings.format;if(input?.settings?.format==='short'&&input?.settings?.formatV2!==true)s.settings.format='named';return s;}
 export function validateSave(input,now=Date.now()){
  if(!input||input.version!==2||input.economyEpoch!==ECONOMY_EPOCH)throw Error('2.0 리워크 이전 저장은 호환되지 않습니다.');
  const s=copyPreferences(input),num=(v,max=MAX_VALUE)=>typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=max;
