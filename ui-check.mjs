@@ -288,7 +288,7 @@ console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',
  for(const n of roots)assert.equal(ui3.visibility.get(n.id),2);for(const n of second)assert.equal(ui3.visibility.get(n.id),1);for(const n of third)assert.equal(ui3.visibility.get(n.id),0);
  assert(ui3.pEdgeEls.every(e=>e.el.style.display==='none'),'No link is shown before a root is owned');
  assert(!ui3.selectNode(1),'Mainland nodes are not selectable on the flower');assert(ui3.selectNode(1001));
- assert.equal(get('panelMeta').textContent,'P01 / DORMANT · LV.0/4');assert.equal(get('buyText').textContent,'연구','Prestige studies use the mainland verb');
+ assert.equal(get('panelMeta').textContent,'001 / DORMANT · LV.0/4');assert.equal(get('buyText').textContent,'연구','Prestige studies use the mainland verb');
  assert(ui3.buySelected());assert.equal(prestigeModule.prestigeLevel(ui3.state,1001),1);assert.equal(ui3.state.currencies.token,17);
  assert(ui3.pNodeEls.get(1001).className.includes('bought'));assert.equal(ui3.visibility.get(1002),2);assert.equal(ui3.visibility.get(1004),1);
  assert(ui3.pEdgeEls.some(e=>e.from.id===1001&&e.el.style.display===''),'Links appear once the parent is owned');

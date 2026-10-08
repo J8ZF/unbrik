@@ -168,7 +168,7 @@ function createGraph(){
  createHeader();createPrestigeGraph();
 }
 // Automation checks live beside the sector headings (AUTOPILOT nodes).
-function toggleAuto(chapter){if(!prestigeBonuses(state).auto.has(chapter))return false;const on=!state.prestige.auto[chapter];if(on)state.prestige.auto[chapter]=true;else delete state.prestige.auto[chapter];render();save();toast(`${CHAPTERS[chapter].name} 자동 연구 ${on?'ON':'OFF'}`,2500);if(on)runAutomation();return true;}
+function toggleAuto(chapter){if(!prestigeBonuses(state).auto.has(chapter))return false;const on=!state.prestige.auto[chapter];if(on)state.prestige.auto[chapter]=true;else delete state.prestige.auto[chapter];render();save();if(on)runAutomation();return true;}
 // The prestige flower: five petals around a pentagon center, same card
 // and link styling as the mainland, its own layer in the same world.
 const pNodeEls=new Map(),pEdgeEls=[],petalEls=[],petalMarkEls=[];
@@ -187,7 +187,7 @@ function createPrestigeGraph(){
   const c=PRESTIGE_BRANCHES[i],mark=document.createElement('div');mark.className='chapter-mark petal-mark';mark.style.left=petal.label.x+'px';mark.style.top=petal.label.y+'px';mark.style.transform=petal.label.align==='left'?'none':petal.label.align==='right'?'translateX(-100%)':'';mark.style.setProperty('--sector-color',c.color);mark.textContent=`0${i+1} / ${c.name}`;$('pMarks').append(mark);petalMarkEls.push(mark);
   const region=document.createElementNS('http://www.w3.org/2000/svg','path');region.setAttribute('d',petal.path);region.setAttribute('class','sector-region petal-region');region.style.setProperty('--sector-color',c.color);$('pRegions').append(region);petalEls.push(region);
   const root=petal.members[0],spoke=document.createElementNS('http://www.w3.org/2000/svg','path');spoke.setAttribute('d',centerPath(root));spoke.setAttribute('class','center-spoke discovered');spoke.style.setProperty('--sector-color',c.color);$('pSpokes').append(spoke);
-  const jump=document.createElement('button');jump.className='sector-jump';jump.style.setProperty('--sector-color',c.color);jump.innerHTML=`<span class="sector-jump-icon">${iconSvg(root.icon)}</span><span class="sector-jump-copy"><span class="sector-jump-name">${c.name} · ${c.ko}</span><span class="sector-jump-progress"></span></span><span class="sector-jump-state" aria-hidden="true"></span>`;jump.onclick=()=>jumpToPetal(i);$('petalMenu').append(jump);
+  const jump=document.createElement('button');jump.className='sector-jump';jump.style.setProperty('--sector-color',c.color);jump.innerHTML=`<span class="sector-jump-icon">${iconSvg(root.icon)}</span><span class="sector-jump-copy"><span class="sector-jump-name">${c.name}</span><span class="sector-jump-progress"></span></span><span class="sector-jump-state" aria-hidden="true"></span>`;jump.onclick=()=>jumpToPetal(i);$('petalMenu').append(jump);
  });
  $('pCenter').addEventListener('click',ev=>handleMapClick(ev,CENTER_SELECTION));
 }
@@ -200,7 +200,7 @@ function prestigeGraph(){
   const popping=el.classList.contains('pop');if(el.className!==cls+(popping?'pop':''))el.className=cls+(popping?'pop':'');
   el.disabled=d===1;el.tabIndex=d>1?0:-1;
   setIcon(el.querySelector('.symbol'),d===1?'LockKeyhole':n.icon);
-  el.querySelector('.node-id').textContent=d===1?'???':`P${String(n.id-1000).padStart(2,'0')}`;
+  el.querySelector('.node-id').textContent=d===1?'???':String(n.id-1000).padStart(3,'0');
   el.querySelector('.node-name').textContent=d===1?'UNEXPLORED':n.name;
   const priceEl=el.querySelector('.node-price>span');el.classList.remove('dual-cost');setHtml(priceEl,d===1?'미발견':n.reserved?'<span class="locked">예약</span>':l>=n.max?'완료':can?priceMarkup(p):'<span class="locked">선행 연구 필요</span>');
   const status=el.querySelector('.node-status');if(d!==1&&l>=n.max)setIcon(status,'Check');else{status.textContent=d===1?'':n.max>1?`${l}/${n.max}`:'';delete status.dataset.icon;}
@@ -211,8 +211,8 @@ function prestigeGraph(){
  let finished=0;
  $('pCenter').classList.toggle('selected',selected===CENTER_SELECTION);$('pCenter').setAttribute('aria-pressed',String(selected===CENTER_SELECTION));
  PRESTIGE_LAYOUT.petals.forEach((petal,i)=>{const progress=petalProgress(state,i);if(progress.complete)finished++;const current=prestigeById.get(selected)?.branch===i,key=`${progress.done}:${current}`;if(petalEls[i].dataset.viewKey===key)return;petalEls[i].dataset.viewKey=key;
-  petalEls[i].classList.toggle('complete',progress.complete);petalMarkEls[i].classList.toggle('complete',progress.complete);petalMarkEls[i].textContent=`0${i+1} / ${PRESTIGE_BRANCHES[i].name}${progress.complete?' · COMPLETE':''}`;$('pPetal'+i).classList.toggle('complete',progress.complete);
-  const button=$('petalMenu').children[i];button.classList.toggle('complete',progress.complete);button.classList.toggle('is-current',current);button.setAttribute('aria-current',current?'true':'false');setText(button.querySelector('.sector-jump-progress'),progress.complete?'완료':progress.total?`${progress.done} / ${progress.total} 레벨${progress.reserved?` · 예약 ${progress.reserved}`:''}`:`설계 대기 · 예약 ${progress.reserved}`);setIcon(button.querySelector('.sector-jump-state'),progress.complete?'Check':'Circle');button.setAttribute('aria-label',`${PRESTIGE_BRANCHES[i].ko} 섹터. ${progress.complete?'완료':`연구 레벨 ${progress.done}/${progress.total}. 남은 연구로 이동`}`);
+  petalEls[i].classList.toggle('complete',progress.complete);placeMark(petalMarkEls[i],petal,progress.complete);petalMarkEls[i].classList.toggle('complete',progress.complete);petalMarkEls[i].textContent=`0${i+1} / ${PRESTIGE_BRANCHES[i].name}${progress.complete?' · COMPLETE':''}`;$('pPetal'+i).classList.toggle('complete',progress.complete);
+  const button=$('petalMenu').children[i];button.classList.toggle('complete',progress.complete);button.classList.toggle('is-current',current);button.setAttribute('aria-current',current?'true':'false');setText(button.querySelector('.sector-jump-progress'),progress.complete?'완료':progress.total?`${progress.done} / ${progress.total} 레벨`:'예약');setIcon(button.querySelector('.sector-jump-state'),progress.complete?'Check':'Circle');button.setAttribute('aria-label',`${PRESTIGE_BRANCHES[i].ko} 섹터. ${progress.complete?'완료':`연구 레벨 ${progress.done}/${progress.total}. 남은 연구로 이동`}`);
  });
  const purchasable=PRESTIGE_NODES.filter(n=>!n.reserved),owned=purchasable.filter(n=>prestigeLevel(state,n)>0).length;
  setText($('pCenterProgress'),`${owned} / ${purchasable.length} 연구`);$('pCenterResearchProgress').style.width=(owned/purchasable.length*100)+'%';
@@ -277,8 +277,9 @@ function renderLedger(){
 // heading sits just past its farthest visible row, then moves to its place
 // outside the coast.
 const HEADING_LEAD=135;
-function placeHeading(i,sector,complete){
- const el=chapterEls[i];let {x,y,align}=sector.label;
+function placeHeading(i,sector,complete){placeMark(chapterEls[i],sector,complete);}
+function placeMark(el,sector,complete){
+ let {x,y,align}=sector.label;
  if(!complete){
   const visible=sector.members.filter(n=>visibility.get(n.id)>0);
   if(visible.length){
@@ -353,7 +354,7 @@ function renderPanel(){
 function renderPrestigeNode(n){
  const l=prestigeLevel(state,n),p=prestigeCost(state,n),can=prestigeUnlocked(state,n),max=l>=n.max,afford=prestigeAffordable(state,n),branch=PRESTIGE_BRANCHES[n.branch];
  setIcon($('panelSymbol'),n.icon);$('panelSymbol').style.color=branch.color;$('panelSymbol').style.setProperty('--sector-color',branch.color);
- setText($('panelMeta'),`P${String(n.id-1000).padStart(2,'0')} / ${branch.name}${n.max>1?` · LV.${l}/${n.max}`:''}${n.reserved?' · 예약':''}`);
+ setText($('panelMeta'),`${String(n.id-1000).padStart(3,'0')} / ${branch.name}${n.max>1?` · LV.${l}/${n.max}`:''}${n.reserved?' · 예약':''}`);
  setText($('panelName'),n.name);setHtml($('panelEffect'),symbolMarkup(n.ko));
  const reqKey='p'+n.req.map(r=>`${r.id}:${prestigeLevel(state,r.id)>=r.level}`).join(',');
  if($('requirements').dataset.key!==reqKey){$('requirements').dataset.key=reqKey;$('requirements').replaceChildren();
@@ -442,13 +443,11 @@ function buySelected(){if(selectionPending)return false;if(selected===CENTER_SEL
  render();save();if(econ.count===NODES.length&&before<NODES.length)toast(`${NODES.length}개 노드 연구 완료. AXIOM에 도달했습니다.`,0,'important');return true;
 }
 function buyPrestige(n){
- const petalBefore=petalProgress(state,n.branch).complete;
  if(!prestigePurchase(state,n)){if(state.settings.motion){$('buy').classList.remove('shake');void $('buy').offsetWidth;$('buy').classList.add('shake');}if(n.reserved)toast('예약 연구 · 설계 전');else if(prestigeUnlocked(state,n)&&prestigeLevel(state,n)<n.max)toast(`✿${tokenFormat(Math.max(0,prestigeCost(state,n).token-state.currencies.token))} 더 필요합니다.`);return false;}
  if(state.settings.haptic&&navigator.vibrate)navigator.vibrate(14);
  const el=pNodeEls.get(n.id);if(state.settings.motion){el.classList.add('pop');setTimeout(()=>el.classList.remove('pop'),550);for(const edge of pEdgeEls.filter(e=>e.from.id===n.id)){edge.el.classList.add('flashing');setTimeout(()=>edge.el.classList.remove('flashing'),1250);}}
  render();save();
  if(n.effect.type==='auto'&&prestigeLevel(state,n)===1)toast(`${CHAPTERS[n.effect.value].name} 자동 연구 해금 · 본섬 섹터 이름 옆 AUTO 체크`,7000);
- if(!petalBefore&&petalProgress(state,n.branch).complete)toast(`${PRESTIGE_BRANCHES[n.branch].name} 섹터 완료`,6000);
  return true;
 }
 // Pointer-up handles captured taps. Native clicks are a fallback, with no duplicate
@@ -509,7 +508,7 @@ function renderStats(){
  const row=([a,b])=>{const div=document.createElement('div');div.className='stat';const span=document.createElement('span'),strong=document.createElement('strong');span.textContent=a;strong.innerHTML=symbolMarkup(b);div.append(span,strong);return div;};
  $('stats').replaceChildren();for(const entry of entries)$('stats').append(row(entry));
  const label=document.createElement('div');label.className='section-label';label.textContent='REBIRTH';$('stats').append(label);for(const entry of rebirth)$('stats').append(row(entry));
- $('sectorStats').innerHTML=CHAPTERS.flatMap((c,i)=>{if(!sectorUnlocked(i))return [];const nodes=NODES.filter(n=>n.chapter===i),count=nodes.filter(n=>level(state,n)).length;return `<div class="sector-row" style="--sector-color:${c.color}"><div><span>${c.name}${pr.auto[i]?' · AUTO':''}</span><span>${count} / ${nodes.length}</span></div><span class="bar"><i style="width:${count/nodes.length*100}%"></i></span></div>`;}).join('');
+ $('sectorStats').innerHTML=CHAPTERS.flatMap((c,i)=>{if(!sectorUnlocked(i))return [];const nodes=NODES.filter(n=>n.chapter===i),count=nodes.filter(n=>level(state,n)).length;return `<div class="sector-row" style="--sector-color:${c.color}"><div><span>${c.name}</span><span>${count} / ${nodes.length}</span></div><span class="bar"><i style="width:${count/nodes.length*100}%"></i></span></div>`;}).join('');
  $('petalStatsLabel').hidden=!pr.count;$('petalStats').innerHTML=pr.count?PRESTIGE_BRANCHES.map((c,i)=>{const p=petalProgress(state,i);return `<div class="sector-row" style="--sector-color:${c.color}"><div><span>${c.name}</span><span>${p.done} / ${p.total}</span></div><span class="bar"><i style="width:${p.total?p.done/p.total*100:0}%"></i></span></div>`;}).join(''):'';
 }
 function suspend(){
@@ -542,10 +541,9 @@ function animateHub(now){if(now-lastHubFrame<33||cameraMoving||document.hidden||
 let autoClock=0;
 function runAutomation(){
  if(!state.prestige.count||!prestigeBonuses(state).auto.size)return;
- const before=econ.count,sectorsBefore=CHAPTERS.map((_,i)=>sectorProgress(state,i).complete),bought=autoResearch(state,6);if(!bought.length)return;
+ const before=econ.count,bought=autoResearch(state,6);if(!bought.length)return;
  econ=economy(state);
  if(!onPrestige()&&state.settings.motion)for(const n of bought){const el=nodeEls.get(n.id);el.classList.add('pop');setTimeout(()=>el.classList.remove('pop'),550);}
- CHAPTERS.forEach((c,i)=>{if(!sectorsBefore[i]&&sectorProgress(state,i).complete)toast(`AUTO · ${c.name} 섹터 완료`,6000);});
  if(econ.count===NODES.length&&before<NODES.length)toast(`${NODES.length}개 노드 연구 완료. AXIOM에 도달했습니다.`,0,'important');
  render();
 }
@@ -559,7 +557,7 @@ installGameSelectionGuard();
 for(const el of document.querySelectorAll('[data-ui-icon]'))setIcon(el,el.dataset.uiIcon);
 // Map switching and the night theme. The flower keeps the grid, turns the
 // logo pink and the background blue-gray; every surface follows body.theme-bloom.
-function applyMapTheme(){const p=onPrestige();document.body.dataset.map=state.map;document.body.classList.toggle('theme-bloom',p);world.classList.toggle('map-prestige',p);$('prestigeLayer').hidden=!p;for(const id of ['sectorRegions','spokes','edges','centerNode','chapterMarks','nodes'])$(id).toggleAttribute('hidden',p);$('maps').classList.toggle('is-bloom',p);bloom?.refresh();}
+function applyMapTheme(){const p=onPrestige();document.body.dataset.map=state.map;document.body.classList.toggle('theme-bloom',p);world.classList.toggle('map-prestige',p);$('prestigeLayer').hidden=!p;for(const id of ['sectorRegions','spokes','edges','centerNode','chapterMarks','nodes'])$(id).toggleAttribute('hidden',p);bloom?.refresh();}
 const cameraByMap={};
 function presentMap(){selected=selectionByMap[state.map]??defaultSelection();state.settings.panelCollapsed=false;applyMapTheme();econ=economy(state);render();const kept=cameraByMap[state.map];if(kept)camera={...kept};else{cameraIntent={type:'fit'};camera=cameraForIntent();cameraIntent=null;}constrain();transform();state.camera={...camera};}
 let themeTimer=0;
@@ -576,7 +574,7 @@ function renderMapMenu(){
  const menu=$('mapMenu');menu.replaceChildren();const purchasable=PRESTIGE_NODES.filter(n=>!n.reserved),owned=purchasable.filter(n=>prestigeLevel(state,n)>0).length;
  for(const m of MAPS){const locked=!!m.locked?.(state),current=state.map===m.id,main=m.id==='main',b=document.createElement('button');b.className='sector-jump map-jump';b.disabled=locked;b.classList.toggle('is-current',current);b.setAttribute('aria-current',current?'true':'false');b.style.setProperty('--sector-color',main?'#b9f36d':'#f7a8c4');
   const progress=main?`${econ.count} / ${NODES.length} 연구 · $${format(state.currencies.money)}`:locked?`${NODES.length}개 연구 완료 후 $${format(PRESTIGE_THRESHOLD)} 보유 시 환생`:`${owned} / ${purchasable.length} 연구 · ✿${tokenFormat(state.currencies.token)}`;
-  b.innerHTML=`<span class="sector-jump-icon">${iconSvg(main?'brand':'Flower')}</span><span class="sector-jump-copy"><span class="sector-jump-name">${m.ko}${current?' · 현재':''}</span><span class="sector-jump-progress"></span></span><span class="sector-jump-state" aria-hidden="true">${iconSvg(current?'Check':locked?'LockKeyhole':'ChevronRight')}</span>`;
+  b.innerHTML=`<span class="sector-jump-icon">${iconSvg(main?'brand':'Flower')}</span><span class="sector-jump-copy"><span class="sector-jump-name">${m.ko}</span><span class="sector-jump-progress"></span></span><span class="sector-jump-state" aria-hidden="true">${iconSvg(current?'Check':locked?'LockKeyhole':'ChevronRight')}</span>`;
   b.querySelector('.sector-jump-progress').innerHTML=symbolMarkup(progress);b.onclick=()=>{closeMaps();if(!current)switchMap(m.id);};menu.append(b);}
 }
 function openMaps(){renderMapMenu();if(!$('mapDialog').open)$('mapDialog').showModal();}

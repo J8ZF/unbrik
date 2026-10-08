@@ -1,4 +1,4 @@
-# UNBRIK — 3.0.3 (2.0 economy, mainland map, paged header, 환생 prestige and the bloom map)
+# UNBRIK — 3.0.4 (2.0 economy, mainland map, paged header, 환생 prestige and the bloom map)
 
 A portrait incremental game with 105 research nodes across the original eight sectors, 316 finite research levels, dollars and coins. The center is navigation, not a purchasable research. AXIOM is research 105.
 
@@ -94,6 +94,16 @@ Built from the roadmap the user dictated (below, kept for reference) plus the fo
 - Rebirth sequence: confirm → blackout with the spinning UNBRIK polyhedron, "N번째 환생 · ✿tokens" → the mainland resets under the blackout → the flower appears with a sticky notice.
 - Statistics: MAINLAND (nodes, levels, production, cache, lifetime gains), REBIRTH (count, condition, tokens held and earned, nodes, production multiplier, automation, current run, last prestige), TIME (play time, offline). Removed as noise: purchase count, total spent, peak rate, offline-equivalent production, current session, cost discount. A BLOOM PETALS block appears after the first prestige.
 - Save: `currencies.token` (fractional), `prestige {count, tokensEarned, tokensSpent, purchases, levels, auto, last}`, `map`, the new `stats` keys and `offline.full/decay` are all optional on load, so 2.2 saves load unchanged.
+
+### 3.0.4 prestige interface, second pass
+
+Every prestige screen was compared field by field with its mainland counterpart; additions that were never asked for are removed:
+- Navigator rows show the sector name only (no Korean subtitle); progress is "N / M 레벨" or 완료, an all-reserved sector shows 예약 (no "설계 대기", no "· 예약 N" suffix).
+- Prestige study numbers use the mainland style (001), not P01.
+- Map tab rows no longer append "· 현재" (the highlight and check mark the current map, as in the navigator); the header map button is no longer tinted pink on the prestige map.
+- Statistics sector rows no longer append "· AUTO".
+- Notices the mainland does not have are gone: sector completion on the prestige map, AUTO on/off, sectors completed by automation. Kept: the AUTOPILOT unlock notice (like the mainland's coin-unlock notice) and the prestige notices that were asked for.
+- Prestige sector headings follow the unlocked frontier until the sector is complete, exactly like mainland headings (`placeMark` is shared).
 
 ### 3.0.3 prestige interface
 

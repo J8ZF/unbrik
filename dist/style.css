@@ -412,7 +412,6 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 .hud.is-collapsed .compact-currency.currency-token:first-child,.compact-currency.currency-token:first-child{padding-left:0;border-left:0}
 #hudPageMain .currency-token .balance{letter-spacing:-.03em}
 /* Header map button */
-#maps.is-bloom{color:var(--token);border-color:color-mix(in srgb,var(--token) 40%,var(--line))}
 /* Automation checks beside the sector headings */
 .chapter-mark .mark-text{display:inline-block;vertical-align:middle}
 .chapter-mark .auto-toggle{display:inline-flex;align-items:center;gap:.4em;vertical-align:middle;margin-left:.9em;min-height:2.3em;padding:.4em .8em .4em .65em;font:inherit;font-size:1.25em;font-weight:700;letter-spacing:.1em;border:2px solid var(--sector-color);border-radius:.5em;background:#0f1820;color:var(--sector-color);opacity:.95;pointer-events:auto;cursor:pointer;transition:background .18s,color .18s,transform .15s}
