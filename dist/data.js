@@ -26,7 +26,7 @@ export const CURRENCY_DEFS={
 // Maps. The header's first page and the collapsed header show the currencies
 // of the current map; a future prestige map lists its own token here.
 export const MAPS=[
- {id:'main',name:'본섬',ko:'본섬',currencies:['money','coin'],theme:'engine'},
+ {id:'main',name:'액시엄',ko:'액시엄',currencies:['money','coin'],theme:'engine'},
  {id:'prestige',name:'환생',ko:'환생',currencies:['token'],theme:'bloom',locked:s=>(s.prestige?.count||0)===0},
 ];
 export const defaultPrestige=()=>({count:0,tokensEarned:0,tokensSpent:0,purchases:0,levels:{},auto:{},last:null,noticed:false});

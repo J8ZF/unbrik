@@ -1,4 +1,4 @@
-# UNBRIK — 3.0.4 (2.0 economy, mainland map, paged header, 환생 prestige and the bloom map)
+# UNBRIK — 3.0.5 (2.0 economy, mainland map, paged header, 환생 prestige and the bloom map)
 
 A portrait incremental game with 105 research nodes across the original eight sectors, 316 finite research levels, dollars and coins. The center is navigation, not a purchasable research. AXIOM is research 105.
 
@@ -94,6 +94,11 @@ Built from the roadmap the user dictated (below, kept for reference) plus the fo
 - Rebirth sequence: confirm → blackout with the spinning UNBRIK polyhedron, "N번째 환생 · ✿tokens" → the mainland resets under the blackout → the flower appears with a sticky notice.
 - Statistics: MAINLAND (nodes, levels, production, cache, lifetime gains), REBIRTH (count, condition, tokens held and earned, nodes, production multiplier, automation, current run, last prestige), TIME (play time, offline). Removed as noise: purchase count, total spent, peak rate, offline-equivalent production, current session, cost discount. A BLOOM PETALS block appears after the first prestige.
 - Save: `currencies.token` (fractional), `prestige {count, tokensEarned, tokensSpent, purchases, levels, auto, last}`, `map`, the new `stats` keys and `offline.full/decay` are all optional on load, so 2.2 saves load unchanged.
+
+### 3.0.5 labels
+
+- Statistics: REBIRTH SECTORS rows count bought research per sector (reserved slots excluded; an all-reserved sector shows 예약), the same measure as the RESEARCH SECTORS rows, instead of upgrade levels.
+- The mainland map is named 액시엄 in the map tab, the navigator's map row and the autopilot notice (`MAPS[0].ko`). Older update-log entries keep their wording.
 
 ### 3.0.4 prestige interface, second pass
 

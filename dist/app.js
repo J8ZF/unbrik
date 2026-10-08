@@ -421,7 +421,7 @@ function focusNode(id,onComplete=null){cameraIntent={type:'node',id};moveCamera(
 function fit(){cancelSelection();render();cameraIntent={type:'fit'};moveCamera(cameraForIntent());}
 function openCenter(){selectCenter();cameraIntent={type:'center'};moveCamera(cameraForIntent());}
 function updateNavigatorScroll(){const content=$('sectorDialog').querySelector('.navigator-content');$('navigatorScrollHint').hidden=content.scrollHeight-content.clientHeight-content.scrollTop<12;}
-function openNavigator(){clearTimeout(navigatorCloseTimer);const p=onPrestige();$('sectorMenu').hidden=p;$('petalMenu').hidden=!p;const unlocked=state.prestige.count>0;setText($('navMapsHint'),unlocked?(p?'본섬으로':'환생으로'):'환생 · 잠김');$('sectorDialog').classList.remove('closing');if(!$('sectorDialog').open)$('sectorDialog').showModal();requestAnimationFrame(updateNavigatorScroll);}
+function openNavigator(){clearTimeout(navigatorCloseTimer);const p=onPrestige();$('sectorMenu').hidden=p;$('petalMenu').hidden=!p;const unlocked=state.prestige.count>0;setText($('navMapsHint'),unlocked?(p?'액시엄으로':'환생으로'):'환생 · 잠김');$('sectorDialog').classList.remove('closing');if(!$('sectorDialog').open)$('sectorDialog').showModal();requestAnimationFrame(updateNavigatorScroll);}
 function closeNavigator(){const dialog=$('sectorDialog');if(!dialog.open)return;clearTimeout(navigatorCloseTimer);dialog.classList.add('closing');const finish=()=>{dialog.close();dialog.classList.remove('closing');};if(document.body.classList.contains('reduced-motion'))finish();else navigatorCloseTimer=setTimeout(finish,160);}
 function jumpToSector(chapter){
  if(!sectorUnlocked(chapter))return false;const members=MAP_LAYOUT.sectors[chapter].members;
@@ -447,7 +447,7 @@ function buyPrestige(n){
  if(state.settings.haptic&&navigator.vibrate)navigator.vibrate(14);
  const el=pNodeEls.get(n.id);if(state.settings.motion){el.classList.add('pop');setTimeout(()=>el.classList.remove('pop'),550);for(const edge of pEdgeEls.filter(e=>e.from.id===n.id)){edge.el.classList.add('flashing');setTimeout(()=>edge.el.classList.remove('flashing'),1250);}}
  render();save();
- if(n.effect.type==='auto'&&prestigeLevel(state,n)===1)toast(`${CHAPTERS[n.effect.value].name} 자동 연구 해금 · 본섬 섹터 이름 옆 AUTO 체크`,7000);
+ if(n.effect.type==='auto'&&prestigeLevel(state,n)===1)toast(`${CHAPTERS[n.effect.value].name} 자동 연구 해금 · 액시엄 섹터 이름 옆 AUTO 체크`,7000);
  return true;
 }
 // Pointer-up handles captured taps. Native clicks are a fallback, with no duplicate
@@ -509,7 +509,7 @@ function renderStats(){
  $('stats').replaceChildren();for(const entry of entries)$('stats').append(row(entry));
  const label=document.createElement('div');label.className='section-label';label.textContent='REBIRTH';$('stats').append(label);for(const entry of rebirth)$('stats').append(row(entry));
  $('sectorStats').innerHTML=CHAPTERS.flatMap((c,i)=>{if(!sectorUnlocked(i))return [];const nodes=NODES.filter(n=>n.chapter===i),count=nodes.filter(n=>level(state,n)).length;return `<div class="sector-row" style="--sector-color:${c.color}"><div><span>${c.name}</span><span>${count} / ${nodes.length}</span></div><span class="bar"><i style="width:${count/nodes.length*100}%"></i></span></div>`;}).join('');
- $('petalStatsLabel').hidden=!pr.count;$('petalStats').innerHTML=pr.count?PRESTIGE_BRANCHES.map((c,i)=>{const p=petalProgress(state,i);return `<div class="sector-row" style="--sector-color:${c.color}"><div><span>${c.name}</span><span>${p.done} / ${p.total}</span></div><span class="bar"><i style="width:${p.total?p.done/p.total*100:0}%"></i></span></div>`;}).join(''):'';
+ $('petalStatsLabel').hidden=!pr.count;$('petalStats').innerHTML=pr.count?PRESTIGE_BRANCHES.map((c,i)=>{const nodes=PRESTIGE_NODES.filter(n=>n.branch===i&&!n.reserved),count=nodes.filter(n=>prestigeLevel(state,n)).length;return `<div class="sector-row" style="--sector-color:${c.color}"><div><span>${c.name}</span><span>${nodes.length?`${count} / ${nodes.length}`:'예약'}</span></div><span class="bar"><i style="width:${nodes.length?count/nodes.length*100:0}%"></i></span></div>`;}).join(''):'';
 }
 function suspend(){
  if(suspended)return;
