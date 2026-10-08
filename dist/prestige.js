@@ -3,7 +3,7 @@
 // petals grow from a pentagon center; each petal is a small flow like the
 // mainland sectors. Node names use AI vocabulary. Nodes marked `reserved`
 // are placeholders for designs that do not exist yet: visible, not purchasable.
-import {buildLand,boundsOf,CARD} from './layout.js?v=3.0.7';
+import {buildLand,boundsOf,CARD} from './layout.js?v=3.0.8';
 export const PRESTIGE_THRESHOLD=5e33;     // $5.00Dc held after finishing the tree
 export const PRESTIGE_BASE_TOKENS=10;    // tokens at exactly the threshold
 export const PRESTIGE_BRANCHES=[
@@ -18,23 +18,23 @@ export const PETAL_ROWS=[[1,2,2,2,1],[1,2,2,2,1],[1,2,2,2,1],[1,2,2,1],[1,2,2,1]
 // effect: {type,value} applied per level in prestigeBonuses(). cost: tokens per level.
 const DEF=[
  // 0 DORMANT — offline reward
- ['CHECKPOINT','Bookmark',4,[3,4,5,8],{type:'offlineFull',value:900},'오프라인 100% 생산 구간 +15분 / Lv'],
- ['WARM START','Coffee',3,[3,5,7],{type:'offlineDecay',value:300},'오프라인 감쇠 시간 상수 +5분 / Lv'],
- ['IDLE INFERENCE','Moon',1,[4],{type:'offlineRate',value:1.5},'오프라인 생산 ×1.5'],
- ['BATCH REPLAY','Hourglass',3,[5,7,10],{type:'offlineFull',value:600},'오프라인 100% 생산 구간 +10분 / Lv'],
- ['PERSISTENCE','Anchor',2,[6,9],{type:'offlineRate',value:1.5},'오프라인 생산 ×1.5 / Lv'],
- ['LONG CONTEXT','BookOpen',2,[7,11],{type:'offlineDecay',value:600},'오프라인 감쇠 시간 상수 +10분 / Lv'],
- ['SNAPSHOT','Camera',1,[10],{type:'offlineFull',value:1800},'오프라인 100% 생산 구간 +30분'],
- ['DREAMING','CloudMoon',1,[16],{type:'offlineRate',value:2},'오프라인 생산 ×2'],
+ ['RNN','Bookmark',4,[3,4,5,8],{type:'offlineFull',value:900},'오프라인 100% 생산 구간 +15분 / Lv'],
+ ['GRU','Coffee',3,[3,5,7],{type:'offlineDecay',value:300},'오프라인 감쇠 시간 상수 +5분 / Lv'],
+ ['HOPFIELD NET','Moon',1,[4],{type:'offlineRate',value:1.5},'오프라인 생산 ×1.5'],
+ ['KV CACHE','Hourglass',3,[5,7,10],{type:'offlineFull',value:600},'오프라인 100% 생산 구간 +10분 / Lv'],
+ ['BOLTZMANN MACHINE','Anchor',2,[6,9],{type:'offlineRate',value:1.5},'오프라인 생산 ×1.5 / Lv'],
+ ['NEURAL TURING MACHINE','BookOpen',2,[7,11],{type:'offlineDecay',value:600},'오프라인 감쇠 시간 상수 +10분 / Lv'],
+ ['WAKE-SLEEP','Camera',1,[10],{type:'offlineFull',value:1800},'오프라인 100% 생산 구간 +30분'],
+ ['LSTM','CloudMoon',1,[16],{type:'offlineRate',value:2},'오프라인 생산 ×2'],
  // 1 SCALING — production
- ['SCALING LAW','Sprout',1,[3],{type:'allMul',value:3},'$ · ¢ 전체 생산 ×3'],
- ['LEARNING RATE','Flame',10,[2,3,4,5,6,7,8,9,10,11],{type:'moneyMul',value:1.15},'$ 생산 +15% / Lv'],
- ['EMBEDDING','Gem',5,[3,4,5,6,7],{type:'baseAdd',value:5},'$ 기본 생산 +5 /s / Lv'],
- ['GRADIENT STEP','Footprints',3,[5,7,9],{type:'coinMul',value:1.5},'¢ 생산 ×1.5 / Lv'],
- ['ATTENTION','Eye',4,[5,6,8,10],{type:'cacheMul',value:1.25},'캐시 지급량 ×1.25 / Lv'],
- ['TOKENIZER','Tag',5,[4,5,6,7,8],{type:'discount',value:.95},'$ 연구 비용 −5% / Lv'],
- ['FINE-TUNING','SlidersHorizontal',3,[8,11,16],{type:'moneyMul',value:1.5},'$ 생산 ×1.5 / Lv'],
- ['OPTIMIZER','Zap',1,[17],{type:'allMul',value:4},'$ · ¢ 전체 생산 ×4'],
+ ['PERCEPTRON','Sprout',1,[3],{type:'allMul',value:3},'$ · ¢ 전체 생산 ×3'],
+ ['ADAM','Flame',10,[2,3,4,5,6,7,8,9,10,11],{type:'moneyMul',value:1.15},'$ 생산 +15% / Lv'],
+ ['WORD2VEC','Gem',5,[3,4,5,6,7],{type:'baseAdd',value:5},'$ 기본 생산 +5 /s / Lv'],
+ ['BACKPROP','Footprints',3,[5,7,9],{type:'coinMul',value:1.5},'¢ 생산 ×1.5 / Lv'],
+ ['RESNET','Eye',4,[5,6,8,10],{type:'cacheMul',value:1.25},'캐시 지급량 ×1.25 / Lv'],
+ ['BPE','Tag',5,[4,5,6,7,8],{type:'discount',value:.95},'$ 연구 비용 −5% / Lv'],
+ ['LORA','SlidersHorizontal',3,[8,11,16],{type:'moneyMul',value:1.5},'$ 생산 ×1.5 / Lv'],
+ ['TRANSFORMER','Zap',1,[17],{type:'allMul',value:4},'$ · ¢ 전체 생산 ×4'],
  // 2 AGENT — automation, one node per mainland sector
  ['AUTOPILOT I','Bike',1,[3],{type:'auto',value:0},'1섹터 INITIALIZATION 자동 연구'],
  ['AUTOPILOT II','Car',1,[4],{type:'auto',value:1},'2섹터 ARITHMETIC 자동 연구'],
@@ -45,19 +45,19 @@ const DEF=[
  ['AUTOPILOT VII','Plane',1,[10],{type:'auto',value:6},'7섹터 ARCHITECTURE 자동 연구'],
  ['AUTOPILOT VIII','Rocket',1,[13],{type:'auto',value:7},'8섹터 COMPUTATION 자동 연구'],
  // 3 EXPANSION — reserved for studies that are not designed yet
- ['TRANSFER','DoorOpen',1,[5],{type:'reserved'},'예약 · 설계 전'],
- ['RETRIEVAL','Compass',1,[6],{type:'reserved'},'예약 · 설계 전'],
- ['TOOL USE','Hammer',1,[6],{type:'reserved'},'예약 · 설계 전'],
- ['MULTIMODAL','Palette',1,[8],{type:'reserved'},'예약 · 설계 전'],
- ['WORLD MODEL','Telescope',1,[8],{type:'reserved'},'예약 · 설계 전'],
- ['ALIGNMENT','Scale',1,[11],{type:'reserved'},'예약 · 설계 전'],
+ ['BERT','DoorOpen',1,[5],{type:'reserved'},'예약 · 설계 전'],
+ ['RAG','Compass',1,[6],{type:'reserved'},'예약 · 설계 전'],
+ ['TOOLFORMER','Hammer',1,[6],{type:'reserved'},'예약 · 설계 전'],
+ ['CLIP','Palette',1,[8],{type:'reserved'},'예약 · 설계 전'],
+ ['DIFFUSION','Telescope',1,[8],{type:'reserved'},'예약 · 설계 전'],
+ ['MIXTURE OF EXPERTS','Scale',1,[11],{type:'reserved'},'예약 · 설계 전'],
  // 4 REWARD — tokens; the rest reserved until the branch is designed
- ['REWARD MODEL','Star',4,[3,5,7,10],{type:'tokenMul',value:.25},'환생 토큰 +25% / Lv'],
- ['DISTILLATION','CakeSlice',5,[3,4,5,6,7],{type:'tokenAdd',value:1},'환생마다 토큰 +1 / Lv'],
- ['SELF-PLAY','Lollipop',1,[6],{type:'reserved'},'예약 · 설계 전'],
- ['CURRICULUM','Cookie',1,[6],{type:'reserved'},'예약 · 설계 전'],
- ['RLHF','IceCreamCone',1,[8],{type:'reserved'},'예약 · 설계 전'],
- ['EMERGENCE','Gift',1,[11],{type:'reserved'},'예약 · 설계 전'],
+ ['Q-LEARNING','Star',4,[3,5,7,10],{type:'tokenMul',value:.25},'환생 토큰 +25% / Lv'],
+ ['DQN','CakeSlice',5,[3,4,5,6,7],{type:'tokenAdd',value:1},'환생마다 토큰 +1 / Lv'],
+ ['ALPHAGO','Lollipop',1,[6],{type:'reserved'},'예약 · 설계 전'],
+ ['MCTS','Cookie',1,[6],{type:'reserved'},'예약 · 설계 전'],
+ ['PPO','IceCreamCone',1,[8],{type:'reserved'},'예약 · 설계 전'],
+ ['MUZERO','Gift',1,[11],{type:'reserved'},'예약 · 설계 전'],
 ];
 const ROW_PITCH=190,COLUMN_PITCH=252,FIRST_RADIUS=430;
 const upstream=(j,width,previousWidth)=>{const lo=j/width,hi=(j+1)/width,parents=[];for(let i=0;i<previousWidth;i++){const a=i/previousWidth,b=(i+1)/previousWidth;if(Math.min(hi,b)-Math.max(lo,a)>1e-9)parents.push(i);}return parents;};
@@ -128,7 +128,7 @@ export function prestigeBonuses(s){
 }
 // Tokens for a prestige with the given dollar balance: 10 at the threshold,
 // growing with the square root of the balance, then the REWARD petal.
-// tokens = 10 · √(balance / $5.00Dc) · (1 + REWARD MODEL) + DISTILLATION
+// tokens = 10 · √(balance / $5.00Dc) · (1 + Q-LEARNING) + DQN
 export function tokensFor(s,money=s.currencies.money){
  if(!(money>=PRESTIGE_THRESHOLD))return 0;
  const b=prestigeBonuses(s);

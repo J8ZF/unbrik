@@ -1,14 +1,14 @@
-import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeReady,prestige,autoResearch} from './data.js?v=3.0.7';
-import {PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress} from './prestige.js?v=3.0.7';
-import {createWeatherFx} from './weather.js?v=3.0.7';
-import {iconSvg,setIcon} from './icons.js?v=3.0.7';
-import {checkpointOffline,settleOffline} from './offline.js?v=3.0.7';
-import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=3.0.7';
-import {wireframePaths} from './hub.js?v=3.0.7';
-import {UPDATES,updatePage} from './updates.js?v=3.0.7';
-import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=3.0.7';
-import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=3.0.7';
-import {createNotifications} from './notifications.js?v=3.0.7';
+import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeReady,prestige,autoResearch} from './data.js?v=3.0.8';
+import {PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress} from './prestige.js?v=3.0.8';
+import {createWeatherFx} from './weather.js?v=3.0.8';
+import {iconSvg,setIcon} from './icons.js?v=3.0.8';
+import {checkpointOffline,settleOffline} from './offline.js?v=3.0.8';
+import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=3.0.8';
+import {wireframePaths} from './hub.js?v=3.0.8';
+import {UPDATES,updatePage} from './updates.js?v=3.0.8';
+import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=3.0.8';
+import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=3.0.8';
+import {createNotifications} from './notifications.js?v=3.0.8';
 const $=id=>document.getElementById(id);
 const CENTER_SELECTION=-1;
 // Two maps share the viewport: the mainland (research ids 1-105) and the

@@ -1,7 +1,7 @@
-import {createRadialLayout} from './layout.js?v=3.0.7';
-import {RESEARCH} from './research.js?v=3.0.7';
-import {PRICES} from './prices.js?v=3.0.7';
-import {PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,prestigeLevel} from './prestige.js?v=3.0.7';
+import {createRadialLayout} from './layout.js?v=3.0.8';
+import {RESEARCH} from './research.js?v=3.0.8';
+import {PRICES} from './prices.js?v=3.0.8';
+import {PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,prestigeLevel} from './prestige.js?v=3.0.8';
 export {PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD};
 export const CHAPTERS = [
  {name:'INITIALIZATION',ko:'초기화',color:'#b9f36d'},

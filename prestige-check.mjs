@@ -57,9 +57,9 @@ assert.equal(s.prestige.count,1);assert.equal(s.prestige.tokensEarned,30);assert
 assert(CURRENCY_DEFS.token.shown(s,economy(s)));assert(!MAPS[1].locked(s));assert.equal(currentMap(s).id,'prestige');
 assert.equal(economy(s).rate,1,'A fresh run starts at $1/s again');
 // Buying: roots first, reserved nodes never, costs per level, cheat makes them free.
-const scaling=PRESTIGE_NODES.find(n=>n.name==='SCALING LAW'),rate=PRESTIGE_NODES.find(n=>n.name==='LEARNING RATE'),transfer=PRESTIGE_NODES.find(n=>n.name==='TRANSFER'),embedding=PRESTIGE_NODES.find(n=>n.name==='EMBEDDING');
+const scaling=PRESTIGE_NODES.find(n=>n.name==='PERCEPTRON'),rate=PRESTIGE_NODES.find(n=>n.name==='ADAM'),transfer=PRESTIGE_NODES.find(n=>n.name==='BERT'),embedding=PRESTIGE_NODES.find(n=>n.name==='WORD2VEC');
 assert(prestigeUnlocked(s,scaling)&&!prestigeUnlocked(s,rate));assert(!prestigePurchase(s,rate),'Upstream first');
-assert(prestigePurchase(s,scaling));assert.equal(s.currencies.token,27);assert.equal(economy(s).rate,3,'SCALING LAW triples production');
+assert(prestigePurchase(s,scaling));assert.equal(s.currencies.token,27);assert.equal(economy(s).rate,3,'PERCEPTRON triples production');
 assert(!prestigeAffordable(s,transfer)&&!prestigePurchase(s,transfer),'Reserved nodes cannot be bought');
 assert(prestigePurchase(s,rate));assert.equal(prestigeCost(s,rate).token,rate.cost[1]);assert(Math.abs(economy(s).rate-3*1.15)<1e-9);
 s.settings.purchaseCheat=true;const before=s.currencies.token;assert(prestigePurchase(s,embedding));assert.equal(s.currencies.token,before,'Cheat buys prestige nodes for free');assert(!prestigePurchase(s,transfer),'Cheat still cannot buy reserved nodes');s.settings.purchaseCheat=false;
@@ -73,7 +73,7 @@ assert(sectorProgress(s,0).complete,'Sector 1 completes by itself');assert.equal
 s.prestige.auto[1]=true;assert.deepEqual(autoResearch(s,50),[],'A check without the AUTOPILOT node does nothing');
 // Offline window grows with DORMANT nodes and is stored at departure.
 assert.deepEqual(offlineParams(s),{full:OFFLINE_FULL_SECONDS,decay:OFFLINE_DECAY_SECONDS,rateMul:1});
-const checkpoint=PRESTIGE_NODES.find(n=>n.name==='CHECKPOINT');s.currencies.token+=checkpoint.cost[0];assert(prestigePurchase(s,checkpoint));
+const checkpoint=PRESTIGE_NODES.find(n=>n.name==='RNN');s.currencies.token+=checkpoint.cost[0];assert(prestigePurchase(s,checkpoint));
 assert.equal(offlineParams(s).full,OFFLINE_FULL_SECONDS+900);checkpointOffline(s,0);assert.equal(s.offline.full,OFFLINE_FULL_SECONDS+900);
 const settled=settleOffline(s,(OFFLINE_FULL_SECONDS+900)*1000);assert(Math.abs(settled.effectiveSeconds-(OFFLINE_FULL_SECONDS+900))<1e-6,'The longer window pays in full');
 // Saves: the prestige block round-trips, a 2.2 save without it loads, bad blocks are rejected.
