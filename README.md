@@ -98,7 +98,7 @@ Built from the roadmap the user dictated (below, kept for reference) plus the fo
 ### 3.0.5 labels
 
 - Statistics: REBIRTH SECTORS rows count bought research per sector (reserved slots excluded; an all-reserved sector shows 예약), the same measure as the RESEARCH SECTORS rows, instead of upgrade levels.
-- The mainland map is named 액시엄 in the map tab, the navigator's map row and the autopilot notice (`MAPS[0].ko`). Older update-log entries keep their wording.
+- The mainland map is named AXIOM in the map tab, the navigator's map row and the autopilot notice (`MAPS[0].ko`). Older update-log entries keep their wording.
 
 ### 3.0.4 prestige interface, second pass
 

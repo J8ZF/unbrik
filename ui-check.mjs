@@ -312,7 +312,7 @@ console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',
  assert(!data.level(ui3.state,data.MAP_LAYOUT.sectors[1].members[0]),'Automation never crosses into a sector without its own check');
  assert(toggle.hidden,'A finished sector hides its check');
  // Stats show the rebirth block; the save round-trips with the prestige data.
- ui3.renderStats();assert(get('petalStats').innerHTML.includes('1 / 8'),'Prestige sector rows count bought research (DORMANT: 1 of 8)');assert(get('petalStats').innerHTML.includes('예약'));assert.equal(data.MAPS[0].ko,'액시엄');assert(get('stats').children.some(c=>c.textContent==='REBIRTH'));assert(!get('petalStatsLabel').hidden);assert.equal(get('stats').children[0].children[0].textContent,'구매한 노드','2.2.2 stat labels are kept');
+ ui3.renderStats();assert(get('petalStats').innerHTML.includes('1 / 8'),'Prestige sector rows count bought research (DORMANT: 1 of 8)');assert(get('petalStats').innerHTML.includes('예약'));assert.equal(data.MAPS[0].ko,'AXIOM');assert(get('stats').children.some(c=>c.textContent==='REBIRTH'));assert(!get('petalStatsLabel').hidden);assert.equal(get('stats').children[0].children[0].textContent,'구매한 노드','2.2.2 stat labels are kept');
  const saved=data.validateSave(JSON.parse(JSON.stringify(ui3.state)));assert.equal(saved.prestige.count,1);assert.equal(saved.currencies.token,14);assert.deepEqual(saved.prestige.auto,{0:true});
  // The flower keeps its selection when the player returns.
  assert(ui3.switchMap('prestige'));assert.equal(ui3.selected,1009);
