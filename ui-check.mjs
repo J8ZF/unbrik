@@ -267,7 +267,7 @@ console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',
  ui3.selectCenter();assert(get('prestigeButton').hidden,'No prestige button before the tree is complete');assert(get('hubBadge').hidden);assert(!ui3.state.prestige.noticed);
  assert.equal(get('tokenNote').textContent,'환생 0회');
  // Map dialog: the flower is locked until the first prestige.
- ui3.openMaps();assert.equal(get('mapMenu').children.length,2);assert(get('mapMenu').children[1].disabled);assert(!get('mapMenu').children[0].disabled);
+ ui3.openMaps();assert.equal(get('mapMenu').children.length,2);assert.equal(data.MAPS[1].ko,'환생');assert(get('mapMenu').children[1].disabled);assert(!get('mapMenu').children[0].disabled);
  assert.equal(ui3.switchMap('prestige'),false,'Locked map cannot be entered');
  // Finish the tree and clear the threshold: the button appears, the note changes.
  for(const n of data.NODES)ui3.state.levels[n.id]=n.max;ui3.state.currencies.money=data.PRESTIGE_THRESHOLD/2;

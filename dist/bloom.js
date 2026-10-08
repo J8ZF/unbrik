@@ -12,7 +12,7 @@ export function createBloom(canvas,isEnabled,{raf=globalThis.requestAnimationFra
  // A cherry petal: longer than wide, a shallow notch at the tip, tumbling
  // so its width keeps changing as it turns in the air.
  function petal(fresh){return {x:rnd(-30,w+30),y:fresh?rnd(-60,-10):rnd(-h*.2,h),len:rnd(6,9.5),a:rnd(0,Math.PI*2),spin:rnd(-1.4,1.4),flip:rnd(0,Math.PI*2),flipSpeed:rnd(2,4.2),vx:rnd(-18,10),vy:rnd(34,62),sway:rnd(0,Math.PI*2),swayAmp:rnd(10,26),swaySpeed:rnd(.6,1.4),tint:random()<.6?'#f9c6da':'#fde6ef',alpha:rnd(.55,.85)};}
- function populate(){drops=Array.from({length:Math.round(Math.min(150,Math.max(40,w*h/3200)))},()=>drop(false));petals=Array.from({length:Math.round(Math.min(26,Math.max(10,w*h/16000)))},()=>petal(false));}
+ function populate(){drops=Array.from({length:Math.round(Math.min(36,Math.max(10,w*h/14000)))},()=>drop(false));petals=Array.from({length:Math.round(Math.min(26,Math.max(10,w*h/16000)))},()=>petal(false));}
  function drawPetal(p){
   const L=p.len,W=L*.62*Math.max(.18,Math.abs(Math.cos(p.flip)));
   ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a);ctx.globalAlpha=p.alpha;ctx.fillStyle=p.tint;

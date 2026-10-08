@@ -27,7 +27,7 @@ export const CURRENCY_DEFS={
 // of the current map; a future prestige map lists its own token here.
 export const MAPS=[
  {id:'main',name:'본섬',ko:'본섬',currencies:['money','coin'],theme:'engine'},
- {id:'prestige',name:'환생',ko:'환생 지도',currencies:['token'],theme:'bloom',locked:s=>(s.prestige?.count||0)===0},
+ {id:'prestige',name:'환생',ko:'환생',currencies:['token'],theme:'bloom',locked:s=>(s.prestige?.count||0)===0},
 ];
 export const defaultPrestige=()=>({count:0,tokensEarned:0,tokensSpent:0,purchases:0,levels:{},auto:{},last:null,noticed:false});
 // Ready when every study is at its cap and the balance clears the threshold.

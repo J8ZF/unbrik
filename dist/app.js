@@ -202,22 +202,22 @@ function prestigeGraph(){
   setIcon(el.querySelector('.symbol'),d===1?'LockKeyhole':n.icon);
   el.querySelector('.node-id').textContent=d===1?'???':`P${String(n.id-1000).padStart(2,'0')}`;
   el.querySelector('.node-name').textContent=d===1?'UNEXPLORED':n.name;
-  const priceEl=el.querySelector('.node-price>span');el.classList.remove('dual-cost');setHtml(priceEl,d===1?'미발견':n.reserved?'<span class="locked">예약</span>':l>=n.max?'완료':can?priceMarkup(p):'<span class="locked">선행 노드 필요</span>');
+  const priceEl=el.querySelector('.node-price>span');el.classList.remove('dual-cost');setHtml(priceEl,d===1?'미발견':n.reserved?'<span class="locked">예약</span>':l>=n.max?'완료':can?priceMarkup(p):'<span class="locked">선행 연구 필요</span>');
   const status=el.querySelector('.node-status');if(d!==1&&l>=n.max)setIcon(status,'Check');else{status.textContent=d===1?'':n.max>1?`${l}/${n.max}`:'';delete status.dataset.icon;}
   el.querySelector('.level-dots').style.width=(l/n.max*100)+'%';
-  el.setAttribute('aria-label',d===1?'미발견 노드':`${n.name}. ${n.ko}. ${n.reserved?'예약 노드':l>=n.max?'완료':`레벨 ${l}/${n.max}, 비용 ${priceText(p)}, ${can?'구매 조건 충족':'선행 노드 필요'}`}`);
+  el.setAttribute('aria-label',d===1?'미발견 연구':`${n.name}. ${n.ko}. ${n.reserved?'예약 연구':l>=n.max?'완료':`레벨 ${l}/${n.max}, 비용 ${priceText(p)}, ${can?'구매 조건 충족':'선행 연구 필요'}`}`);
  }
  for(const {el,from,to}of pEdgeEls){const visible=visibility.get(from.id)>1&&visibility.get(to.id)>1;const flash=el.classList.contains('flashing'),cls=`edge ${prestigeLevel(state,to)?'researched':prestigeLevel(state,from)?'active':'ghost'}${flash?' flashing':''}`,key=visible+cls;if(el.dataset.viewKey===key)continue;el.dataset.viewKey=key;el.style.display=visible?'':'none';if(visible)el.setAttribute('class',cls);}
  let finished=0;
  $('pCenter').classList.toggle('selected',selected===CENTER_SELECTION);$('pCenter').setAttribute('aria-pressed',String(selected===CENTER_SELECTION));
  PRESTIGE_LAYOUT.petals.forEach((petal,i)=>{const progress=petalProgress(state,i);if(progress.complete)finished++;const current=prestigeById.get(selected)?.branch===i,key=`${progress.done}:${current}`;if(petalEls[i].dataset.viewKey===key)return;petalEls[i].dataset.viewKey=key;
   petalEls[i].classList.toggle('complete',progress.complete);petalMarkEls[i].classList.toggle('complete',progress.complete);petalMarkEls[i].textContent=`0${i+1} / ${PRESTIGE_BRANCHES[i].name}${progress.complete?' · COMPLETE':''}`;$('pPetal'+i).classList.toggle('complete',progress.complete);
-  const button=$('petalMenu').children[i];button.classList.toggle('complete',progress.complete);button.classList.toggle('is-current',current);button.setAttribute('aria-current',current?'true':'false');setText(button.querySelector('.sector-jump-progress'),progress.complete?'완성':progress.total?`${progress.done} / ${progress.total} 레벨${progress.reserved?` · 예약 ${progress.reserved}`:''}`:`설계 대기 · 예약 ${progress.reserved}`);setIcon(button.querySelector('.sector-jump-state'),progress.complete?'Check':'Circle');button.setAttribute('aria-label',`${PRESTIGE_BRANCHES[i].ko} 꽃잎. ${progress.complete?'완성':`레벨 ${progress.done}/${progress.total}. 남은 노드로 이동`}`);
+  const button=$('petalMenu').children[i];button.classList.toggle('complete',progress.complete);button.classList.toggle('is-current',current);button.setAttribute('aria-current',current?'true':'false');setText(button.querySelector('.sector-jump-progress'),progress.complete?'완료':progress.total?`${progress.done} / ${progress.total} 레벨${progress.reserved?` · 예약 ${progress.reserved}`:''}`:`설계 대기 · 예약 ${progress.reserved}`);setIcon(button.querySelector('.sector-jump-state'),progress.complete?'Check':'Circle');button.setAttribute('aria-label',`${PRESTIGE_BRANCHES[i].ko} 섹터. ${progress.complete?'완료':`연구 레벨 ${progress.done}/${progress.total}. 남은 연구로 이동`}`);
  });
  const purchasable=PRESTIGE_NODES.filter(n=>!n.reserved),owned=purchasable.filter(n=>prestigeLevel(state,n)>0).length;
- setText($('pCenterProgress'),`${owned} / ${purchasable.length} 노드`);
+ setText($('pCenterProgress'),`${owned} / ${purchasable.length} 연구`);$('pCenterResearchProgress').style.width=(owned/purchasable.length*100)+'%';
  if($('sectorDialog').open)updateNavigatorScroll();
- setText($('navigatorHint'),finished===5?'꽃잎으로 이동':'남은 노드로 이동');$('pCenter').setAttribute('aria-label',`UNBRIK 블룸 센터. ${owned}/${purchasable.length} 노드, ${finished}개 꽃잎 완성. 선택하여 내비게이터 열기`);
+ setText($('navigatorHint'),finished===5?'섹터로 이동':'남은 연구로 이동');$('pCenter').setAttribute('aria-label',`UNBRIK 환생 센터. ${owned}/${purchasable.length} 연구, ${finished}개 섹터 완료. 선택하여 내비게이터 열기`);
 }
 // Header pages: page 1 is the current map (clock, weather, its currencies);
 // the following pages list every shown currency, four per page. Swiping the
@@ -334,7 +334,7 @@ function renderPanel(){
  $('requirements').hidden=center;$('purchaseTrack').hidden=center;$('panelEffect').hidden=center;
  renderPrestigeButton(center);
  if(center){setIcon($('panelSymbol'),'brand');$('panelSymbol').style.color='#f2f4f7';$('panelSymbol').style.setProperty('--sector-color','#f2f4f7');setText($('panelName'),'UNBRIK');
-  if(onPrestige()){const complete=PRESTIGE_BRANCHES.filter((_,i)=>petalProgress(state,i).complete).length;setText($('panelMeta'),'CENTER / 00');setText($('costLabel'),'완성한 꽃잎');setHtml($('panelCost'),`${complete} / 5`);}
+  if(onPrestige()){const complete=PRESTIGE_BRANCHES.filter((_,i)=>petalProgress(state,i).complete).length;setText($('panelMeta'),'CENTER / 00');setText($('costLabel'),'완료한 섹터');setHtml($('panelCost'),`${complete} / 5`);}
   else{const complete=CHAPTERS.filter((_,i)=>sectorProgress(state,i).complete).length;setText($('panelMeta'),'CENTER / 00');setText($('costLabel'),'완료한 섹터');setHtml($('panelCost'),`${complete} / 8`);}
   setBuyState('navigator','내비게이터','열기',false);return;}
  if(n.prestige){renderPrestigeNode(n);return;}
@@ -420,7 +420,7 @@ function focusNode(id,onComplete=null){cameraIntent={type:'node',id};moveCamera(
 function fit(){cancelSelection();render();cameraIntent={type:'fit'};moveCamera(cameraForIntent());}
 function openCenter(){selectCenter();cameraIntent={type:'center'};moveCamera(cameraForIntent());}
 function updateNavigatorScroll(){const content=$('sectorDialog').querySelector('.navigator-content');$('navigatorScrollHint').hidden=content.scrollHeight-content.clientHeight-content.scrollTop<12;}
-function openNavigator(){clearTimeout(navigatorCloseTimer);const p=onPrestige();$('sectorMenu').hidden=p;$('petalMenu').hidden=!p;setText($('navigatorSummary'),p?'꽃잎 선택':'섹터 선택');const unlocked=state.prestige.count>0;setText($('navMapsHint'),unlocked?(p?'본섬으로':'환생 지도로'):'환생 지도 · 잠김');$('sectorDialog').classList.remove('closing');if(!$('sectorDialog').open)$('sectorDialog').showModal();requestAnimationFrame(updateNavigatorScroll);}
+function openNavigator(){clearTimeout(navigatorCloseTimer);const p=onPrestige();$('sectorMenu').hidden=p;$('petalMenu').hidden=!p;const unlocked=state.prestige.count>0;setText($('navMapsHint'),unlocked?(p?'본섬으로':'환생으로'):'환생 · 잠김');$('sectorDialog').classList.remove('closing');if(!$('sectorDialog').open)$('sectorDialog').showModal();requestAnimationFrame(updateNavigatorScroll);}
 function closeNavigator(){const dialog=$('sectorDialog');if(!dialog.open)return;clearTimeout(navigatorCloseTimer);dialog.classList.add('closing');const finish=()=>{dialog.close();dialog.classList.remove('closing');};if(document.body.classList.contains('reduced-motion'))finish();else navigatorCloseTimer=setTimeout(finish,160);}
 function jumpToSector(chapter){
  if(!sectorUnlocked(chapter))return false;const members=MAP_LAYOUT.sectors[chapter].members;
@@ -443,12 +443,12 @@ function buySelected(){if(selectionPending)return false;if(selected===CENTER_SEL
 }
 function buyPrestige(n){
  const petalBefore=petalProgress(state,n.branch).complete;
- if(!prestigePurchase(state,n)){if(state.settings.motion){$('buy').classList.remove('shake');void $('buy').offsetWidth;$('buy').classList.add('shake');}if(n.reserved)toast('예약 노드 · 설계 전');else if(prestigeUnlocked(state,n)&&prestigeLevel(state,n)<n.max)toast(`✿${tokenFormat(Math.max(0,prestigeCost(state,n).token-state.currencies.token))} 더 필요합니다.`);return false;}
+ if(!prestigePurchase(state,n)){if(state.settings.motion){$('buy').classList.remove('shake');void $('buy').offsetWidth;$('buy').classList.add('shake');}if(n.reserved)toast('예약 연구 · 설계 전');else if(prestigeUnlocked(state,n)&&prestigeLevel(state,n)<n.max)toast(`✿${tokenFormat(Math.max(0,prestigeCost(state,n).token-state.currencies.token))} 더 필요합니다.`);return false;}
  if(state.settings.haptic&&navigator.vibrate)navigator.vibrate(14);
  const el=pNodeEls.get(n.id);if(state.settings.motion){el.classList.add('pop');setTimeout(()=>el.classList.remove('pop'),550);for(const edge of pEdgeEls.filter(e=>e.from.id===n.id)){edge.el.classList.add('flashing');setTimeout(()=>edge.el.classList.remove('flashing'),1250);}}
  render();save();
  if(n.effect.type==='auto'&&prestigeLevel(state,n)===1)toast(`${CHAPTERS[n.effect.value].name} 자동 연구 해금 · 본섬 섹터 이름 옆 AUTO 체크`,7000);
- if(!petalBefore&&petalProgress(state,n.branch).complete)toast(`${PRESTIGE_BRANCHES[n.branch].name} 꽃잎 완성`,6000);
+ if(!petalBefore&&petalProgress(state,n.branch).complete)toast(`${PRESTIGE_BRANCHES[n.branch].name} 섹터 완료`,6000);
  return true;
 }
 // Pointer-up handles captured taps. Native clicks are a fallback, with no duplicate
@@ -575,7 +575,7 @@ function switchMap(id){
 function renderMapMenu(){
  const menu=$('mapMenu');menu.replaceChildren();const purchasable=PRESTIGE_NODES.filter(n=>!n.reserved),owned=purchasable.filter(n=>prestigeLevel(state,n)>0).length;
  for(const m of MAPS){const locked=!!m.locked?.(state),current=state.map===m.id,main=m.id==='main',b=document.createElement('button');b.className='sector-jump map-jump';b.disabled=locked;b.classList.toggle('is-current',current);b.setAttribute('aria-current',current?'true':'false');b.style.setProperty('--sector-color',main?'#b9f36d':'#f7a8c4');
-  const progress=main?`${econ.count} / ${NODES.length} 연구 · $${format(state.currencies.money)}`:locked?`${NODES.length}개 연구 완료 후 $${format(PRESTIGE_THRESHOLD)} 보유 시 환생`:`✿${tokenFormat(state.currencies.token)} · ${owned} / ${purchasable.length} 노드`;
+  const progress=main?`${econ.count} / ${NODES.length} 연구 · $${format(state.currencies.money)}`:locked?`${NODES.length}개 연구 완료 후 $${format(PRESTIGE_THRESHOLD)} 보유 시 환생`:`${owned} / ${purchasable.length} 연구 · ✿${tokenFormat(state.currencies.token)}`;
   b.innerHTML=`<span class="sector-jump-icon">${iconSvg(main?'brand':'Flower')}</span><span class="sector-jump-copy"><span class="sector-jump-name">${m.ko}${current?' · 현재':''}</span><span class="sector-jump-progress"></span></span><span class="sector-jump-state" aria-hidden="true">${iconSvg(current?'Check':locked?'LockKeyhole':'ChevronRight')}</span>`;
   b.querySelector('.sector-jump-progress').innerHTML=symbolMarkup(progress);b.onclick=()=>{closeMaps();if(!current)switchMap(m.id);};menu.append(b);}
 }

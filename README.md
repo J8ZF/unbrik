@@ -1,4 +1,4 @@
-# UNBRIK — 3.0.2 (2.0 economy, mainland map, paged header, 환생 prestige and the bloom map)
+# UNBRIK — 3.0.3 (2.0 economy, mainland map, paged header, 환생 prestige and the bloom map)
 
 A portrait incremental game with 105 research nodes across the original eight sectors, 316 finite research levels, dollars and coins. The center is navigation, not a purchasable research. AXIOM is research 105.
 
@@ -94,6 +94,16 @@ Built from the roadmap the user dictated (below, kept for reference) plus the fo
 - Rebirth sequence: confirm → blackout with the spinning UNBRIK polyhedron, "N번째 환생 · ✿tokens" → the mainland resets under the blackout → the flower appears with a sticky notice.
 - Statistics: MAINLAND (nodes, levels, production, cache, lifetime gains), REBIRTH (count, condition, tokens held and earned, nodes, production multiplier, automation, current run, last prestige), TIME (play time, offline). Removed as noise: purchase count, total spent, peak rate, offline-equivalent production, current session, cost discount. A BLOOM PETALS block appears after the first prestige.
 - Save: `currencies.token` (fractional), `prestige {count, tokensEarned, tokensSpent, purchases, levels, auto, last}`, `map`, the new `stats` keys and `offline.full/decay` are all optional on load, so 2.2 saves load unchanged.
+
+### 3.0.3 prestige interface
+
+- Terminology: the five branches are 환생 섹터 (sectors). "Petal" is only the visual motif and the internal code name (`petal*`, `PETAL_ROWS`); no player-facing text says 꽃잎. Wording matches the mainland: 연구 (not 노드), 완료 (not 완성), 선행 연구 필요, 남은 연구로 이동, 완료한 섹터.
+- Map tab: both rows read "N / total 연구 · balance"; the prestige map is named 환생.
+- Prestige center: an inverted pentagon so its flat edges face the five sectors, built like the mainland octagon — orbit track with the travelling highlight, an inset outline, one light bar per sector along its edge (lit on completion; the night theme no longer overrides the lit color), the overlapping-triangles logo behind the polyhedron, and the research progress bar.
+- Loading screen: the triangles logo sits behind the spinning polyhedron, as on the center node.
+- Rain: about a quarter of the 3.0.2 density.
+- Header page dots: the night theme no longer hides the current-page dot.
+- Icons: the map button and map tab use a map icon; the 36 prestige studies have their own Lucide icons (dormant: bookmark, coffee, moon, hourglass, anchor, book, camera, cloud-moon; scaling: sprout, flame, gem, footprints, eye, tag, sliders, zap; agent: bike → rocket, one vehicle per autopilot; expansion: door, compass, hammer, palette, telescope, scale; reward: star and desserts, gift). `prestige-check` asserts they are distinct and never reuse a mainland or interface icon.
 
 ### 3.0.2 interface audit
 

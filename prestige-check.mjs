@@ -2,10 +2,16 @@ import assert from 'node:assert/strict';
 import {NODES,defaultState,economy,level,unlocked,purchase,tick,validateSave,treeComplete,prestigeReady,prestige,tokensFor,autoResearch,prestigeBonuses,PRESTIGE_THRESHOLD,CURRENCY_DEFS,MAPS,currentMap,sectorProgress} from './dist/data.js';
 import {PRESTIGE_NODES,PRESTIGE_BRANCHES,PETAL_ROWS,PRESTIGE_LAYOUT,prestigeById,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress} from './dist/prestige.js';
 import {offlineParams,checkpointOffline,settleOffline,OFFLINE_FULL_SECONDS,OFFLINE_DECAY_SECONDS} from './dist/offline.js';
-// Node table: five petals of 6–10 nodes, matching cost tables, non-crossing flows, distinct names and icons.
+// Node table: five sectors of 6–10 nodes, matching cost tables, non-crossing flows, distinct names and icons.
 assert.equal(PRESTIGE_BRANCHES.length,5);
 for(let b=0;b<5;b++){const members=PRESTIGE_NODES.filter(n=>n.branch===b);assert(members.length>=6&&members.length<=10,`Petal ${b+1} has ${members.length} nodes`);assert.equal(members.length,PETAL_ROWS[b].reduce((a,x)=>a+x,0));assert.equal(members[0].row,0);assert(members.at(-1).gate);}
 assert.equal(new Set(PRESTIGE_NODES.map(n=>n.name)).size,PRESTIGE_NODES.length,'Prestige names are distinct');
+// Icons: every prestige study has its own icon, none reused from a mainland study or the interface.
+{const {iconSvg}=await import('./dist/icons.js');const fs=await import('node:fs');const lock=iconSvg('LockKeyhole');
+ const taken=new Set(NODES.map(n=>iconSvg(n.icon)));for(const [,name]of fs.readFileSync('dist/index.html','utf8').matchAll(/data-ui-icon="([^"]+)"/g))taken.add(iconSvg(name));
+ for(const name of ['Check','Circle','LockKeyhole','X','ChevronRight','Flower','brand'])taken.add(iconSvg(name));
+ const mine=PRESTIGE_NODES.map(n=>iconSvg(n.icon));assert.equal(new Set(mine).size,PRESTIGE_NODES.length,'Prestige icons are distinct');
+ for(const [i,svg]of mine.entries()){assert.notEqual(svg,lock,`${PRESTIGE_NODES[i].name} icon exists`);assert(!taken.has(svg),`${PRESTIGE_NODES[i].name} reuses an icon`);}}
 for(const n of PRESTIGE_NODES){
  assert(n.id>=1001&&!NODES.some(m=>m.id===n.id),'Prestige ids never collide with studies');
  assert.equal(n.cost.length,n.max);assert(n.cost.every((c,i)=>Number.isInteger(c)&&c>=1&&(i===0||c>n.cost[i-1])),`${n.name} costs rise per level`);
