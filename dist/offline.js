@@ -1,4 +1,4 @@
-import {economy,MAX_VALUE,prestigeBonuses} from './data.js?v=3.0-bloom';
+import {economy,MAX_VALUE,prestigeBonuses} from './data.js?v=3.0.7';
 export const OFFLINE_FULL_SECONDS=1800;
 export const OFFLINE_DECAY_SECONDS=600;
 // Prestige DORMANT nodes extend the full-rate window, slow the decay and

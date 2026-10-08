@@ -1,4 +1,4 @@
-# UNBRIK — 3.0.6 (2.0 economy, mainland map, paged header, 환생 prestige and the bloom map)
+# UNBRIK — 3.0.7 (2.0 economy, mainland map, paged header, 환생 prestige and the bloom map)
 
 A portrait incremental game with 105 research nodes across the original eight sectors, 316 finite research levels, dollars and coins. The center is navigation, not a purchasable research. AXIOM is research 105.
 
@@ -95,6 +95,13 @@ Built from the roadmap the user dictated (below, kept for reference) plus the fo
 - Statistics: MAINLAND (nodes, levels, production, cache, lifetime gains), REBIRTH (count, condition, tokens held and earned, nodes, production multiplier, automation, current run, last prestige), TIME (play time, offline). Removed as noise: purchase count, total spent, peak rate, offline-equivalent production, current session, cost discount. A BLOOM PETALS block appears after the first prestige.
 - Save: `currencies.token` (fractional), `prestige {count, tokensEarned, tokensSpent, purchases, levels, auto, last}`, `map`, the new `stats` keys and `offline.full/decay` are all optional on load, so 2.2 saves load unchanged.
 
+### 3.0.7 screen weather
+
+- `weather.js` replaces `bloom.js`: one canvas (`#weatherFx`) over both maps draws what the game weather (`worldState().weather`) says. Rain → rain streaks, light on AXIOM (4 streaks on a phone screen) and heavy on the prestige map (16); snow → snowflakes on AXIOM and falling flowers instead of snow on the prestige map; clear → nothing. The prestige map is the rainier place by design.
+- On a weather change the old particles finish their fall and are not replaced while the new kind drifts in from the top over about two seconds; the loop stops when the sky is clear, when motion is off, or when the page is hidden.
+- Module query strings are `?v=3.0.7` so browsers fetch the new files.
+- `weather-check.mjs` covers the six weather × map cases, transitions and the idle stop.
+
 ### 3.0.6 header toggle
 
 - The header open/close toggle was 38×44 next to 38×38 map and settings buttons (`.disclosure-button` min-height 44px); it now matches them.
@@ -164,13 +171,13 @@ Current key: `unbrik-save-v2`, schema version 2, economy epoch `unbrik-2.0-rewor
 - `hub.js`, `camera.js`: dodecahedron projection and cancellable movement.
 - `effects.js`, `notifications.js`: selection guard, opal motion, toast deadlines.
 - `prestige.js`: the prestige node table, petal layout, token formula, purchases and aggregated bonuses.
-- `bloom.js`: petals-and-rain canvas for the prestige map.
+- `weather.js`: screen weather (rain, snow, flowers) for both maps, driven by the game weather.
 - `index.html`, `style.css`: game interface; the 2.1 header, the 2.2 header pages and the 3.0 bloom theme/prestige layer are the last blocks of `style.css`.
 - `UNBRIK_3.0.html` (repository root, optional): single-file build of `dist/` (inline CSS, bundled script) that runs from `file://`; regenerate with `scripts/bundle-single.mjs` after changing `dist/`.
 
 ## Verification
 
-Run `npm run check`, `node balance-check.mjs`, `node ui-check.mjs`, `node offline-check.mjs`, `node layout-check.mjs`, `node effects-check.mjs`, `node motion-check.mjs`, `node notification-check.mjs`, `node prestige-check.mjs`; `node scripts/prestige-sim.mjs` prints the prestige pacing.
+Run `npm run check`, `node balance-check.mjs`, `node ui-check.mjs`, `node offline-check.mjs`, `node layout-check.mjs`, `node effects-check.mjs`, `node motion-check.mjs`, `node notification-check.mjs`, `node prestige-check.mjs`, `node weather-check.mjs`; `node scripts/prestige-sim.mjs` prints the prestige pacing.
 
 Checks cover the prestige node table, petal lobes, token formula, reset semantics, cheat-free prestige, automation gates, offline windows and prestige save round-trips; the prestige row, the rebirth flow, flower discovery, token purchases, reserved nodes, map switching and automation checks against the real renderers; stacked and sticky notices, weather kinds, the world clock, weather roll, ledger pages, pager controls and map-aware cache strip; reachable prerequisites; finite costs and distinct icons; exact initial coin production; both-currency shortages with no partial debit; cheat guards; cache snapshot consistency; split, duplicate and reloaded offline settlements; save epoch rejection; row plans, upstream-only prerequisites and non-crossing links; every card inside its own sector polygon and outside the others, headings off the land, all eight sectors forming one connected mainland; hidden-sector boundaries; complete-card re-selection; gesture cancellation; navigator state; settings and reduced-motion combinations; original color/opal constraints.
 

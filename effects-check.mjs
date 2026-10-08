@@ -17,7 +17,7 @@ const elements=new Map(),$=id=>{if(!elements.has(id))elements.set(id,element());
 const app=readFileSync('dist/app.js','utf8');
 const actual=app.slice(app.indexOf('function syncOpalMotion(){'),app.indexOf('function renderChrome(){'));
 const setup=new Function('createOpalMotion','NODES','defaultState','$','element',`
- let state=defaultState(),opalMotion=null,bloom=null,suspended=false,panelAnimation=null,cameraMoving=false,cameraIntent=null;
+ let state=defaultState(),opalMotion=null,weatherFx=null,suspended=false,panelAnimation=null,cameraMoving=false,cameraIntent=null;
  const motionPreference={matches:false},document={hidden:false,body:element()},viewport=element();
  const nodeEls=new Map(NODES.map(n=>[n.id,element()])),sectorEls=Array.from({length:8},element);
  ${actual}

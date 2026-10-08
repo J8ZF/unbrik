@@ -1,14 +1,14 @@
-import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeReady,prestige,autoResearch} from './data.js?v=3.0-bloom';
-import {PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress} from './prestige.js?v=3.0-bloom';
-import {createBloom} from './bloom.js?v=3.0-bloom';
-import {iconSvg,setIcon} from './icons.js?v=3.0-bloom';
-import {checkpointOffline,settleOffline} from './offline.js?v=3.0-bloom';
-import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=3.0-bloom';
-import {wireframePaths} from './hub.js?v=3.0-bloom';
-import {UPDATES,updatePage} from './updates.js?v=3.0-bloom';
-import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=3.0-bloom';
-import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=3.0-bloom';
-import {createNotifications} from './notifications.js?v=3.0-bloom';
+import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeReady,prestige,autoResearch} from './data.js?v=3.0.7';
+import {PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress} from './prestige.js?v=3.0.7';
+import {createWeatherFx} from './weather.js?v=3.0.7';
+import {iconSvg,setIcon} from './icons.js?v=3.0.7';
+import {checkpointOffline,settleOffline} from './offline.js?v=3.0.7';
+import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=3.0.7';
+import {wireframePaths} from './hub.js?v=3.0.7';
+import {UPDATES,updatePage} from './updates.js?v=3.0.7';
+import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=3.0.7';
+import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=3.0.7';
+import {createNotifications} from './notifications.js?v=3.0.7';
 const $=id=>document.getElementById(id);
 const CENTER_SELECTION=-1;
 // Two maps share the viewport: the mainland (research ids 1-105) and the
@@ -36,7 +36,7 @@ function initialCamera(){const n=lookupNode(selected)||activeNodes()[0];const st
 let camera=state.camera||initialCamera();
 let gestureUsed=false,suspended=true,cameraMoving=false,lastHubFrame=0,updatesPage=1;
 const motionPreference=matchMedia('(prefers-reduced-motion: reduce)');
-let opalMotion=null,bloom=null;
+let opalMotion=null,weatherFx=null;
 let selectionPending=false,selectionEpoch=0,navigationFrame=0,panelAnimation=null,navigatorCloseTimer=0,cameraIntent=null;
 function format(n,decimals=2){
  if(!Number.isFinite(n))return '∞';
@@ -69,7 +69,7 @@ const notification=createNotifications({container:$('toasts'),build(){
 }},()=>state.settings.motion&&!motionPreference.matches);
 function toast(message,duration=4000,kind='info'){notification.show(message,{duration,kind,sticky:kind==='important'});}
 const WEATHER_NOTICES={rain:'날씨 · 비가 내리기 시작합니다.',snow:'날씨 · 눈이 내리기 시작합니다.',clear:'날씨 · 하늘이 맑게 갰습니다.'};
-function syncOpalMotion(){document.body.classList.toggle('effects-paused',document.hidden||suspended);opalMotion?.refresh();bloom?.refresh();}
+function syncOpalMotion(){document.body.classList.toggle('effects-paused',document.hidden||suspended);opalMotion?.refresh();weatherFx?.refresh();}
 function applySettings(){
  const reduced=!state.settings.motion||motionPreference.matches;document.body.classList.toggle('reduced-motion',reduced);
  for(const k of ['motion','touch','haptic','purchaseCheat','mapControls'])$(k).checked=state.settings[k];$('format').value=state.settings.format;
@@ -381,7 +381,7 @@ function syncPrestigeReady(){
  if(ready&&!state.prestige.noticed){state.prestige.noticed=true;toast('환생 가능 · UNBRIK 센터에서 환생',0,'important');}
 }
 function render(){
- econ=economy(state);setText($('money'),format(state.currencies.money));setHtml($('rate'),`+${format(econ.rate)}<span> /s</span>`);
+ econ=economy(state);weatherFx?.refresh();setText($('money'),format(state.currencies.money));setHtml($('rate'),`+${format(econ.rate)}<span> /s</span>`);
  setText($('token'),tokenFormat(state.currencies.token));setText($('tokenNote'),tokenNote());syncPrestigeReady();
  setText($('coin'),format(state.currencies.coin));setHtml($('coinRate'),`+${format(econ.coinRate)}<span> /s</span>`);
  renderChrome();if(!cameraMoving){graph();renderPanel();}if($('settingsDialog').open&&!$('pane-stats').hidden)renderStats();
@@ -557,7 +557,7 @@ installGameSelectionGuard();
 for(const el of document.querySelectorAll('[data-ui-icon]'))setIcon(el,el.dataset.uiIcon);
 // Map switching and the night theme. The flower keeps the grid, turns the
 // logo pink and the background blue-gray; every surface follows body.theme-bloom.
-function applyMapTheme(){const p=onPrestige();document.body.dataset.map=state.map;document.body.classList.toggle('theme-bloom',p);world.classList.toggle('map-prestige',p);$('prestigeLayer').hidden=!p;for(const id of ['sectorRegions','spokes','edges','centerNode','chapterMarks','nodes'])$(id).toggleAttribute('hidden',p);bloom?.refresh();}
+function applyMapTheme(){const p=onPrestige();document.body.dataset.map=state.map;document.body.classList.toggle('theme-bloom',p);world.classList.toggle('map-prestige',p);$('prestigeLayer').hidden=!p;for(const id of ['sectorRegions','spokes','edges','centerNode','chapterMarks','nodes'])$(id).toggleAttribute('hidden',p);weatherFx?.refresh();}
 const cameraByMap={};
 function presentMap(){selected=selectionByMap[state.map]??defaultSelection();state.settings.panelCollapsed=false;applyMapTheme();econ=economy(state);render();const kept=cameraByMap[state.map];if(kept)camera={...kept};else{cameraIntent={type:'fit'};camera=cameraForIntent();cameraIntent=null;}constrain();transform();state.camera={...camera};}
 let themeTimer=0;
@@ -601,7 +601,10 @@ function runPrestige(){
  if(reduced){commit();setTimeout(finish,900);}else{setTimeout(commit,1700);setTimeout(finish,2900);}
  return true;
 }
-bloom=createBloom($('bloom'),()=>onPrestige()&&state.settings.motion&&!motionPreference.matches&&!document.hidden&&!suspended);
+// Screen weather follows the game weather: rain everywhere (heavier on the
+// prestige map), snow on AXIOM and flowers instead of snow on the prestige map.
+function weatherMode(){const w=worldState(state).weather;if(w==='rain')return onPrestige()?'rain-heavy':'rain-light';if(w==='snow')return onPrestige()?'petals':'snow';return 'none';}
+weatherFx=createWeatherFx($('weatherFx'),()=>state.settings.motion&&!motionPreference.matches&&!document.hidden&&!suspended,weatherMode);
 createGraph();setupOpalMotion();renderUpdates();applyMapTheme();applySettings();render();if(!state.camera)camera=initialCamera();transform();resume();requestAnimationFrame(frame);if(loadNotice)setTimeout(()=>toast(loadNotice,0,'important'),500);if(!storageOK)setText($('saveState'),'저장 불가 · 설정에서 내보내기');
 // Optional browser agent tools use exactly the same state and purchase guard as the UI.
 if(document.modelContext?.registerTool){const lifecycle=new AbortController();const register=tool=>{try{Promise.resolve(document.modelContext.registerTool(tool,{signal:lifecycle.signal})).catch(()=>{});}catch{}};
