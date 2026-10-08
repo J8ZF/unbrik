@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
-import {NODES,defaultState,economy,level,unlocked,purchase,tick,validateSave,treeComplete,prestigeReady,prestige,tokensFor,autoResearch,prestigeBonuses,PRESTIGE_THRESHOLD,CURRENCY_DEFS,MAPS,currentMap,sectorProgress} from './dist/data.js';
+import {NODES,defaultState,economy,level,unlocked,purchase,tick,validateSave,treeComplete,prestigeReady,prestige,tokensFor,autoResearch,prestigeBonuses,PRESTIGE_THRESHOLD,CURRENCY_DEFS,MAPS,currentMap,sectorProgress,Big} from './dist/data.js';
+globalThis.BIG_STRICT=true;
+const N=v=>Big.from(v).toNumber();
 import {PRESTIGE_NODES,PRESTIGE_BRANCHES,PETAL_ROWS,PRESTIGE_LAYOUT,prestigeById,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress} from './dist/prestige.js';
 import {offlineParams,checkpointOffline,settleOffline,OFFLINE_FULL_SECONDS,OFFLINE_DECAY_SECONDS} from './dist/offline.js';
 // Node table: five sectors of 6–10 nodes, matching cost tables, non-crossing flows, distinct names and icons.
@@ -42,30 +44,30 @@ for(const petal of PRESTIGE_LAYOUT.petals){
 
 // Currency, maps and a fresh state.
 assert.equal(CURRENCY_DEFS.token.symbol,'✿');assert.equal(MAPS[1].id,'prestige');
-let s=defaultState();assert.equal(s.currencies.token,0);assert.equal(s.prestige.count,0);assert(MAPS[1].locked(s));assert(!CURRENCY_DEFS.token.shown(s,economy(s)));
+let s=defaultState();assert.equal(N(s.currencies.token),0);assert.equal(s.prestige.count,0);assert(MAPS[1].locked(s));assert(!CURRENCY_DEFS.token.shown(s,economy(s)));
 assert.equal(currentMap(s).id,'main');
 // Tokens: nothing below the threshold, ten at it, square-root growth above it.
-assert.equal(tokensFor(s,PRESTIGE_THRESHOLD*.999),0);assert.equal(tokensFor(s,PRESTIGE_THRESHOLD),10);assert.equal(tokensFor(s,PRESTIGE_THRESHOLD*4),20);assert.equal(tokensFor(s,PRESTIGE_THRESHOLD*100),100);assert.equal(tokensFor(s,PRESTIGE_THRESHOLD*2),14.14,'Tokens keep two decimals');
+assert.equal(N(tokensFor(s,PRESTIGE_THRESHOLD*.999)),0);assert.equal(N(tokensFor(s,PRESTIGE_THRESHOLD)),10);assert.equal(N(tokensFor(s,PRESTIGE_THRESHOLD*4)),20);assert.equal(N(tokensFor(s,PRESTIGE_THRESHOLD*100)),100);assert.equal(N(tokensFor(s,PRESTIGE_THRESHOLD*2)),14.14,'Tokens keep two decimals');
 // Not ready: incomplete tree, or complete but poor.
 assert.equal(prestige(s),0);
 for(const n of NODES)s.levels[n.id]=n.max;assert(treeComplete(s));s.currencies.money=PRESTIGE_THRESHOLD/2;assert(!prestigeReady(s));assert.equal(prestige(s),0);
 // Ready: tokens granted, studies and both currencies reset, checks cleared, settings and world kept, lands on the prestige map.
 s.currencies.money=PRESTIGE_THRESHOLD*9;s.currencies.coin=12345;s.settings.format='scientific';s.world.seconds=777;s.prestige.auto={0:true};
 const tokens=prestige(s,1000);
-assert.equal(tokens,30);assert.equal(s.currencies.token,30);assert.equal(s.currencies.money,0);assert.equal(s.currencies.coin,0);assert.deepEqual(s.levels,{});
-assert.equal(s.prestige.count,1);assert.equal(s.prestige.tokensEarned,30);assert.deepEqual(s.prestige.auto,{});assert.equal(s.map,'prestige');assert.equal(s.settings.format,'scientific');assert.equal(s.world.seconds,777);assert.equal(s.prestige.last.tokens,30);
+assert.equal(N(tokens),30);assert.equal(N(s.currencies.token),30);assert.equal(N(s.currencies.money),0);assert.equal(N(s.currencies.coin),0);assert.deepEqual(s.levels,{});
+assert.equal(s.prestige.count,1);assert.equal(N(s.prestige.tokensEarned),30);assert.deepEqual(s.prestige.auto,{});assert.equal(s.map,'prestige');assert.equal(s.settings.format,'scientific');assert.equal(s.world.seconds,777);assert.equal(N(s.prestige.last.tokens),30);
 assert(CURRENCY_DEFS.token.shown(s,economy(s)));assert(!MAPS[1].locked(s));assert.equal(currentMap(s).id,'prestige');
-assert.equal(economy(s).rate,1,'A fresh run starts at $1/s again');
+assert.equal(N(economy(s).rate),1,'A fresh run starts at $1/s again');
 // Buying: roots first, reserved nodes never, costs per level, cheat makes them free.
 const scaling=PRESTIGE_NODES.find(n=>n.name==='PERCEPTRON'),rate=PRESTIGE_NODES.find(n=>n.name==='ADAM'),transfer=PRESTIGE_NODES.find(n=>n.name==='BERT'),embedding=PRESTIGE_NODES.find(n=>n.name==='WORD2VEC');
 assert(prestigeUnlocked(s,scaling)&&!prestigeUnlocked(s,rate));assert(!prestigePurchase(s,rate),'Upstream first');
-assert(prestigePurchase(s,scaling));assert.equal(s.currencies.token,27);assert.equal(economy(s).rate,3,'PERCEPTRON triples production');
+assert(prestigePurchase(s,scaling));assert.equal(N(s.currencies.token),27);assert.equal(N(economy(s).rate),3,'PERCEPTRON triples production');
 assert(!prestigeAffordable(s,transfer)&&!prestigePurchase(s,transfer),'Reserved nodes cannot be bought');
-assert(prestigePurchase(s,rate));assert.equal(prestigeCost(s,rate).token,rate.cost[1]);assert(Math.abs(economy(s).rate-3*1.15)<1e-9);
-s.settings.purchaseCheat=true;const before=s.currencies.token;assert(prestigePurchase(s,embedding));assert.equal(s.currencies.token,before,'Cheat buys prestige nodes for free');assert(!prestigePurchase(s,transfer),'Cheat still cannot buy reserved nodes');s.settings.purchaseCheat=false;
-assert.equal(economy(s).rate,(1+5)*3*1.15);
+assert(prestigePurchase(s,rate));assert.equal(prestigeCost(s,rate).token,rate.cost[1]);assert(Math.abs(N(economy(s).rate)-3*1.15)<1e-9);
+s.settings.purchaseCheat=true;const before=s.currencies.token;assert(prestigePurchase(s,embedding));assert(s.currencies.token.eq(before),'Cheat buys prestige nodes for free');assert(!prestigePurchase(s,transfer),'Cheat still cannot buy reserved nodes');s.settings.purchaseCheat=false;
+assert.equal(N(economy(s).rate),(1+5)*3*1.15);
 // Automation: only sectors with an owned AUTOPILOT and a checked box, only unlocked studies, so a sector cannot pass its gate.
-const auto1=PRESTIGE_NODES.find(n=>n.name==='AUTOPILOT I');s.currencies.token+=auto1.cost[0];assert(prestigePurchase(s,auto1));
+const auto1=PRESTIGE_NODES.find(n=>n.name==='AUTOPILOT I');s.currencies.token=s.currencies.token.add(auto1.cost[0]);assert(prestigePurchase(s,auto1));
 s.currencies.money=1e12;assert.deepEqual(autoResearch(s),[],'Nothing happens until the check is on');
 s.prestige.auto[0]=true;const bought=autoResearch(s,50);assert(bought.length>0&&bought.every(n=>n.chapter===0),'Only sector 1 is automated');
 for(let i=0;i<40;i++)autoResearch(s,50);
@@ -73,12 +75,12 @@ assert(sectorProgress(s,0).complete,'Sector 1 completes by itself');assert.equal
 s.prestige.auto[1]=true;assert.deepEqual(autoResearch(s,50),[],'A check without the AUTOPILOT node does nothing');
 // Offline window grows with DORMANT nodes and is stored at departure.
 assert.deepEqual(offlineParams(s),{full:OFFLINE_FULL_SECONDS,decay:OFFLINE_DECAY_SECONDS,rateMul:1});
-const checkpoint=PRESTIGE_NODES.find(n=>n.name==='RNN');s.currencies.token+=checkpoint.cost[0];assert(prestigePurchase(s,checkpoint));
+const checkpoint=PRESTIGE_NODES.find(n=>n.name==='RNN');s.currencies.token=s.currencies.token.add(checkpoint.cost[0]);assert(prestigePurchase(s,checkpoint));
 assert.equal(offlineParams(s).full,OFFLINE_FULL_SECONDS+900);checkpointOffline(s,0);assert.equal(s.offline.full,OFFLINE_FULL_SECONDS+900);
 const settled=settleOffline(s,(OFFLINE_FULL_SECONDS+900)*1000);assert(Math.abs(settled.effectiveSeconds-(OFFLINE_FULL_SECONDS+900))<1e-6,'The longer window pays in full');
 // Saves: the prestige block round-trips, a 2.2 save without it loads, bad blocks are rejected.
-const copy=validateSave(JSON.parse(JSON.stringify(s)));assert.equal(copy.prestige.count,1);assert.equal(copy.currencies.token,s.currencies.token);assert.deepEqual(copy.prestige.levels,s.prestige.levels);assert.deepEqual(copy.prestige.auto,{0:true,1:true});assert.equal(copy.map,'prestige');
-const old=JSON.parse(JSON.stringify(defaultState()));delete old.prestige;delete old.currencies.token;const loaded=validateSave(old);assert.equal(loaded.prestige.count,0);assert.equal(loaded.currencies.token,0);
+const copy=validateSave(JSON.parse(JSON.stringify(s)));assert.equal(copy.prestige.count,1);assert(copy.currencies.token.eq(s.currencies.token));assert.deepEqual(copy.prestige.levels,s.prestige.levels);assert.deepEqual(copy.prestige.auto,{0:true,1:true});assert.equal(copy.map,'prestige');
+const old=JSON.parse(JSON.stringify(defaultState()));delete old.prestige;delete old.currencies.token;const loaded=validateSave(old);assert.equal(loaded.prestige.count,0);assert.equal(N(loaded.currencies.token),0);
 const bad=JSON.parse(JSON.stringify(s));bad.prestige.levels[String(rate.id)]=1;delete bad.prestige.levels[String(scaling.id)];assert.throws(()=>validateSave(bad),/환생 선행/);
 const bad2=JSON.parse(JSON.stringify(defaultState()));bad2.currencies.token=5;assert.throws(()=>validateSave(bad2),/환생 전 토큰/);
 // Petal progress ignores reserved nodes so a petal with placeholders can still light up.

@@ -3,7 +3,8 @@
 // petals grow from a pentagon center; each petal is a small flow like the
 // mainland sectors. Node names use AI vocabulary. Nodes marked `reserved`
 // are placeholders for designs that do not exist yet: visible, not purchasable.
-import {buildLand,boundsOf,CARD} from './layout.js?v=3.0.9';
+import {buildLand,boundsOf,CARD} from './layout.js?v=3.1.0';
+import {Big,ZERO} from './big.js?v=3.1.0';
 export const PRESTIGE_THRESHOLD=5e33;     // $5.00Dc held after finishing the tree
 export const PRESTIGE_BASE_TOKENS=10;    // tokens at exactly the threshold
 export const PRESTIGE_BRANCHES=[
@@ -95,11 +96,11 @@ export const PRESTIGE_LAYOUT=(()=>{
 export const prestigeLevel=(s,n)=>s.prestige?.levels?.[typeof n==='number'?n:n.id]||0;
 export function prestigeUnlocked(s,n){return n.req.every(r=>prestigeLevel(s,r.id)>=r.level);}
 export function prestigeCost(s,n){const l=prestigeLevel(s,n);return {token:n.cost[Math.min(l,n.max-1)]};}
-export function prestigeAffordable(s,n){if(n.reserved)return false;return s.settings.purchaseCheat||(s.currencies.token||0)+1e-9>=prestigeCost(s,n).token;}
+export function prestigeAffordable(s,n){if(n.reserved)return false;return s.settings.purchaseCheat||Big.from(s.currencies.token||0).add(1e-9).gte(prestigeCost(s,n).token);}
 export function prestigePurchase(s,n){
  if(!n||n.reserved||!prestigeUnlocked(s,n)||prestigeLevel(s,n)>=n.max||!prestigeAffordable(s,n))return false;
  const price=prestigeCost(s,n).token;
- if(!s.settings.purchaseCheat){s.currencies.token=Math.round(Math.max(0,(s.currencies.token||0)-price)*100)/100;s.prestige.tokensSpent=Math.round(((s.prestige.tokensSpent||0)+price)*100)/100;}
+ if(!s.settings.purchaseCheat){s.currencies.token=Big.max(0,Big.from(s.currencies.token||0).sub(price)).round(2);s.prestige.tokensSpent=Big.from(s.prestige.tokensSpent||0).add(price).round(2);}
  s.prestige.levels[n.id]=prestigeLevel(s,n)+1;s.prestige.purchases=(s.prestige.purchases||0)+1;
  return true;
 }
@@ -130,8 +131,8 @@ export function prestigeBonuses(s){
 // growing with the square root of the balance, then the REWARD petal.
 // tokens = 10 · √(balance / $5.00Dc) · (1 + Q-LEARNING) + DQN
 export function tokensFor(s,money=s.currencies.money){
- if(!(money>=PRESTIGE_THRESHOLD))return 0;
+ money=Big.from(money||0);if(money.lt(PRESTIGE_THRESHOLD))return ZERO;
  const b=prestigeBonuses(s);
  // Tokens are fractional: the balance keeps two decimals, costs are whole numbers.
- return Math.max(PRESTIGE_BASE_TOKENS,Math.round((PRESTIGE_BASE_TOKENS*Math.sqrt(money/PRESTIGE_THRESHOLD)*b.tokenMul+b.tokenAdd)*100)/100);
+ return Big.max(PRESTIGE_BASE_TOKENS,money.div(PRESTIGE_THRESHOLD).sqrt().mul(PRESTIGE_BASE_TOKENS).mul(b.tokenMul).add(b.tokenAdd).round(2));
 }

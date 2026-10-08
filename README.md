@@ -1,4 +1,4 @@
-# UNBRIK — 3.0.9 (2.0 economy, mainland map, paged header, 환생 prestige and the bloom map)
+# UNBRIK — 3.1.0 (2.0 economy, mainland map, paged header, 환생 prestige and the bloom map)
 
 A portrait incremental game with 105 research nodes across the original eight sectors, 316 finite research levels, dollars and coins. The center is navigation, not a purchasable research. AXIOM is research 105.
 
@@ -94,6 +94,15 @@ Built from the roadmap the user dictated (below, kept for reference) plus the fo
 - Rebirth sequence: confirm → blackout with the spinning UNBRIK polyhedron, "N번째 환생 · ✿tokens" → the mainland resets under the blackout → the flower appears with a sticky notice.
 - Statistics: MAINLAND (nodes, levels, production, cache, lifetime gains), REBIRTH (count, condition, tokens held and earned, nodes, production multiplier, automation, current run, last prestige), TIME (play time, offline). Removed as noise: purchase count, total spent, peak rate, offline-equivalent production, current session, cost discount. A BLOOM PETALS block appears after the first prestige.
 - Save: `currencies.token` (fractional), `prestige {count, tokensEarned, tokensSpent, purchases, levels, auto, last}`, `map`, the new `stats` keys and `offline.full/decay` are all optional on load, so 2.2 saves load unchanged.
+
+### 3.1.0 big numbers
+
+- Amounts no longer stop at 1e100 (the old `MAX_VALUE`) or at the double limit (~1.8e308). `big.js` adds an immutable `Big` (value = m × 10^e): below 1e300 it is a plain double, so every existing calculation, the fixed price table (`authorPrices()` still matches `prices.js`) and the pacing (3.85 h prestige sim) are unchanged; from 1e300 up the exponent is an integer with no practical limit (1.2e293910).
+- Big values: dollars, coins and tokens; production rates and the compounding multipliers; costs; cache payouts; offline rates and payouts; the lifetime stats (earned, spent, peaks, offline earnings); prestige `tokensEarned/tokensSpent/last`. Counts, seconds, levels and fixed token prices stay plain numbers. `waitTime`/`normalizedCost` return seconds as numbers.
+- Notation: `formatNumber`/`compactNumber` in `units.js` work on the mantissa/exponent, so named units continue to Ce (1e303), each 1000× the previous one, and past Ce the exponent is shown (`1.50e400`); short, scientific and engineering also go past 1e308.
+- Saves: a Big is written as a plain number while it is below 1e300 (so saves look exactly as before) and as a string such as `"1.5e400"` above. Every older save (plain numbers) loads; negative, NaN and malformed amounts are rejected.
+- Checks run with `globalThis.BIG_STRICT`, which makes any implicit numeric use of a Big (`big > 0`, `big + 1`) throw. `check.mjs` covers arithmetic past 1e308, save round trips, a 1.5e400 save that ticks and buys, prestige with an astronomical balance and every notation past Ce; `ui-check.mjs` renders and prestiges a 1.5e400 balance.
+- Module queries are `?v=3.1.0`.
 
 ### 3.0.9 named units
 

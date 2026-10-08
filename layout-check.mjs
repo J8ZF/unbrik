@@ -69,7 +69,7 @@ old.levels[1]=1;
 const migrated=validateSave(old);
 assert.equal(migrated.camera,null);
 assert.equal(migrated.settings.hudCollapsed,true);
-assert.equal(migrated.currencies.money,3456);
+assert(migrated.currencies.money.eq(3456));
 assert.deepEqual(migrated.levels,old.levels);
 const previousLayout=defaultState();
 previousLayout.layoutVersion=2;previousLayout.camera={x:-200,y:400,scale:.6};

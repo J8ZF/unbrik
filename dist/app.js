@@ -1,15 +1,16 @@
-import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeReady,prestige,autoResearch} from './data.js?v=3.0.9';
-import {PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress} from './prestige.js?v=3.0.9';
-import {createWeatherFx} from './weather.js?v=3.0.9';
-import {iconSvg,setIcon} from './icons.js?v=3.0.9';
-import {formatNamed,compactNamed} from './units.js?v=3.0.9';
-import {checkpointOffline,settleOffline} from './offline.js?v=3.0.9';
-import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=3.0.9';
-import {wireframePaths} from './hub.js?v=3.0.9';
-import {UPDATES,updatePage} from './updates.js?v=3.0.9';
-import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=3.0.9';
-import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=3.0.9';
-import {createNotifications} from './notifications.js?v=3.0.9';
+import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeReady,prestige,autoResearch} from './data.js?v=3.1.0';
+import {PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress} from './prestige.js?v=3.1.0';
+import {createWeatherFx} from './weather.js?v=3.1.0';
+import {iconSvg,setIcon} from './icons.js?v=3.1.0';
+import {formatNumber,compactNumber} from './units.js?v=3.1.0';
+import {Big} from './big.js?v=3.1.0';
+import {checkpointOffline,settleOffline} from './offline.js?v=3.1.0';
+import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=3.1.0';
+import {wireframePaths} from './hub.js?v=3.1.0';
+import {UPDATES,updatePage} from './updates.js?v=3.1.0';
+import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=3.1.0';
+import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=3.1.0';
+import {createNotifications} from './notifications.js?v=3.1.0';
 const $=id=>document.getElementById(id);
 const CENTER_SELECTION=-1;
 // Two maps share the viewport: the mainland (research ids 1-105) and the
@@ -39,19 +40,17 @@ let gestureUsed=false,suspended=true,cameraMoving=false,lastHubFrame=0,updatesPa
 const motionPreference=matchMedia('(prefers-reduced-motion: reduce)');
 let opalMotion=null,weatherFx=null;
 let selectionPending=false,selectionEpoch=0,navigationFrame=0,panelAnimation=null,navigatorCloseTimer=0,cameraIntent=null;
+// Amounts are Big values (or plain numbers); from 1000 up the chosen notation
+// applies, past the named units as an exponent (1.23e293910).
 function format(n,decimals=2){
- if(!Number.isFinite(n))return '∞';
- if(n<1000)return n.toLocaleString('en-US',{minimumFractionDigits:n<10?decimals:0,maximumFractionDigits:n<100?decimals:0});
- const mode=state.settings.format;
- if(mode==='named')return formatNamed(n);
- if(mode==='scientific')return n.toExponential(2).replace('+','');
- if(mode==='engineering'){const exp=Math.floor(Math.log10(n)/3)*3;return `${(n/10**exp).toFixed(2)}e${exp}`;}
- const units=['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];
- const k=Math.floor(Math.log10(n)/3);return k<units.length?`${(n/1000**k).toFixed(2).replace(/\.00$/,'')}${units[k]}`:n.toExponential(2).replace('+','');
+ if(typeof n==='number'&&!Number.isFinite(n))return '∞';
+ const b=Big.from(n);
+ if(b.lt(1000)){n=b.toNumber();return n.toLocaleString('en-US',{minimumFractionDigits:n<10?decimals:0,maximumFractionDigits:n<100?decimals:0});}
+ return formatNumber(b,state.settings.format);
 }
-function compactFormat(n,digits=3){if(n<1000)return format(n,n<10?1:0);if(state.settings.format==='named')return compactNamed(n,digits);n=Number(n.toPrecision(digits));const exp=Math.floor(Math.log10(n)/3)*3,m=n/10**exp,decimals=Math.max(0,digits-1-Math.floor(Math.log10(m)));if(state.settings.format==='scientific')return n.toExponential(digits-1).replace('+','');if(state.settings.format==='engineering')return m.toFixed(decimals)+'e'+exp;const units=['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];return exp/3<units.length?m.toFixed(decimals)+units[exp/3]:n.toExponential(digits-1).replace('+','');}
+function compactFormat(n,digits=3){const b=Big.from(n);if(b.lt(1000)){n=b.toNumber();return format(n,n<10?1:0);}return compactNumber(b,state.settings.format,digits);}
 // Tokens keep two decimals (the prestige formula yields fractions).
-function tokenFormat(n){if(!Number.isFinite(n))return '∞';if(n<1000)return n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2});return format(n);}
+function tokenFormat(n){if(typeof n==='number'&&!Number.isFinite(n))return '∞';const b=Big.from(n);if(b.lt(1000))return b.toNumber().toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2});return format(b);}
 const amountFormat=(k,v)=>k==='token'?tokenFormat(v):format(v);
 function priceMarkup(prices){return Object.entries(prices).map(([k,v])=>'<span class="price-'+k+'"><i class="sym sym-'+k+'">'+SYMBOLS[k]+'</i>'+amountFormat(k,v)+'</span>').join('');}
 // Currency symbols in numeric displays take their currency color.
@@ -105,8 +104,8 @@ function tokenNote(){if(!onPrestige()&&prestigeReady(state))return '환생 가�
 function showCacheReward({money=0,coin=0}){
  cacheReward={money,coin,until:performance.now()+2400};
  const amounts=[];
- if(money>0)amounts.push(`달러 ${format(money)}`);
- if(coin>0)amounts.push(`코인 ${format(coin)}`);
+ if(Big.from(money).gt(0))amounts.push(`달러 ${format(money)}`);
+ if(Big.from(coin).gt(0))amounts.push(`코인 ${format(coin)}`);
  setText($('cacheAnnouncement'),amounts.length?'캐시 획득: '+amounts.join(', '):'');
  renderCacheHud();
 }
@@ -125,13 +124,13 @@ function renderCacheHud(){
   }
   const remaining=Math.max(0,econ.interval-state.timers.cache);
   setText($('cacheInfo'),remaining.toFixed(1)+'s');
-  const yields=cached.map(k=>`<b style="--yield-color:${CURRENCY_DEFS[k].color}">+${compactFormat(econ.rates[k]*bursts[k])} ${CURRENCY_DEFS[k].symbol}</b>`);setHtml($('cacheYield'),yields.join('<span class="cache-sep">·</span>'));
+  const yields=cached.map(k=>`<b style="--yield-color:${CURRENCY_DEFS[k].color}">+${compactFormat(econ.rates[k].mul(bursts[k]))} ${CURRENCY_DEFS[k].symbol}</b>`);setHtml($('cacheYield'),yields.join('<span class="cache-sep">·</span>'));
   $('cacheTrack').setAttribute('aria-valuenow',String(Math.round(progress*100)));
   $('cacheTrack').setAttribute('aria-valuetext',`다음 캐시까지 ${remaining.toFixed(1)}초`);
  }
  const visible=performance.now()<cacheReward.until;
  for(const [currency,ids]of [['money',['cacheMoney','compactCacheMoney']],['coin',['cacheCoin','compactCacheCoin']]]){
-  const amount=cacheReward[currency],show=visible&&amount>0;
+  const amount=cacheReward[currency],show=visible&&Big.from(amount).gt(0);
   for(const id of ids){
    const el=$(id),compact=id.startsWith('compact');
    // Compact gains stay beside the balance even with late-game exponents.
@@ -351,7 +350,7 @@ function renderPanel(){
  setText($('costLabel'),max?'RESEARCH COMPLETE':'RESEARCH COST');setHtml($('panelCost'),max?'완료':priceMarkup(p));
  if(selectionPending)setBuyState('pending','…','이동 중',true);
  else setBuyState(max?'completed':!can?'blocked':afford?'':'waiting',max?'연구 완료':!can?'잠김':n.max>1&&l>0?'레벨 업':'연구',max?'MAX':!can?'조건 미충족':state.settings.purchaseCheat?'무료 연구':afford?l?`Lv.${l+1}`:'구매 가능':time(waitTime(state,n,econ))+' 후',max||!can);
- $('purchaseProgress').style.width=(max?100:Math.min(100,...Object.entries(p).map(([k,x])=>state.currencies[k]/x*100)))+'%';
+ $('purchaseProgress').style.width=(max?100:Math.min(100,...Object.entries(p).map(([k,x])=>Big.from(state.currencies[k]).div(x).toNumber()*100)))+'%';
 }
 function renderPrestigeNode(n){
  const l=prestigeLevel(state,n),p=prestigeCost(state,n),can=prestigeUnlocked(state,n),max=l>=n.max,afford=prestigeAffordable(state,n),branch=PRESTIGE_BRANCHES[n.branch];
@@ -364,15 +363,15 @@ function renderPrestigeNode(n){
  setText($('costLabel'),n.reserved?'RESERVED':max?'RESEARCH COMPLETE':'RESEARCH COST');setHtml($('panelCost'),n.reserved?'설계 대기':max?'완료':priceMarkup(p));
  if(selectionPending)setBuyState('pending','…','이동 중',true);
  else if(n.reserved)setBuyState('blocked','예약','설계 전',true);
- else setBuyState(max?'completed':!can?'blocked':afford?'':'waiting',max?'연구 완료':!can?'잠김':n.max>1&&l>0?'레벨 업':'연구',max?'MAX':!can?'조건 미충족':state.settings.purchaseCheat?'무료 연구':afford?l?`Lv.${l+1}`:'구매 가능':`✿${tokenFormat(Math.max(0,p.token-state.currencies.token))} 더 필요`,max||!can);
- $('purchaseProgress').style.width=(max||n.reserved?100:Math.min(100,state.currencies.token/p.token*100))+'%';
+ else setBuyState(max?'completed':!can?'blocked':afford?'':'waiting',max?'연구 완료':!can?'잠김':n.max>1&&l>0?'레벨 업':'연구',max?'MAX':!can?'조건 미충족':state.settings.purchaseCheat?'무료 연구':afford?l?`Lv.${l+1}`:'구매 가능':`✿${tokenFormat(Big.max(0,Big.from(p.token).sub(state.currencies.token)))} 더 필요`,max||!can);
+ $('purchaseProgress').style.width=(max||n.reserved?100:Math.min(100,Big.from(state.currencies.token).div(p.token).toNumber()*100))+'%';
 }
 // The center panel's prestige button, left of the navigator: shown once the
 // tree is complete, enabled when the balance clears the threshold.
 function renderPrestigeButton(center){
  const button=$('prestigeButton');
  if(!center||onPrestige()||!treeComplete(state)){button.hidden=true;return;}
- const ready=prestigeReady(state),left=PRESTIGE_THRESHOLD-state.currencies.money;
+ const ready=prestigeReady(state),left=Big.from(PRESTIGE_THRESHOLD).sub(state.currencies.money);
  button.hidden=false;button.disabled=!ready;
  setHtml($('prestigeDetail'),symbolMarkup(ready?`✿${tokenFormat(tokensFor(state))}`:`$${compactFormat(left)} 더`));
  button.setAttribute('aria-label',ready?`환생. 지금 환생하면 토큰 ${tokenFormat(tokensFor(state))}`:`환생까지 $${format(left)} 더 필요`);
@@ -438,14 +437,14 @@ function jumpTo(n){
 function interruptMapMotion(){cameraIntent=null;cancelAnimationFrame(navigationFrame);navigationFrame=0;stopCamera();if(selectionPending)commitSelection(selectionEpoch);}
 function ripple(x,y){if(!state.settings.touch||!state.settings.motion)return;const el=document.createElement('i');el.className='ripple';el.style.left=x+'px';el.style.top=y+'px';viewport.append(el);el.addEventListener('animationend',()=>el.remove());setTimeout(()=>el.remove(),650);}
 function buySelected(){if(selectionPending)return false;if(selected===CENTER_SELECTION){openNavigator();return true;}const n=lookupNode(selected);if(!n)return false;if(n.prestige)return buyPrestige(n);const before=economy(state).count;
- if(!purchase(state,n)){if(state.settings.motion){$('buy').classList.remove('shake');void $('buy').offsetWidth;$('buy').classList.add('shake');}if(unlocked(state,n)&&level(state,n)<n.max)toast(`${priceText(Object.fromEntries(Object.entries(cost(state,n)).map(([k,v])=>[k,Math.max(0,v-state.currencies[k])]).filter(([,v])=>v>0)))} 더 필요합니다.`);return false;}
+ if(!purchase(state,n)){if(state.settings.motion){$('buy').classList.remove('shake');void $('buy').offsetWidth;$('buy').classList.add('shake');}if(unlocked(state,n)&&level(state,n)<n.max)toast(`${priceText(Object.fromEntries(Object.entries(cost(state,n)).map(([k,v])=>[k,Big.max(0,v.sub(state.currencies[k]))]).filter(([,v])=>v.gt(0))))} 더 필요합니다.`);return false;}
  if(state.settings.haptic&&navigator.vibrate)navigator.vibrate(14);
  const el=nodeEls.get(n.id);if(state.settings.motion){el.classList.add('pop');setTimeout(()=>el.classList.remove('pop'),550);for(const edge of edgeEls.filter(e=>e.from.id===n.id)){edge.el.classList.add('flashing');setTimeout(()=>edge.el.classList.remove('flashing'),1250);}}
  if(n.id===22&&level(state,n)===1)toast('코인 해금 · 1 ¢/s 생산을 시작합니다.');
  render();save();if(econ.count===NODES.length&&before<NODES.length)toast(`${NODES.length}개 노드 연구 완료. AXIOM에 도달했습니다.`,0,'important');return true;
 }
 function buyPrestige(n){
- if(!prestigePurchase(state,n)){if(state.settings.motion){$('buy').classList.remove('shake');void $('buy').offsetWidth;$('buy').classList.add('shake');}if(n.reserved)toast('예약 연구 · 설계 전');else if(prestigeUnlocked(state,n)&&prestigeLevel(state,n)<n.max)toast(`✿${tokenFormat(Math.max(0,prestigeCost(state,n).token-state.currencies.token))} 더 필요합니다.`);return false;}
+ if(!prestigePurchase(state,n)){if(state.settings.motion){$('buy').classList.remove('shake');void $('buy').offsetWidth;$('buy').classList.add('shake');}if(n.reserved)toast('예약 연구 · 설계 전');else if(prestigeUnlocked(state,n)&&prestigeLevel(state,n)<n.max)toast(`✿${tokenFormat(Big.max(0,Big.from(prestigeCost(state,n).token).sub(state.currencies.token)))} 더 필요합니다.`);return false;}
  if(state.settings.haptic&&navigator.vibrate)navigator.vibrate(14);
  const el=pNodeEls.get(n.id);if(state.settings.motion){el.classList.add('pop');setTimeout(()=>el.classList.remove('pop'),550);for(const edge of pEdgeEls.filter(e=>e.from.id===n.id)){edge.el.classList.add('flashing');setTimeout(()=>edge.el.classList.remove('flashing'),1250);}}
  render();save();
@@ -502,10 +501,10 @@ $('updatesPrev').onclick=()=>renderUpdates(updatesPage-1);$('updatesNext').oncli
 function renderStats(){
  const e=economy(state),pb=prestigeBonuses(state),pr=state.prestige,purchasable=PRESTIGE_NODES.filter(n=>!n.reserved),owned=purchasable.filter(n=>prestigeLevel(state,n)>0).length,levels=purchasable.reduce((a,n)=>a+prestigeLevel(state,n),0),levelsTotal=purchasable.reduce((a,n)=>a+n.max,0);
  // Lifetime coin totals stay listed after a prestige locks coins again.
- const coinStats=e.coinUnlocked||state.stats.coinEarned>0;
- const condition=prestigeReady(state)?`충족 · ✿${tokenFormat(tokensFor(state))}`:treeComplete(state)?`$${format(PRESTIGE_THRESHOLD-state.currencies.money)} 더`:`${NODES.length}개 연구 + $${format(PRESTIGE_THRESHOLD)}`;
+ const coinStats=e.coinUnlocked||Big.from(state.stats.coinEarned).gt(0);
+ const condition=prestigeReady(state)?`충족 · ✿${tokenFormat(tokensFor(state))}`:treeComplete(state)?`$${format(Big.from(PRESTIGE_THRESHOLD).sub(state.currencies.money))} 더`:`${NODES.length}개 연구 + $${format(PRESTIGE_THRESHOLD)}`;
  // 2.2.2 entries and order, minus the removed ones; prestige entries follow.
- const entries=[['구매한 노드',`${e.count} / ${NODES.length}`],['총 연구 레벨',format(e.total,0)],['총 달러 획득','$'+format(state.stats.earned)],...(coinStats?[['총 코인 획득','¢'+format(state.stats.coinEarned)]]:[]),...(e.coinUnlocked?[['코인 생산','¢'+format(e.coinRate)+' /s']]:[]),['현재 생산','$'+format(e.rate)+' /s'],['캐시 보너스',e.burst?`${priceText({money:e.rate*e.burst,...(e.coinUnlocked?{coin:e.coinRate*e.coinBurst}:{})})} / ${Math.round(e.interval)}s`:'미해금'],['총 플레이 시간',time(state.stats.seconds)],['오프라인 경과',time(state.stats.offlineSeconds)],['오프라인 수입',priceText({money:state.stats.offlineEarned,...(coinStats?{coin:state.stats.offlineCoinEarned}:{})})]];
+ const entries=[['구매한 노드',`${e.count} / ${NODES.length}`],['총 연구 레벨',format(e.total,0)],['총 달러 획득','$'+format(state.stats.earned)],...(coinStats?[['총 코인 획득','¢'+format(state.stats.coinEarned)]]:[]),...(e.coinUnlocked?[['코인 생산','¢'+format(e.coinRate)+' /s']]:[]),['현재 생산','$'+format(e.rate)+' /s'],['캐시 보너스',e.burst?`${priceText({money:e.rate.mul(e.burst),...(e.coinUnlocked?{coin:e.coinRate.mul(e.coinBurst)}:{})})} / ${Math.round(e.interval)}s`:'미해금'],['총 플레이 시간',time(state.stats.seconds)],['오프라인 경과',time(state.stats.offlineSeconds)],['오프라인 수입',priceText({money:state.stats.offlineEarned,...(coinStats?{coin:state.stats.offlineCoinEarned}:{})})]];
  const rebirth=[['환생 횟수',`${pr.count}회`],['환생 조건',condition],...(pr.count?[['보유 토큰','✿'+tokenFormat(state.currencies.token)],['누적 토큰','✿'+tokenFormat(pr.tokensEarned)],['환생 노드',`${owned} / ${purchasable.length} · ${levels} / ${levelsTotal} 레벨`],['생산 배율',`$ ×${format(pb.moneyMul*pb.allMul)} · ¢ ×${format(pb.coinMul*pb.allMul)}`],['자동 연구 섹터',`${pb.auto.size} / 8 해금 · ${Object.keys(pr.auto).length} 켜짐`],['이번 회차',time(state.stats.seconds-(state.stats.runStart||0))],...(pr.last?[['마지막 환생',`$${format(pr.last.money)} → ✿${tokenFormat(pr.last.tokens)}`]]:[])]:[])];
  const row=([a,b])=>{const div=document.createElement('div');div.className='stat';const span=document.createElement('span'),strong=document.createElement('strong');span.textContent=a;strong.innerHTML=symbolMarkup(b);div.append(span,strong);return div;};
  $('stats').replaceChildren();for(const entry of entries)$('stats').append(row(entry));
@@ -523,7 +522,7 @@ function resume(){
  // Prefer a newer checkpoint if another window saved while this one was away.
  try{const raw=localStorage.getItem(KEY);if(raw){const input=JSON.parse(raw);if(input.savedAt>state.savedAt)state=validateSave(input);}}catch{}
  const reward=settleOffline(state);suspended=false;applySettings();lastFrame=performance.now();checkpointOffline(state);save();render();
- if(reward.elapsed>=5&&reward.amount>0)toast(`오프라인 생산 +${priceText({money:reward.amount,...(reward.coin?{coin:reward.coin}:{})})}\n${time(reward.elapsed)} 경과 · ${time(reward.effectiveSeconds)}에 해당하는 생산`,8500);
+ if(reward.elapsed>=5&&reward.amount.gt(0))toast(`오프라인 생산 +${priceText({money:reward.amount,...(reward.coin.gt(0)?{coin:reward.coin}:{})})}\n${time(reward.elapsed)} 경과 · ${time(reward.effectiveSeconds)}에 해당하는 생산`,8500);
 }
 document.addEventListener('visibilitychange',()=>{if(document.hidden)suspend();else resume();});
 window.addEventListener('pagehide',suspend);window.addEventListener('pageshow',resume);
@@ -609,8 +608,8 @@ function weatherMode(){const w=worldState(state).weather;if(w==='rain')return on
 weatherFx=createWeatherFx($('weatherFx'),()=>state.settings.motion&&!motionPreference.matches&&!document.hidden&&!suspended,weatherMode);
 createGraph();setupOpalMotion();renderUpdates();applyMapTheme();applySettings();render();if(!state.camera)camera=initialCamera();transform();resume();requestAnimationFrame(frame);if(loadNotice)setTimeout(()=>toast(loadNotice,0,'important'),500);if(!storageOK)setText($('saveState'),'저장 불가 · 설정에서 내보내기');
 // Optional browser agent tools use exactly the same state and purchase guard as the UI.
-if(document.modelContext?.registerTool){const lifecycle=new AbortController();const register=tool=>{try{Promise.resolve(document.modelContext.registerTool(tool,{signal:lifecycle.signal})).catch(()=>{});}catch{}};
- register({name:'read_research_state',title:'연구 상태 읽기',description:'현재 자원, 생산량, 발견한 연구와 구매 조건을 읽습니다.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute(){const e=economy(state);return {money:state.currencies.money,coin:state.currencies.coin,rate:e.rate,coinRate:e.coinRate,purchased:e.count,nodes:NODES.filter(n=>discovery(n)>1).map(n=>({id:n.id,name:n.name,level:level(state,n),max:n.max,cost:cost(state,n,e),unlocked:unlocked(state,n)}))};}});
+if(document.modelContext?.registerTool){const lifecycle=new AbortController(),json=v=>JSON.parse(JSON.stringify(v));const register=tool=>{try{Promise.resolve(document.modelContext.registerTool(tool,{signal:lifecycle.signal})).catch(()=>{});}catch{}};
+ register({name:'read_research_state',title:'연구 상태 읽기',description:'현재 자원, 생산량, 발견한 연구와 구매 조건을 읽습니다.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute(){const e=economy(state);return json({money:state.currencies.money,coin:state.currencies.coin,rate:e.rate,coinRate:e.coinRate,purchased:e.count,nodes:NODES.filter(n=>discovery(n)>1).map(n=>({id:n.id,name:n.name,level:level(state,n),max:n.max,cost:cost(state,n,e),unlocked:unlocked(state,n)}))});}});
  register({name:'select_research',title:'연구 선택',description:'발견한 연구를 선택하고 화면을 이동합니다. 구매하지 않습니다.',inputSchema:{type:'object',properties:{id:{type:'integer',minimum:1,maximum:NODES.length}},required:['id'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||!Number.isInteger(input.id)||!selectNode(input.id))throw Error('발견한 연구 ID가 필요합니다.');focusNode(input.id);return {selected:input.id};}});
- register({name:'purchase_research',title:'연구 구매',description:'발견한 연구를 1레벨 구매합니다. 선행 조건과 최대 레벨을 검사합니다. 무료 연구 치트가 켜져 있으면 자금을 소모하지 않으며, 꺼져 있으면 보유 금액을 검사하고 구매 금액을 차감합니다.',inputSchema:{type:'object',properties:{id:{type:'integer',minimum:1,maximum:NODES.length}},required:['id'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||!Number.isInteger(input.id)||!selectNode(input.id))throw Error('발견한 연구 ID가 필요합니다.');if(!buySelected())throw Error('자원이 부족하거나 연구가 잠겼거나 최대 레벨입니다.');return {id:input.id,level:level(state,input.id),money:state.currencies.money,coin:state.currencies.coin};}});
+ register({name:'purchase_research',title:'연구 구매',description:'발견한 연구를 1레벨 구매합니다. 선행 조건과 최대 레벨을 검사합니다. 무료 연구 치트가 켜져 있으면 자금을 소모하지 않으며, 꺼져 있으면 보유 금액을 검사하고 구매 금액을 차감합니다.',inputSchema:{type:'object',properties:{id:{type:'integer',minimum:1,maximum:NODES.length}},required:['id'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||!Number.isInteger(input.id)||!selectNode(input.id))throw Error('발견한 연구 ID가 필요합니다.');if(!buySelected())throw Error('자원이 부족하거나 연구가 잠겼거나 최대 레벨입니다.');return json({id:input.id,level:level(state,input.id),money:state.currencies.money,coin:state.currencies.coin});}});
  window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});}

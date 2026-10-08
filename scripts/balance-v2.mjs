@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import {pathToFileURL} from 'node:url';
-import {NODES,defaultState,economy,level,unlocked,cost,purchase,tick,normalizedCost,affordable,sectorProgress} from '../dist/data.js';
+import {NODES,defaultState,economy,level,unlocked,cost,purchase,tick,normalizedCost,affordable,sectorProgress,Big} from '../dist/data.js';
+// Reports keep plain numbers (balances here stay far below the double limit).
+const plain=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,Big.from(v).toNumber()]));
 export function authorPrices(waitScale=1.075){
  const reference=defaultState(),events=[],waits=[3.6,9,17,24,29,35,40,44];
  for(const n of NODES){const own=NODES.filter(x=>x.chapter===n.chapter),next=NODES.filter(x=>x.chapter===Math.min(7,n.chapter+1)),position=own.indexOf(n)/(own.length-1);
@@ -11,9 +13,9 @@ export function authorPrices(waitScale=1.075){
  for(const {n,l,at}of events){
   const ch=NODES[Math.min(104,Math.max(0,Math.floor(at)-1))].chapter,wait=n.id===1?10:waits[ch]*(n.max===1?1.25:1)*waitScale;
   let e=economy(reference);
-  for(const k of ['money','coin'])reference.currencies[k]=e.rates[k]*(1+e.bursts[k]/e.interval)*wait*.5;
+  for(const k of ['money','coin'])reference.currencies[k]=e.rates[k].mul(1+e.bursts[k]/e.interval).mul(wait).mul(.5);
   e=economy(reference);const prices={};
-  for(const k of n.payment){let raw=e.rates[k]*(1+e.bursts[k]/e.interval)*wait/(e.discounts[k]*e.scalings[k]**l);raw=Math.max(1,raw,l?n.costs[l-1][k]*1.08:0);prices[k]=Number(raw.toPrecision(4));}
+  for(const k of n.payment){let raw=e.rates[k].mul(1+e.bursts[k]/e.interval).mul(wait).div(e.discounts[k]*e.scalings[k]**l).toNumber();raw=Math.max(1,raw,l?n.costs[l-1][k]*1.08:0);prices[k]=Number(raw.toPrecision(4));}
   n.costs[l]=prices;n.baseCost=n.costs[0];reference.levels[n.id]=l+1;
  }
  return Object.fromEntries(NODES.map(n=>[n.id,n.costs]));
@@ -26,14 +28,14 @@ export function simulate({cadence=3,strategy='cost',maxSeconds=22000}={}){
   const e=economy(s),eligible=NODES.filter(n=>unlocked(s,n)&&level(s,n)<n.max&&affordable(s,n,e));
   eligible.sort((a,b)=>strategy==='frontier'?((level(s,a)>0)-(level(s,b)>0))||normalizedCost(s,a,e)-normalizedCost(s,b,e):normalizedCost(s,a,e)-normalizedCost(s,b,e));
   const n=eligible[0];if(!n)continue;
-  lastBalances={...s.currencies};if(entries[n.chapter]===null){entries[n.chapter]=t/60;entryBalances[n.chapter]={...s.currencies};}
+  lastBalances=plain(s.currencies);if(entries[n.chapter]===null){entries[n.chapter]=t/60;entryBalances[n.chapter]=plain(s.currencies);}
   if(!purchase(s,n))throw Error('Candidate was not purchasable');
   if(n.id===22)coinAt=t/60;if(n.gate&&level(s,n)===1)gates.push({id:n.id,min:t/60,money:lastBalances.money});
-  history.push({t,id:n.id,level:level(s,n),money:lastBalances.money,coin:lastBalances.coin,rate:e.rate,coinRate:e.coinRate});
+  history.push({t,id:n.id,level:level(s,n),money:lastBalances.money,coin:lastBalances.coin,rate:e.rate.toNumber(),coinRate:e.coinRate.toNumber()});
   maxGap=Math.max(maxGap,t-lastPurchase);lastPurchase=t;
   for(let i=0;i<8;i++)if(completed[i]===null&&sectorProgress(s,i).complete)completed[i]=t/60;
   if(economy(s).count===105&&allAt===null)allAt=t/60;
-  if(completed.every(x=>x!==null))return {minutes:t/60,allAt,coinAt,entries,completed,entryBalances,gates,maxGap,finalBalance:lastBalances,finalRate:economy(s).rates,purchases:s.stats.purchases,history};
+  if(completed.every(x=>x!==null))return {minutes:t/60,allAt,coinAt,entries,completed,entryBalances,gates,maxGap,finalBalance:lastBalances,finalRate:plain(economy(s).rates),purchases:s.stats.purchases,history};
  }
  return {failed:true,minutes:maxSeconds/60,entries,completed,coinAt,purchases:s.stats.purchases,last:history.at(-1)};
 }

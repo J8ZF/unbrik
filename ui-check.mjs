@@ -8,6 +8,9 @@ import * as cameraHelpers from './dist/camera.js';
 import * as prestigeModule from './dist/prestige.js';
 import * as hub from './dist/hub.js';
 import * as units from './dist/units.js';
+// Amounts are Big values; any implicit numeric use of one (big > 0) throws here.
+globalThis.BIG_STRICT=true;
+const N=v=>data.Big.from(v).toNumber();
 
 // Run the actual renderers and controls against a minimal element adapter.
 // This verifies state/DOM wiring, not browser layout or physical touch input.
@@ -22,7 +25,7 @@ const slice=(start,end)=>{const a=app.indexOf(start),b=app.indexOf(end,a);assert
 const source=[slice('const CENTER_SELECTION','const KEY='),slice('function compactFormat(', 'function time('),slice('function syncOpalMotion(){','function save('),slice('function sectorUnlocked(','const visibility='),slice('function createGraph(){','function animatePanel('),slice('function animatePanel(','function ripple('),slice('function buySelected(){','const pointers='),slice('const pointers=',"$('zoomIn').onclick="),slice('let previousWidth=','new ResizeObserver(reframeViewport)'),slice('function renderUpdates(','function suspend('),
  slice("$('toggleHud').onclick=", "$('settings').onclick="),slice("for(const k of ['motion','touch','haptic','mapControls'])", "$('format').onchange="),slice("$('purchaseCheat').onchange=", "$('saveNow').onclick="),slice('let autoClock=0;','function frame(now){'),slice('function applyMapTheme(){',"$('maps').onclick="),slice('function openPrestigeDialog(){','function weatherMode(){')].join('\n');
 const createUI=new Function('deps','$','document',`
- const {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,purchase,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,BRANCHES,CENTER,boundsOf,connectionPath,centerPath,iconSvg,setIcon,UPDATES,updatePage,interpolateCamera,overviewMode,mapFrames,fitCamera,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeReady,prestige,autoResearch,PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress,wireframePaths,formatNamed,compactNamed}=deps;
+ const {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,purchase,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,BRANCHES,CENTER,boundsOf,connectionPath,centerPath,iconSvg,setIcon,UPDATES,updatePage,interpolateCamera,overviewMode,mapFrames,fitCamera,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeReady,prestige,autoResearch,PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress,wireframePaths,formatNumber,compactNumber,Big}=deps;
  let sessionSeconds=0;let state=defaultState(),selected=1,econ=economy(state),saved=null,camera={x:0,y:0,scale:1},cameraMoving=false,updatesPage=1;
  let suspended=false,opalMotion={refresh(){}},weatherFx=null,motionPreference={matches:false};
  let selectionPending=false,selectionEpoch=0,navigationFrame=0,panelAnimation=null,navigatorCloseTimer=0,cameraIntent=null;
@@ -117,7 +120,7 @@ $('toggleHud').onclick();assert.equal($('toggleHud').attributes['aria-label'],'�
 assert(!$('panelDetails').hidden);$('togglePanel').onclick();assert.equal(ui.selected,1);assert($('panelDetails').hidden);assert.equal($('panelToggleText').textContent,'연구 정보 펼치기');assert.equal($('collapsedName').textContent,'START');assert(ui.saved.settings.panelCollapsed);
 $('togglePanel').onclick();assert(!$('panelDetails').hidden);assert.equal(ui.selected,1);
 $('togglePanel').onclick();ui.state.levels[1]=1;assert(ui.selectNode(2));assert.equal(ui.selected,2);assert(!$('panelDetails').hidden);assert.equal($('togglePanel').attributes['aria-expanded'],'true');
-const displayedPrice=$('panelCost').textContent;assert(ui.state.currencies.money<data.cost(ui.state,data.byId.get(2)).money);$('purchaseCheat').checked=true;$('purchaseCheat').onchange();assert(ui.state.settings.purchaseCheat);assert(ui.saved.settings.purchaseCheat);assert(!$('cheatBadge').hidden);assert.equal($('panelCost').textContent,displayedPrice);assert.equal($('costLabel').textContent,'RESEARCH COST');assert.equal($('buyDetail').textContent,'무료 연구');assert.equal($('buy').className,'');assert(!$('buy').disabled);assert(ui.nodeEls.get(2).className.includes('available'));assert(!ui.nodeEls.get(1).className.includes('available'));
+const displayedPrice=$('panelCost').textContent;assert(data.Big.from(ui.state.currencies.money).lt(data.cost(ui.state,data.byId.get(2)).money));$('purchaseCheat').checked=true;$('purchaseCheat').onchange();assert(ui.state.settings.purchaseCheat);assert(ui.saved.settings.purchaseCheat);assert(!$('cheatBadge').hidden);assert.equal($('panelCost').textContent,displayedPrice);assert.equal($('costLabel').textContent,'RESEARCH COST');assert.equal($('buyDetail').textContent,'무료 연구');assert.equal($('buy').className,'');assert(!$('buy').disabled);assert(ui.nodeEls.get(2).className.includes('available'));assert(!ui.nodeEls.get(1).className.includes('available'));
 $('purchaseCheat').checked=false;$('purchaseCheat').onchange();assert(!ui.state.settings.purchaseCheat);assert($('cheatBadge').hidden);assert.equal($('costLabel').textContent,'RESEARCH COST');assert.equal($('panelCost').textContent,displayedPrice);assert.equal($('buy').className,'waiting');
 ui.openCenter();assert.equal(ui.selected,-1);assert.equal($('panelName').textContent,'UNBRIK');assert(!$('sectorDialog').open);assert.equal($('buyText').textContent,'내비게이터');assert($('panelEffect').hidden);assert($('requirements').hidden);assert($('purchaseTrack').hidden);ui.buySelected();assert($('sectorDialog').open);ui.jumpToSector(7);assert($('sectorDialog').open,'Undiscovered sector cannot navigate');ui.jumpToSector(0);assert.equal($('buy').className,'pending');assert($('buy').disabled);assert.equal($('buyText').textContent,'…');assert.equal(ui.buySelected(),false);finishNavigation();assert(!$('sectorDialog').open);assert.equal(ui.selected,2);assert(!ui.pending);assert.equal($('buy').className,'waiting');
 for(const n of data.MAP_LAYOUT.sectors[0].members)ui.state.levels[n.id]=1;ui.render();assert.equal(ui.sectorEls[0].style.display,'none');
@@ -195,7 +198,7 @@ for(const restoredCollapsed of [true,false]){
  const get=id=>{assert(map.has(id),`Missing ${id}`);return map.get(id);};
  const doc={...element(),createElement:element,createElementNS:element,body:element()};
  const hud=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,...units,iconSvg,setIcon},get,doc);
- hud.render();assert(get('cacheMeter').hidden);assert.deepEqual(hud.state.currencies,{money:0,coin:0,token:0});
+ hud.render();assert(get('cacheMeter').hidden);assert.deepEqual(Object.fromEntries(Object.entries(hud.state.currencies).map(([k,v])=>[k,N(v)])),{money:0,coin:0,token:0});
  hud.state.levels=Object.fromEntries(data.NODES.filter(n=>n.id<=18).map(n=>[n.id,1]));
  hud.state.timers.cache=7.5;hud.render();
  assert(!get('cacheMeter').hidden);assert.equal(get('cacheInfo').textContent,'22.5s');
@@ -215,7 +218,7 @@ for(const restoredCollapsed of [true,false]){
  // Rendering future simultaneous awards must itself never credit a currency.
  hud.showCacheReward({money:100,coin:12});
  assert(get('cacheCoin').classList.contains('is-visible'));assert.equal(get('compactCacheCoin').textContent,'+12');
- assert.equal(JSON.stringify(hud.state),before);assert.equal(hud.state.currencies.coin,0);
+ assert.equal(JSON.stringify(hud.state),before);assert.equal(N(hud.state.currencies.coin),0);
  hud.advance(4802);hud.render();assert(!get('compactCacheCoin').classList.contains('is-visible'));
  for(const motion of [true,false])for(const os of [true,false]){
   hud.state.settings.motion=motion;hud.osReduce(os);hud.state.timers.cache=15;hud.render();
@@ -226,14 +229,14 @@ for(const restoredCollapsed of [true,false]){
 console.log(JSON.stringify({uiControls:'passed',cacheHud:'passed',dualCurrencyRewardDisplay:'no duplicate economy mutations',cacheSettingsCases:4,nativeClickReopens:'passed',lowerTapClickThrough:'blocked',targetBeforeRepaint:'passed',initialPanelLayoutCases:8,freshSessionCases:2,lostCaptureRecovery:'passed',dragPinchCancellation:'passed',inputSettingsCombinations:24,saveCompatibility:'passed',originalNodeMarkup:'restored',sectorBoundaryCases:12,lockedSectorMenuAndStats:'hidden',crossPrerequisiteLeaks:'blocked',invalidNavigation:'blocked',atomicFinalButton:'passed',motionToggleDuringNavigation:'passed'}));
 
 // Coin visibility, data wiring, and real dual-currency cache awards in both HUD states.
-ui.interruptMapMotion();ui.state.levels={};ui.state.currencies={money:0,coin:0};ui.render();
+ui.interruptMapMotion();ui.state.levels={};ui.state.currencies={money:0,coin:0,token:0};ui.render();
 assert($('coinCard').hidden&&$('compactCoinCard').hidden);
 for(const n of data.NODES.filter(n=>n.id<=22))ui.state.levels[n.id]=1;
 ui.render();assert(!$('coinCard').hidden&&!$('compactCoinCard').hidden);assert($('hud').classList.contains('has-coin'));
 assert.equal($('compactCoinRate').textContent,'+1 /s');
-ui.state.timers.cache=29.9;const payout=data.tick(ui.state,.2).find(e=>e.type==='cache');assert(payout.coin>0&&payout.money>0);
-ui.render();const awarded=structuredClone(ui.state.currencies);ui.showCacheReward(payout);
-for(const collapsed of [true,false]){ui.state.settings.hudCollapsed=collapsed;ui.render();assert(!$('cacheMeter').hidden);assert($('cacheCoin').classList.contains('is-visible'));assert($('compactCacheCoin').classList.contains('is-visible'));assert.deepEqual(ui.state.currencies,awarded);}
+ui.state.timers.cache=29.9;const payout=data.tick(ui.state,.2).find(e=>e.type==='cache');assert(payout.coin.gt(0)&&payout.money.gt(0));
+ui.render();const awarded=JSON.stringify(ui.state.currencies);ui.showCacheReward(payout);
+for(const collapsed of [true,false]){ui.state.settings.hudCollapsed=collapsed;ui.render();assert(!$('cacheMeter').hidden);assert($('cacheCoin').classList.contains('is-visible'));assert($('compactCacheCoin').classList.contains('is-visible'));assert.equal(JSON.stringify(ui.state.currencies),awarded);}
 ui.selectNode(22);ui.selectCenter();ui.selectNode(22);assert.equal($('panelCost').innerHTML,'완료','Panel markup cache must survive center/research switching');
 console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',headerTogglePreservesReward:'passed',centerPanelMarkup:'passed'}));
 // 2.2: world clock, ledger pages and the map-aware cache strip.
@@ -278,7 +281,7 @@ console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',
  assert(!get('hubBadge').hidden,'Center badge while prestige is available');assert(ui3.state.prestige.noticed,'One availability notice per run');
  get('prestigeButton').onclick();assert(get('prestigeDialog').open);assert(get('prestigeSummary').innerHTML.includes('1번째'));
  get('confirmPrestige').onclick();assert(!get('prestigeDialog').open);assert(!get('prestigeOverlay').hidden);
- assert.equal(ui3.state.map,'prestige','Reduced motion commits at once');assert.equal(ui3.state.currencies.token,20);assert.deepEqual(ui3.state.levels,{});assert.equal(ui3.state.currencies.money,0);assert.equal(ui3.state.currencies.coin,0);
+ assert.equal(ui3.state.map,'prestige','Reduced motion commits at once');assert.equal(N(ui3.state.currencies.token),20);assert.deepEqual(ui3.state.levels,{});assert.equal(N(ui3.state.currencies.money),0);assert.equal(N(ui3.state.currencies.coin),0);
  assert(doc.body.classList.contains('theme-bloom'));assert(!get('prestigeLayer').hidden);assert(get('nodes').attributes.hidden!==undefined&&get('centerNode').attributes.hidden!==undefined);
  for(const id of ['sectorRegions','spokes','edges'])assert(get(id).attributes.hidden!==undefined,'Mainland SVG layers are hidden by attribute on the flower');assert.equal(ui3.selected,-1);assert(get('pCenter').classList.contains('selected'));assert(get('prestigeButton').hidden,'No prestige button on the flower');assert(get('hubBadge').hidden);assert(!ui3.state.prestige.noticed,'The notice flag resets with the run');
  ui3.advance(1000);assert(get('prestigeOverlay').hidden,'Overlay lifts after the hold');
@@ -290,14 +293,14 @@ console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',
  assert(ui3.pEdgeEls.every(e=>e.el.style.display==='none'),'No link is shown before a root is owned');
  assert(!ui3.selectNode(1),'Mainland nodes are not selectable on the flower');assert(ui3.selectNode(1001));
  assert.equal(get('panelMeta').textContent,'001 / DORMANT · LV.0/4');assert.equal(get('buyText').textContent,'연구','Prestige studies use the mainland verb');
- assert(ui3.buySelected());assert.equal(prestigeModule.prestigeLevel(ui3.state,1001),1);assert.equal(ui3.state.currencies.token,17);
+ assert(ui3.buySelected());assert.equal(prestigeModule.prestigeLevel(ui3.state,1001),1);assert.equal(N(ui3.state.currencies.token),17);
  assert(ui3.pNodeEls.get(1001).className.includes('bought'));assert.equal(ui3.visibility.get(1002),2);assert.equal(ui3.visibility.get(1004),1);
  assert(ui3.pEdgeEls.some(e=>e.from.id===1001&&e.el.style.display===''),'Links appear once the parent is owned');
  // Reserved nodes are visible but never purchasable; a locked node cannot be bought.
  const reserved=prestigeModule.PRESTIGE_NODES.find(n=>n.reserved);assert(!ui3.selectNode(reserved.id)||!ui3.buySelected());
  assert(!ui3.selectNode(1004),'Ghost nodes stay unselectable');
  // AUTOPILOT I unlocks the sector-1 automation check on the mainland.
- assert(ui3.selectNode(1017));assert.equal(get('panelName').textContent,'AUTOPILOT I');assert(ui3.buySelected());assert.equal(ui3.state.currencies.token,14);
+ assert(ui3.selectNode(1017));assert.equal(get('panelName').textContent,'AUTOPILOT I');assert(ui3.buySelected());assert.equal(N(ui3.state.currencies.token),14);
  assert(ui3.jumpToPetal(1));assert.equal(ui3.selected,1009,'Petal jump picks the open root');
  ui3.openNavigator();assert(get('sectorMenu').hidden&&!get('petalMenu').hidden);
  assert.equal(get('petalMenu').children.length,5);
@@ -314,8 +317,29 @@ console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',
  assert(toggle.hidden,'A finished sector hides its check');
  // Stats show the rebirth block; the save round-trips with the prestige data.
  ui3.renderStats();assert(get('petalStats').innerHTML.includes('1 / 8'),'Prestige sector rows count bought research (DORMANT: 1 of 8)');assert(get('petalStats').innerHTML.includes('예약'));assert.equal(data.MAPS[0].ko,'AXIOM');assert(get('stats').children.some(c=>c.textContent==='REBIRTH'));assert(!get('petalStatsLabel').hidden);assert.equal(get('stats').children[0].children[0].textContent,'구매한 노드','2.2.2 stat labels are kept');
- const saved=data.validateSave(JSON.parse(JSON.stringify(ui3.state)));assert.equal(saved.prestige.count,1);assert.equal(saved.currencies.token,14);assert.deepEqual(saved.prestige.auto,{0:true});
+ const saved=data.validateSave(JSON.parse(JSON.stringify(ui3.state)));assert.equal(saved.prestige.count,1);assert.equal(N(saved.currencies.token),14);assert.deepEqual(saved.prestige.auto,{0:true});
  // The flower keeps its selection when the player returns.
  assert(ui3.switchMap('prestige'));assert.equal(ui3.selected,1009);
  console.log(JSON.stringify({prestigeRow:'passed',rebirthFlow:'passed',flowerDiscovery:'passed',tokenPurchases:'passed',reservedNodes:'blocked',mapSwitch:'passed',automationChecks:'passed',rebirthStats:'passed',prestigeSaved:'passed'}));
+}
+// 3.1: amounts past the double limit render in the header, the ledger, the panel and the stats.
+{
+ const map=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,element()])),get=id=>{assert(map.has(id),`Missing ${id}`);return map.get(id);};
+ const doc={...element(),createElement:element,createElementNS:element,body:element()};
+ const ui4=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,...units,iconSvg,setIcon},get,doc);
+ const B=data.Big.from;
+ for(const n of data.NODES)ui4.state.levels[n.id]=n.max;
+ ui4.state.currencies.money=B('1.5e400');ui4.state.currencies.coin=B('2.5e330');ui4.state.stats.earned=B('3e400');ui4.state.stats.coinEarned=B('4e330');
+ ui4.reduced(true);ui4.applyMapTheme();ui4.selectCenter();ui4.render();
+ assert.equal(get('compactMoneyValue').textContent,'1.50e400');assert.equal(get('compactCoin').textContent,'2.50e330');
+ assert(!get('prestigeButton').hidden&&!get('prestigeButton').disabled,'A huge balance clears the threshold');
+ assert(data.tokensFor(ui4.state).eq(B('1.5e400').div(5e33).sqrt().mul(10).round(2)),'Tokens = 10 · √(1.5e400 / 5e33)');
+ ui4.state.settings.format='named';ui4.render();assert.equal(get('compactMoneyValue').textContent,'1.50e400','Past Ce the exponent shows');
+ ui4.state.currencies.money=B('4.2e300');ui4.render();assert.equal(get('compactMoneyValue').textContent,'4.20NoNog');
+ ui4.state.currencies.money=B('1.5e400');ui4.renderStats();
+ ui4.runPrestige();
+ assert(ui4.state.currencies.token.gt('1e184')&&ui4.state.currencies.money.isZero(),'Prestige pays astronomical tokens');
+ const saved=data.validateSave(JSON.parse(JSON.stringify(ui4.state)));assert(saved.currencies.token.eq(ui4.state.currencies.token)&&saved.prestige.last.money.eq('1.5e400'));
+ ui4.render();assert.equal(get('compactMoneyValue').textContent,'0');
+ console.log(JSON.stringify({bigHeader:'passed',bigPrestige:'passed',bigSave:'passed'}));
 }
