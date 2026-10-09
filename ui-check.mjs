@@ -25,7 +25,7 @@ const slice=(start,end)=>{const a=app.indexOf(start),b=app.indexOf(end,a);assert
 const source=[slice('const CENTER_SELECTION','const KEY='),slice('function compactFormat(', 'function time('),slice('function syncOpalMotion(){','function save('),slice('function sectorUnlocked(','const visibility='),slice('function createGraph(){','function animatePanel('),slice('function animatePanel(','function ripple('),slice('function buySelected(){','const pointers='),slice('const pointers=',"$('zoomIn').onclick="),slice('let previousWidth=','new ResizeObserver(reframeViewport)'),slice('function renderUpdates(','function suspend('),
  slice("$('toggleHud').onclick=", "$('settings').onclick="),slice("for(const k of ['motion','sea','touch','haptic','mapControls'])", "$('format').onchange="),slice("$('purchaseCheat').onchange=", "$('saveNow').onclick="),slice('let autoClock=0;','function frame(now){'),slice('function applyMapTheme(){',"$('maps').onclick="),slice('function openPrestigeDialog(){','function weatherMode(){')].join('\n');
 const createUI=new Function('deps','$','document',`
- const {createIslandView,zoneColor,islandOpen,ISLANDS,NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,purchase,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,BRANCHES,CENTER,boundsOf,connectionPath,centerPath,iconSvg,setIcon,UPDATES,updatePage,interpolateCamera,overviewMode,mapFrames,fitCamera,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeGateMet,PRESTIGE_GATE,prestigeReady,prestige,autoResearch,PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress,wireframePaths,formatNumber,compactNumber,Big}=deps;
+ const {createIslandView,zoneColor,islandOpen,islandDone,ISLANDS,NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,purchase,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,BRANCHES,CENTER,boundsOf,connectionPath,centerPath,iconSvg,setIcon,UPDATES,updatePage,interpolateCamera,overviewMode,mapFrames,fitCamera,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeGateMet,PRESTIGE_GATE,prestigeReady,prestige,autoResearch,PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress,wireframePaths,formatNumber,compactNumber,Big}=deps;
  let sessionSeconds=0;let state=defaultState(),selected=1,econ=economy(state),saved=null,camera={x:0,y:0,scale:1},cameraMoving=false,updatesPage=1;
  let suspended=false,opalMotion={refresh(){}},weatherFx=null,islandView=null,motionPreference={matches:false};
  let selectionPending=false,selectionEpoch=0,navigationFrame=0,panelAnimation=null,navigatorCloseTimer=0,cameraIntent=null;
@@ -40,7 +40,7 @@ const createUI=new Function('deps','$','document',`
  createGraph();renderUpdates();
  return {sectorUnlocked,renderStats,fit,render,showCacheReward,selectNode,selectCenter,buySelected,openCenter,openNavigator,jumpToSector,jumpToPetal,interruptMapMotion,renderUpdates,sectorEls,chapterEls,nodeEls,edgeEls,spokeEls,visibility,applySettings,applyMapTheme,switchMap,openMaps,runPrestige,runAutomation,toggleAuto,pNodeEls,pEdgeEls,petalEls,osReduce(value){motionPreference.matches=value;applySettings();},
  advance(now){clock=now;for(const [id,timer]of timers){if(timer.at<=clock){timers.delete(id);timer.fn();}}const pending=[...frames.values()];frames.clear();for(const frame of pending)frame(now);},
- resize(width,height){viewport.clientWidth=width;viewport.clientHeight=height;reframeViewport();},reduced(value){document.body.classList.toggle('reduced-motion',value)},get activePointers(){return pointers.size},get moving(){return cameraMoving},get pending(){return selectionPending},get state(){return state},get selected(){return selected},get saved(){return saved}};
+ resize(width,height){viewport.clientWidth=width;viewport.clientHeight=height;reframeViewport();},reduced(value){document.body.classList.toggle('reduced-motion',value)},get activePointers(){return pointers.size},get cameraNow(){return camera},get moving(){return cameraMoving},get pending(){return selectionPending},get state(){return state},get selected(){return selected},get saved(){return saved}};
 `);
 const documentAdapter={...element(),createElement:element,createElementNS:element,body:element()};
 // The island picture is drawn by island-view.js in the browser; here a stub records what the app asks of it.
@@ -133,7 +133,7 @@ for(const n of data.MAP_LAYOUT.sectors[0].members)ui.state.levels[n.id]=1;ui.ren
 for(const n of data.MAP_LAYOUT.sectors[0].members)ui.state.levels[n.id]=n.max;ui.render();assert.equal(ui.sectorEls[0].style.display,'');assert.equal($('centerProgress').textContent,'30 / 253 연구');assert.deepEqual(islandsDone(),[true,false,false,false,false],'a finished island lights its relic');assert(islandOpenHook(2)&&!islandOpenHook(3),'the next island opens with the last study');assert(ui.sectorUnlocked(1)&&!ui.sectorUnlocked(2));
 assert.equal(ui.chapterEls[0].querySelector('.island-progress').textContent,'30 / 30');
 maxAll(ui.state);ui.state.levels[LONG.id]--;ui.render();assert.equal(ui.sectorEls[0].style.display,'none');ui.openCenter();ui.buySelected();ui.jumpToSector(0);assert(ui.pending);finishNavigation();assert.equal(ui.selected,LONG.id);assert(!$('sectorDialog').open);
-assert.deepEqual(islandsDone(),[false,true,true,true,true]);
+assert.deepEqual(islandsDone(),[true,true,true,true,true],'done means the last study is bought');
 // Update log: two entries per page, page numbers five at a time; previous/next step to the neighbouring set.
 {const P=updates.updatePage(1).pages,nums=()=>$('updatePages').children.map(b=>b.textContent),cur=()=>$('updatePages').children.find(b=>b.attributes['aria-current']==='page').textContent;assert(P>10);
  assert.equal($('updateEntries').children.length,2);assert.deepEqual(nums(),['1','2','3','4','5']);assert($('updatesPrev').disabled);assert(!$('updatesNext').disabled);
@@ -199,10 +199,12 @@ for(const through of [0,1,2,12,17,18,29,30]){
 // Opening the next island: buying island 1's last study holds island 2 back, glides the camera over, fades the island in, then shows its studies.
 {ui.interruptMapMotion();ui.state.levels={};for(const n of data.MAP_LAYOUT.sectors[0].members)if(!n.gate)ui.state.levels[n.id]=n.max;ui.state.settings.purchaseCheat=true;ui.reduced(false);ui.state.settings.motion=true;ui.applySettings();
  ui.selectNode(LAST.id);ui.render();const before=islandCalls.length;assert(ui.buySelected());assert(data.islandOpen(ui.state,1));
- assert(!ui.sectorUnlocked(1),'island 2 waits for its reveal');assert(!islandOpenHook(2));assert($('viewport').classList.contains('cutscene'));assert(ui.moving,'the camera glides to the island');
+ assert(!ui.sectorUnlocked(1),'island 2 waits for its reveal');assert(!islandOpenHook(2));assert(documentAdapter.body.classList.contains('cutscene'),'the interface folds away for the cutscene');
+ for(let i=0;i<3;i++)ui.advance(now+=16);assert(ui.moving,'the camera glides to the island');
+ const held={...ui.cameraNow};pointer('pointerdown',1,2);pointer('pointermove',1,2,160,160);pointer('pointerup',1,2,160,160);assert.equal(ui.activePointers,0,'gestures are ignored during the cutscene');assert(ui.moving,'a touch does not stop the glide');
  for(let i=0;i<90;i++)ui.advance(now+=16);
  assert(islandCalls.slice(before).some(c=>c[0]==='reveal'&&c[1]===2),'the island picture fades in once the camera is there');
- assert(ui.sectorUnlocked(1)&&islandOpenHook(2)&&!$('viewport').classList.contains('cutscene'),'island 2 shows after the reveal');assert(!ui.chapterEls[1].hidden);
+ assert(ui.sectorUnlocked(1)&&islandOpenHook(2)&&!documentAdapter.body.classList.contains('cutscene'),'island 2 shows after the reveal');assert(!ui.chapterEls[1].hidden);
  const root=data.MAP_LAYOUT.sectors[1].members[0];assert.equal(ui.visibility.get(root.id),2,'the first study of island 2 is open');
  for(let i=0;i<120;i++)ui.advance(now+=16);assert.equal(ui.selected,root.id,'the camera settles on the island\'s first study');
  ui.state.settings.purchaseCheat=false;}

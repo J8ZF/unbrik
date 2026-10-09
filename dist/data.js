@@ -13,6 +13,8 @@ export const ZONE_COLORS={grass:'#b9f36d',sand:'#ecd29a',rock:'#93a9be'};
 export const zoneColor=n=>(ISLANDS[n.chapter]?.zones||ZONE_COLORS)[n.zone]||ZONE_COLORS[n.zone];
 // An island is open once the island before it is finished (its last study bought).
 export const islandOpen=(s,chapter)=>chapter===0||level(s,ISLANDS[chapter-1].last)>0;
+// An island counts as done once its last study is bought (its relic lamp lights; the next island opens).
+export const islandDone=(s,chapter)=>level(s,ISLANDS[chapter].last)>0;
 export const ECONOMY_EPOCH='unbrik-4.0';
 export const CURRENCIES=['money','coin'];
 // Amounts (balances, rates, costs, earnings) are Big values with no upper
