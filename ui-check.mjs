@@ -44,7 +44,7 @@ const createUI=new Function('deps','$','document',`
 `);
 const documentAdapter={...element(),createElement:element,createElementNS:element,body:element()};
 // The island picture is drawn by island-view.js in the browser; here a stub records what the app asks of it.
-const islandCalls=[];let islandsDone=()=>[];const createIslandView=o=>({...(islandsDone=o.islandsDone||islandsDone,{}),setCamera(c){islandCalls.push(['camera',{...c}]);},resize(){},setMotion(v){islandCalls.push(['motion',v]);},setVisible(v){islandCalls.push(['visible',v]);},render(){islandCalls.push(['render']);}});
+const islandCalls=[];let islandsDone=()=>[];const createIslandView=o=>({...(islandsDone=o.islandsDone||islandsDone,{}),setCamera(c){islandCalls.push(['camera',{...c}]);},resize(){},setMotion(v){islandCalls.push(['motion',v]);},setObsMotion(v){islandCalls.push(['obsMotion',v]);},setVisible(v){islandCalls.push(['visible',v]);},render(){islandCalls.push(['render']);}});
 const ui=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,...units,iconSvg,setIcon,createIslandView},$,documentAdapter);
 // 4.0 stage 1: one island. LONG is an upgradeable study deep in it, LAST its final study, CACHE the cache study.
 const LONG=data.byId.get(23),LAST=data.NODES.at(-1),CACHE=data.NODES.find(n=>n.effects.some(e=>e.type==='cache'));assert(LONG.max>1&&LAST.gate);

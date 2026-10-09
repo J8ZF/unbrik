@@ -611,7 +611,4 @@ body:not(.theme-bloom) .node.locked{border-color:#46505a}
 #centerNode .hub-eye{fill:#07111a;stroke:#04090d;stroke-width:3}
 #centerNode .hub-inset{display:none;fill:none;stroke:#f2f4f7;stroke-width:3}
 #centerNode.selected .hub-inset{display:block}
-#centerNode .hub-iris{fill:#466575;stroke:#849e9f;stroke-width:1.5;transform-origin:0 0;animation:obsIris 300s linear infinite}
 #centerNode .hub-wire{transform:translate(0,69px) scale(1.5)}
-.sea-still #centerNode .hub-iris,.camera-moving #centerNode .hub-iris,#world.overview #centerNode .hub-iris{animation-play-state:paused}
-@keyframes obsIris{to{transform:rotate(360deg)}}

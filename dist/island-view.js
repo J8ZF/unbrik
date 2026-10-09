@@ -10,8 +10,10 @@
 //         the camera, so the shore never lags behind the island.
 //  #world — growth layers around the HTML studies: decoration and grass, the
 //         lighthouse beam, landmark buildings, moss over bought cards.
-//  The observatory's moving parts go on two more screen-space canvases, one
-//  under the painted layer and one over the map (see observatory-view.js).
+//  The observatory's moving parts: the machinery under its painted city goes
+//  on one more screen-space canvas below the painted layer (sized 1×1 while
+//  the observatory is off screen); what floats above the sea round it is
+//  drawn on the sea canvas after the sea (see observatory-view.js).
 import {ISLAND_ART as ART} from './island-art.js?v=4.0.0-dev.1';
 import {createObservatory} from './observatory-view.js?v=4.0.0-dev.1';
 
@@ -30,10 +32,10 @@ function moss(n){if(n.zone==='sand')return '';const r=rng(n.id*13);let s='';cons
  for(let i=0;i<4;i++)s+=`<circle cx="${f1(cx+(r()-.5)*36)}" cy="${f1(cy+(r()-.5)*26)}" r="${f1(1.5+r()*2)}" fill="#b6d886"/>`;return s;}
 
 export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,buildSvg,mossSvg,nodes,level,islandsDone=()=>[]}){
- const obs=createObservatory(),obsUnder=document.createElement('canvas'),obsOver=document.createElement('canvas');
- obsUnder.className=obsOver.className='obs-canvas';obsUnder.setAttribute('aria-hidden','true');obsOver.setAttribute('aria-hidden','true');
- viewport.insertBefore(obsUnder,back);world.after(obsOver);
- const ctxU=obsUnder.getContext('2d'),ctxO=obsOver.getContext('2d');
+ const obs=createObservatory(),obsUnder=document.createElement('canvas');
+ obsUnder.className='obs-canvas';obsUnder.setAttribute('aria-hidden','true');viewport.insertBefore(obsUnder,back);
+ const ctxU=obsUnder.getContext('2d');let underLive=false,obsMotion=true;
+ function sizeUnder(on){if(on===underLive)return;underLive=on;obsUnder.width=on?canvas.width:1;obsUnder.height=on?canvas.height:1;}
  const [WX0,WY0,WW,WH]=ART.world;
  let cam={x:0,y:0,scale:1},motion=true,visible=true,W=0,H=0,dpr=1;
  // ---- world-space sheets ----
@@ -49,7 +51,7 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
   beamSvg.innerHTML=[[.13,.13],[.07,.12]].map(([a,o])=>`<polygon points="${cx},${cy} ${cx+L},${cy-L*a} ${cx+L},${cy+L*a}" fill="#fff3b0" fill-opacity="${o}"/>`).join('');}
 
  // ---- static picture as bitmap tiles ----
- const T=512,LEVELS=[.5,1,2,4,8],MAX_TILES=90,tiles=new Map();let backImg=null,queue=[],pumping=false,moving=false,settleTimer=0;
+ const T=512,LEVELS=[.5,1,2,4,8],MAX_TILES=48,tiles=new Map();let backImg=null,queue=[],pumping=false,moving=false,settleTimer=0;
  const viewRect=(m=0)=>{const w=W/cam.scale,h=H/cam.scale,x=-cam.x/cam.scale,y=-cam.y/cam.scale;return [x-w*m,y-h*m,x+w*(1+m),y+h*(1+m)];};
  function neededLevel(){const need=cam.scale*dpr;if(need<=.3)return 0;for(const L of LEVELS)if(L>=need*.9)return L;return LEVELS.at(-1);}
  function scheduleTiles(){if(!backImg||!visible)return;const L=neededLevel();queue=[];const now=performance.now();if(!L)return;const span=T/L,v=viewRect(.2),cx=(v[0]+v[2])/2,cy=(v[1]+v[3])/2;
@@ -115,11 +117,11 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
    ctx.globalCompositeOperation='destination-over';ctx.globalAlpha=.045;ctx.drawImage(waveCv,WX0,WY0,DW*WQ,DH*WQ);ctx.globalAlpha=1;}
   ctx.globalCompositeOperation='destination-out';ctx.fillStyle=ctx.strokeStyle='#000';ctx.lineWidth=6;for(const m of MASK)if(hit(m.b,v)){ctx.fill(m.p);ctx.stroke(m.p);}
   ctx.globalCompositeOperation='source-over';}
- function size(){const r=viewport.getBoundingClientRect();dpr=Math.min(2,window.devicePixelRatio||1);W=r.width;H=r.height;for(const c of [canvas,obsUnder,obsOver]){c.width=Math.round(W*dpr);c.height=Math.round(H*dpr);}}
- function draw(t){for(const c of [ctx,ctxU,ctxO]){c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,c.canvas.width,c.canvas.height);}if(!visible)return;
-  const s=cam.scale*dpr;const v=viewRect();
-  obs.tick(t,motion);ctxU.setTransform(s,0,0,s,cam.x*dpr,cam.y*dpr);obs.drawUnder(ctxU,v,cam.scale);
-  ctxO.setTransform(s,0,0,s,cam.x*dpr,cam.y*dpr);obs.drawOver(ctxO,v,cam.scale,dpr);
+ function size(){const r=viewport.getBoundingClientRect();dpr=Math.min(2,window.devicePixelRatio||1);W=r.width;H=r.height;canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);underLive=false;sizeUnder(false);}
+ function draw(t){ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);if(!visible){sizeUnder(false);return;}
+  const s=cam.scale*dpr;const v=viewRect(),near=obs.inView(v);
+  obs.tick(t,obsMotion);sizeUnder(near);
+  if(near){ctxU.setTransform(1,0,0,1,0,0);ctxU.clearRect(0,0,obsUnder.width,obsUnder.height);ctxU.setTransform(s,0,0,s,cam.x*dpr,cam.y*dpr);obs.drawUnder(ctxU,v,cam.scale);}
   ctx.setTransform(s,0,0,s,cam.x*dpr,cam.y*dpr);drawGrid(t,v);ctx.setTransform(s,0,0,s,cam.x*dpr,cam.y*dpr);
   ctx.strokeStyle='#eef4f5';ctx.lineJoin='round';ctx.lineCap='butt';
   const ph=(t/5000)%2,br=.12+.34*ease(ph<1?ph:2-ph);
@@ -127,10 +129,10 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
   ctx.lineWidth=3.6;ctx.setLineDash([170,46,70,38,240,60,110,52]);ctx.lineDashOffset=motion?-786*((t/40000)%1):0;ctx.globalAlpha=.62;for(const o of SURF_IN)if(hit(o.b,v))ctx.stroke(o.p);
   ctx.setLineDash([]);ctx.lineCap='round';
   for(const w of WAVES)if(hit(w.b,v)){ctx.globalAlpha=motion?waveAlpha(t,w.i):.28;ctx.lineWidth=3.4-w.i*.3;ctx.stroke(w.p);}
-  ctx.globalAlpha=1;}
+  ctx.globalAlpha=1;if(near)obs.drawOver(ctx,v,cam.scale,dpr);}
  let queued=false,last=0;
- function loop(t){queued=false;if(!motion||!visible)return;if(t-last>=32){last=t;draw(t);}queue2();}
- function queue2(){if(!queued&&motion&&visible){queued=true;requestAnimationFrame(loop);}}
+ function loop(t){queued=false;if(!(motion||obsMotion)||!visible)return;if(t-last>=32){last=t;draw(t);}queue2();}
+ function queue2(){if(!queued&&(motion||obsMotion)&&visible){queued=true;requestAnimationFrame(loop);}}
 
  // ---- camera: called by the game whenever it moves the world ----
  function setCamera(c){cam={x:c.x,y:c.y,scale:c.scale};back.style.transform=`translate(${c.x}px,${c.y}px) scale(${c.scale})`;last=performance.now();draw(last);
@@ -138,7 +140,9 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
   clearTimeout(settleTimer);settleTimer=setTimeout(()=>{moving=false;world.classList.remove('moving');scheduleTiles();},220);}
  function resize(){size();draw(performance.now());scheduleTiles();}
  function setMotion(on){motion=on;viewport.classList.toggle('sea-still',!on);draw(performance.now());queue2();}
- function setVisible(on){visible=on;back.hidden=!on;canvas.hidden=obsUnder.hidden=obsOver.hidden=!on;for(const el of [decorSvg,beamSvg,buildSvg,mossSvg])el.style.visibility=on?'':'hidden';draw(performance.now());if(on){scheduleTiles();queue2();}}
+ // the observatory's machinery follows the animation setting, not the sea's
+ function setObsMotion(on){obsMotion=on;draw(performance.now());queue2();}
+ function setVisible(on){visible=on;back.hidden=!on;canvas.hidden=obsUnder.hidden=!on;for(const el of [decorSvg,beamSvg,buildSvg,mossSvg])el.style.visibility=on?'':'hidden';draw(performance.now());if(on){scheduleTiles();queue2();}}
 
  // ---- growth: decoration by island progress, buildings at MAX, grass and moss ----
  let growthKey='';
@@ -156,5 +160,5 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
  // The map area changes size when the panel or header folds, or the phone's
  // browser bars move. The FX bitmap must follow, or it stretches off the coast.
  if(typeof ResizeObserver==='function')new ResizeObserver(()=>{const r=viewport.getBoundingClientRect();if(Math.round(r.width*dpr)!==canvas.width||Math.round(r.height*dpr)!==canvas.height||Math.min(2,window.devicePixelRatio||1)!==dpr)resize();}).observe(viewport);
- return {setCamera,resize,setMotion,setVisible,render};
+ return {setCamera,resize,setMotion,setObsMotion,setVisible,render};
 }

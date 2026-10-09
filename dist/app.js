@@ -74,7 +74,7 @@ const WEATHER_NOTICES={rain:'날씨 · 비가 내리기 시작합니다.',snow:'
 function syncOpalMotion(){document.body.classList.toggle('effects-paused',document.hidden||suspended);opalMotion?.refresh();weatherFx?.refresh();}
 function applySettings(){
  const reduced=!state.settings.motion||motionPreference.matches;document.body.classList.toggle('reduced-motion',reduced);
- for(const k of ['motion','sea','touch','haptic','purchaseCheat','mapControls'])$(k).checked=state.settings[k];islandView?.setMotion(!reduced&&state.settings.sea);$('sea').disabled=reduced;$('format').value=state.settings.format;
+ for(const k of ['motion','sea','touch','haptic','purchaseCheat','mapControls'])$(k).checked=state.settings[k];islandView?.setMotion(!reduced&&state.settings.sea);islandView?.setObsMotion(!reduced&&state.settings.motion);$('sea').disabled=reduced;$('format').value=state.settings.format;
  const controls=$('mapTools'),expanded=state.settings.mapControls,changed=controls.dataset.expanded!==String(expanded);
  controls.dataset.expanded=String(expanded);controls.classList.toggle('is-compact',!expanded);
  for(const id of ['fit','zoomOut','zoomIn'])$(id).hidden=!expanded;

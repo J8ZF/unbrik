@@ -143,7 +143,7 @@ function machinery(){
   P.add(dCircle(572),'#101f28',C.edge,3);P.add(dRing(551.5,554.5),C.cyan);
   layers.push({spin:0,groups:P.groups});}
  // the ring of arcs under the districts, turning
- {const P=painter();for(let i=0;i<16;i++)P.add(dArc(668,44,i*22.5+1,i*22.5+20),C.dark,C.steel,2);layers.push({spin:-.12,groups:P.groups});}
+ {const P=painter();for(let i=0;i<16;i++)P.add(dArc(668,44,i*22.5+1,i*22.5+20),C.dark,C.steel,2);layers.push({spin:-2,groups:P.groups});}
  // the dark pillars between the arms: bent slopes going down into the water,
  // the deep end sea-dark, the top light; a hub and two struts on each
  {const P=painter(),ms=Array.from({length:8},(_,i)=>M(i*45+22.5)),each=f=>ms.forEach(m=>f(m,mul(m,M(0,0,-828)),mul(m,M(24,103,-822)),mul(m,M(-30,-110,-794))));
@@ -157,7 +157,7 @@ function machinery(){
   layers.push({spin:0,groups:P.groups});}
  // the gear ring under the terraces, turning
  {const P=painter();for(let i=0;i<32;i++)P.add(dArc(726,32,i*11.25+1,i*11.25+8.8),C.machine);for(let i=0;i<32;i++)P.add(dArc(735,3,i*11.25+1,i*11.25+7.5),C.cyan);
-  for(let i=0;i<24;i++)P.add(dRect(-10.5,-788.5,21,49,M(i*15+7.5)),C.steel);layers.push({spin:.25,groups:P.groups});}
+  for(let i=0;i<24;i++)P.add(dRect(-10.5,-788.5,21,49,M(i*15+7.5)),C.steel);layers.push({spin:3,groups:P.groups});}
  return layers;}
 
 // What lies under the water round the observatory, in reef-grey: the sunken
@@ -172,7 +172,7 @@ function sunken(){
   for(let i=0;i<14;i++){const a=i*360/14+13+(q()-.5)*8,r0=1150+q()*60;P.add(dPoly([p(r0,a-4),p(r0+150+q()*90,a-1+q()*2),p(r0+40,a+6)]),DEEP[3]);}
   for(let i=0;i<12;i++)P.add(dRect(-44,-1300,88,200,M(i*30+15)),DEEP[2]);for(let i=0;i<12;i++)P.add(dRect(-30,-1180,60,110,M(i*30+15)),DEEP[1]);for(let i=0;i<12;i++)P.add(dRect(-5,-1270,10,120,M(i*30+15)),DEEP_LIGHT);
   for(let i=0;i<24;i++)P.add(dRect(-14,-1412,28,22,M(i*15+7.5)),DEEP_LIGHT);
-  layers.push({spin:-.05,groups:P.groups});}
+  layers.push({spin:-1.2,groups:P.groups});}
  {const P=painter();
   const G8=Array.from({length:8},(_,i)=>M(i*45+22.5)),G4=Array.from({length:4},(_,i)=>M(i*90));
   for(const m of G8){P.add(dRect(-80,-2260,160,1300,m),DEEP[1]);P.add(dRect(-190,-2300,380,130,m),DEEP[1]);}for(const m of G4)P.add(dRect(-60,-2150,120,620,m),DEEP[1]);
@@ -180,15 +180,17 @@ function sunken(){
   for(const m of G4){P.add(dRect(-130,-2230,260,110,m),DEEP[2]);P.add(dNgon(8,70,0,mul(m,M(0,0,-1880))),DEEP[2]);}
   for(const m of G8)P.add(dNgon(8,100,0,mul(m,M(0,0,-2060))),'#0d161e');for(const m of G4)P.add(dNgon(8,42,0,mul(m,M(0,0,-1880))),'#0d161e');
   for(const m of G8)P.add(dRect(-14,-2200,28,1060,m),DEEP_LIGHT);for(const m of G8)P.add(dRect(-6,-2200,12,1060,m),DEEP_LIGHT2);
-  layers.push({spin:.04,groups:P.groups});}
+  layers.push({spin:.6,groups:P.groups});}
  {const P=painter();
   P.add(dRing(1850,1990),DEEP[1]);
   for(let i=0;i<16;i++)P.add(dRect(-70,-2080,140,150,M(i*22.5+11.25)),DEEP[2]);for(let i=0;i<16;i++)P.add(dRect(-40,-1860,80,80,M(i*22.5+11.25)),DEEP[0]);for(let i=0;i<16;i++)P.add(dRect(-26,-2060,52,14,M(i*22.5+11.25)),DEEP_LIGHT2);
   P.add(dRing(1675,1725),DEEP[0]);for(let i=0;i<32;i++)P.add(dRect(-16,-1740,32,60,M(i*11.25)),DEEP[2]);
-  layers.push({spin:-.07,groups:P.groups});}
- {const P=painter();P.add(dRing(2300,2360),DEEP[0]);for(let i=0;i<12;i++)P.add(dRect(-90,-2380,180,110,M(i*30)),DEEP[1]);layers.push({spin:.025,groups:P.groups});}
+  layers.push({spin:-.9,groups:P.groups});}
+ {const P=painter();P.add(dRing(2300,2360),DEEP[0]);for(let i=0;i<12;i++)P.add(dRect(-90,-2380,180,110,M(i*30)),DEEP[1]);layers.push({spin:.4,groups:P.groups});}
  return layers;}
 
+// The iris blades round the eye, turning.
+function iris(){const P=painter();for(let i=0;i<8;i++)P.add(dPoly([[-27,-159],[17,-159],[44,-132],[31,-110],[-8,-114],[-26,-137]],M(i*45)),C.steel,C.edge,1.5);return [{spin:5,groups:P.groups}];}
 // Above the sea at the rim: two half rings of dark machinery, turning.
 function rimRings(){
  const P=painter();
@@ -196,7 +198,7 @@ function rimRings(){
  for(const h of [0,180])for(let k=0;k<12;k++)P.add(dArc(1440,9,h+16+k*13,h+16+k*13+6),C.cyan);
  const ms=[0,180].flatMap(h=>Array.from({length:5},(_,k)=>M(h+28+k*31)));
  for(const m of ms)P.add(dRect(-30,-1486,60,46,m),C.steel,C.edge,1.5);for(const m of ms)P.add(dRect(-14,-1480,28,30,m),'#0a1b27');for(const m of ms)P.add(dRect(-4,-1476,8,20,m),C.cyan);
- return [{spin:.12,groups:P.groups}];}
+ return [{spin:2.4,groups:P.groups}];}
 
 // ---------- the relic islands ----------
 const S=100;
@@ -269,22 +271,24 @@ export function relicIsland(i){
 
 // ---------- everything, placed in the world ----------
 export function buildObservatory(cx=OBS_CENTER[0],cy=OBS_CENTER[1]){
- const svg=`<g transform="translate(${cx} ${cy})">${architecture()}</g>`;
+
  const ring=(r,n=48)=>Array.from({length:n},(_,i)=>{const [x,y]=p(r,i*360/n);return [+(cx+x).toFixed(1),+(cy+y).toFixed(1)];});
- const islands=Array.from({length:6},(_,i)=>({...relicIsland(i),orbit:{r:1960,a0:i*60+30,speed:.2},spin:i%2===0?.35:-.28}));
+ const islands=Array.from({length:6},(_,i)=>({...relicIsland(i),orbit:{r:1960,a0:i*60+30,speed:.45},spin:i%2===0?1.6:-1.3}));
  // drifting reef triangles in the water round it, as the island sea has
  const q=rng(909),tri=[];
- for(let k=0;k<10;k++){const a=k*36+q()*14,rad=1560+q()*1000,[tx,ty]=p(rad,a);let b=q()*360,body='';const n=4+Math.floor(q()*3),pts=[];
+ for(let k=0;k<6;k++){const a=k*60+q()*20,rad=1560+q()*1000,[tx,ty]=p(rad,a);let b=q()*360,body='';const n=4+Math.floor(q()*3),pts=[];
   for(let j=0;j<n;j++){const d=50+q()*70,a1=b+30+q()*45,[x1,y1]=p(d,b),[x2,y2]=p(d*(.8+q()*.4),a1),c=['#111e29','#0c141c','#0f1a24','#0d1620'][Math.floor(q()*4)];
    const P3=[[cx+tx,cy+ty],[cx+tx+x1,cy+ty+y1],[cx+tx+x2,cy+ty+y2]];pts.push(...P3);body+=`<polygon points="${P3.map(v=>f1(v[0])+','+f1(v[1])).join(' ')}" fill="${c}" stroke="${c}" stroke-width="1"/>`;b=a1;}
   const xs=pts.map(v=>v[0]),ys=pts.map(v=>v[1]),x0=Math.floor(Math.min(...xs))-30,y0=Math.floor(Math.min(...ys))-30;
   tri.push({x0,y0,w:Math.ceil(Math.max(...xs))+30-x0,h:Math.ceil(Math.max(...ys))+30-y0,style:`animation-delay:${f1(-q()*20)}s;animation-duration:${f1(24+q()*6)}s`,body});}
+ // the reef triangles stay still here (each drifting group is a composited layer on the phone)
+ const svg=tri.map(t=>t.body).join('')+`<g transform="translate(${cx} ${cy})">${architecture()}</g>`;
  return {
   center:[cx,cy],radius:OBS_RADIUS,core:1020,
-  svg,tri,
+  svg,tri:[],
   fx:{mask:[ring(1020)],coast:[ring(1020)],depth:[{c:'#304250',pts:ring(2000)},{c:'#374b5b',pts:ring(1600)},{c:'#3f5466',pts:ring(1250)}]},
   art:{center:[cx,cy],radius:OBS_RADIUS,core:1020,halo:{r:920,c:'#1c7eb7'},
-   under:[...sunken(),...machinery()],rims:rimRings(),
-   tracks:[433,594,804].map((r,i)=>({r,spin:[.6,-.32,.2][i],w:.9+i*.2,gap:i*17,alpha:.56})),
-   neon:{r:1120,w:3,orbit:1095,speed:.11},
+   under:[...sunken(),...machinery()],rims:rimRings(),iris:iris(),
+   tracks:[433,594,804].map((r,i)=>({r,spin:[6,-3.6,2.4][i],w:.9+i*.2,gap:i*17,alpha:.56})),
+   neon:{r:1120,w:3,orbit:1095,speed:8},
    islands:islands.map(i=>({svg:i.svg,size:i.size,lamp:i.lamp,color:i.color,orbit:i.orbit,spin:i.spin}))}};}

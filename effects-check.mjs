@@ -18,7 +18,7 @@ const app=readFileSync('dist/app.js','utf8');
 const actual=app.slice(app.indexOf('function syncOpalMotion(){'),app.indexOf('function renderChrome(){'));
 const setup=new Function('createOpalMotion','NODES','defaultState','$','element',`
  let state=defaultState(),opalMotion=null,weatherFx=null,suspended=false,panelAnimation=null,cameraMoving=false,cameraIntent=null;
- const seaCalls=[],islandView={setMotion(v){seaCalls.push(v);}};
+ const seaCalls=[],obsCalls=[],islandView={setMotion(v){seaCalls.push(v);},setObsMotion(v){obsCalls.push(v);}};
  const motionPreference={matches:false},document={hidden:false,body:element()},viewport=element();
  const nodeEls=new Map(NODES.map(n=>[n.id,element()])),sectorEls=Array.from({length:8},element);
  ${actual}
