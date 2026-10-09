@@ -1,4 +1,4 @@
-import {zoneColor,islandOpen,islandDone,ISLANDS,NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeGateMet,PRESTIGE_GATE,prestigeReady,prestige,autoResearch} from './data.js?v=4.0.0-dev.1';
+import {zoneColor,islandOpen,ISLANDS,NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeGateMet,PRESTIGE_GATE,prestigeReady,prestige,autoResearch} from './data.js?v=4.0.0-dev.1';
 import {PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress} from './prestige.js?v=4.0.0-dev.1';
 import {createWeatherFx} from './weather.js?v=4.0.0-dev.1';
 import {iconSvg,setIcon} from './icons.js?v=4.0.0-dev.1';
@@ -172,7 +172,7 @@ function createGraph(){
  const region=document.createElementNS('http://www.w3.org/2000/svg','path');region.setAttribute('d',sector.path);region.setAttribute('class','sector-region');region.style.setProperty('--sector-color',c.color);region.style.display='none';$('sectorRegions').append(region);sectorEls.push(region);
  const jump=document.createElement('button');jump.className='sector-jump';jump.hidden=true;jump.style.setProperty('--sector-color',c.color);jump.innerHTML=`<span class="sector-jump-icon">${iconSvg(sector.members[0].icon)}</span><span class="sector-jump-copy"><span class="sector-jump-name">${c.name}</span><span class="sector-jump-progress"></span></span><span class="sector-jump-state" aria-hidden="true"></span>`;jump.onclick=()=>jumpToSector(i);$('sectorMenu').append(jump);
  }
- islandView=createIslandView({viewport,back:$('islandBack'),canvas:$('seaFx'),world,decorSvg:$('islandDecor'),beamSvg:$('islandBeam'),buildSvg:$('islandBuild'),mossSvg:$('islandMoss'),nodes:NODES,level:n=>level(state,n),islandsDone:()=>CHAPTERS.map((_,i)=>islandDone(state,i)),islandOpen:id=>{const k=ISLANDS.findIndex(i=>i.id===id);return k>=0&&islandOpen(state,k)&&!pendingReveal.has(k);}});
+ islandView=createIslandView({viewport,back:$('islandBack'),canvas:$('seaFx'),world,decorSvg:$('islandDecor'),beamSvg:$('islandBeam'),buildSvg:$('islandBuild'),mossSvg:$('islandMoss'),nodes:NODES,level:n=>level(state,n),islandsDone:()=>CHAPTERS.map((_,i)=>sectorProgress(state,i).complete),islandOpen:id=>{const k=ISLANDS.findIndex(i=>i.id===id);return k>=0&&islandOpen(state,k)&&!pendingReveal.has(k);}});
  $('centerNode').style.left=CENTER.x+'px';$('centerNode').style.top=CENTER.y+'px';
  $('centerNode').addEventListener('click',ev=>handleMapClick(ev,CENTER_SELECTION));
  createHeader();createPrestigeGraph();
@@ -347,7 +347,7 @@ function renderPanel(){
  renderPrestigeButton(center);
  if(center){setIcon($('panelSymbol'),'brand');$('panelSymbol').style.color='#f2f4f7';$('panelSymbol').style.setProperty('--sector-color','#f2f4f7');setText($('panelName'),'UNBRIK');
   if(onPrestige()){const complete=PRESTIGE_BRANCHES.filter((_,i)=>petalProgress(state,i).complete).length;setText($('panelMeta'),'CENTER / 00');setText($('costLabel'),'완료한 섹터');setHtml($('panelCost'),`${complete} / 5`);}
-  else{const complete=CHAPTERS.filter((_,i)=>islandDone(state,i)).length;setText($('panelMeta'),'CENTER / 00');setText($('costLabel'),'완료한 섬');setHtml($('panelCost'),`${complete} / ${CHAPTERS.length}`);}
+  else{const complete=CHAPTERS.filter((_,i)=>sectorProgress(state,i).complete).length;setText($('panelMeta'),'CENTER / 00');setText($('costLabel'),'완료한 섬');setHtml($('panelCost'),`${complete} / ${CHAPTERS.length}`);}
   setBuyState('navigator','내비게이터','열기',false);return;}
  if(n.prestige){renderPrestigeNode(n);return;}
  const l=level(state,n),p=cost(state,n,econ),can=unlocked(state,n),max=l>=n.max,afford=affordable(state,n,econ);
