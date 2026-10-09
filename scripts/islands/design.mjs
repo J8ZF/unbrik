@@ -26,7 +26,6 @@ export async function loadDesign(name){
   D.sandBands=(D.sandBands||[]).map(b=>Array.isArray(b)?b:{...b,from:b.from.map(v=>v*k),to:b.to.map(v=>v*k),depths:b.depths.map(v=>v*k)});
   for(const z of D.rockZones||[]){z.area=S(z.area,k);z.core=(z.core||[]).map(([cx,cy,w,h,a])=>[cx*k,cy*k,w*k,h*k,a]);z.size=z.size.map(v=>v*k);z.count=Math.round(z.count*k*k);}
   for(const t of D.terrain||[])t.pts=S(t.pts,k);
-  if(D.rockShelf){const sh=D.rockShelf;sh.ledge=Math.round((sh.ledge||40)*k);sh.shelf=Math.round((sh.shelf||200)*k);for(const key of ['blocks','shelfBlocks'])sh[key]=(sh[key]||[]).map(([cx,cy,w,h,a])=>[cx*k,cy*k,w*k,h*k,a]);}
   for(const key of Object.keys(D.extras||{}))D.extras[key]=D.extras[key].map(e=>e.pts?{...e,pts:S(e.pts,k)}:Array.isArray(e[0])?S(e,k):e.map(v=>typeof v==='number'?v*k:v));
  }
  if(D.outline){
@@ -53,7 +52,6 @@ export async function loadDesign(name){
   D.sandBands=(D.sandBands||[]).map(b=>Array.isArray(b)||!was(b.from)?b:{...b,from:R(b.from),to:R(b.to)});
   D.beach=(D.beach||[]).map(([x0,y0,x1,y1,w])=>{if(!was([(x0+x1)/2,(y0+y1)/2]))return [x0,y0,x1,y1,w];const cs=[[x0,y0],[x1,y0],[x1,y1],[x0,y1]].map(R);return [Math.min(...cs.map(q=>q[0])),Math.min(...cs.map(q=>q[1])),Math.max(...cs.map(q=>q[0])),Math.max(...cs.map(q=>q[1])),w];});
   for(const key2 of ['holes','sandHoles'])D[key2]=(D[key2]||[]).map(pg=>was(centroid(pg))?pg.map(R):pg);
-  if(D.rockShelf)for(const key2 of ['blocks','shelfBlocks'])D.rockShelf[key2]=(D.rockShelf[key2]||[]).map(([cx,cy,w,h,a])=>{if(!was([cx,cy]))return [cx,cy,w,h,a];const [nx,ny]=R([cx,cy]);return [nx,ny,w,h,a-rt.ccw];});
  }
  return D;
 }

@@ -282,8 +282,44 @@ export function boulders(n,CW,CH,l,{rock}){const x=n.x,y=n.y,T=rock;let s='';
  for(const [cx,cy,w,h,a] of [...stack,...loose])s+=poly(rectPts(cx,cy,w,h,a),'fill="rgba(4,8,12,.4)" stroke="rgba(4,8,12,.4)" stroke-width="18" stroke-linejoin="miter"');
  for(const b of [...stack,...loose])s+=blk(...b);
  return s;}
+// ---- 섬 3: the observatory's building language on the island — white stone in two tones, chamfered and octagonal,
+// bronze roofs (two bronze tones and a dark edge), the game's dark rim round each platform ----
+const W={stone:'#d0dcd7',light:'#e5eae1',edge:'#849e9f',mid:'#a8bcba',bronze:'#b5813f',bronzeL:'#d4a05a',bronzeD:'#7d5526',bronzeEdge:'#5e3f1c',grass:'#3f9a86',grassL:'#5fb39a',water:'#1d4b4b',ripple:'#4fb3b0'};
+const rimOf=pts=>poly(pts,'fill="none" stroke="#04080c" stroke-opacity=".5" stroke-width="26" stroke-linejoin="round"');
+const platform=pts=>shape(pts,W.stone,W.edge,3)+shape(inset(pts,10),W.light,null);
+// a bronze dome from above: octagons stepping lighter to the cap
+const dome=(cx,cy,R,rot=.3927)=>shape(oct(cx,cy,R,rot),W.bronzeD,W.bronzeEdge,2.4)+shape(oct(cx,cy,R*.72,rot),W.bronze,null)+shape(oct(cx,cy,R*.42,rot),W.bronzeL,null)+circ(cx,cy,R*.12,W.light,W.bronzeEdge,1.4);
+// a bronze gable roof from above: two slopes, the ridge, rafters
+const gable=(x0,y0,x1,y1,dir='h')=>{const pts=cbox(x0,y0,x1,y1,Math.min(18,(x1-x0)*.2,(y1-y0)*.2));let g=shape(pts,W.bronze,null),inner='';
+ if(dir==='h'){const ym=(y0+y1)/2;inner+=shape(box(x0,y0,x1,ym),W.bronzeL,null)+line(x0,ym,x1,ym,W.bronzeD,3);for(let x=x0+24;x<x1;x+=28)inner+=line(x,y0,x,y1,W.bronzeD,1.4,'stroke-opacity=".55"');}
+ else{const xm=(x0+x1)/2;inner+=shape(box(x0,y0,xm,y1),W.bronzeL,null)+line(xm,y0,xm,y1,W.bronzeD,3);for(let y=y0+24;y<y1;y+=28)inner+=line(x0,y,x1,y,W.bronzeD,1.4,'stroke-opacity=".55"');}
+ return g+clip(pts,inner)+shape(pts,'none',W.bronzeEdge,2.6);};
+// the card sits in a light court with a thin bronze frame
+const court=(n,CW,CH)=>shape(cbox(n.x-CW/2-16,n.y-CH/2-16,n.x+CW/2+16,n.y+CH/2+16,12),W.light,W.bronze,3);
+// 도서관: a long bronze-gabled hall, an octagonal reading tower with a dome, a garden terrace, a colonnade
+export function scriptorium(n,CW,CH){const x=n.x,y=n.y;const base=cbox(x-260,y-170,x+260,y+170,40);let s=rimOf(base)+platform(base);
+ s+=gable(x-238,y-128,x-104,y+128,'h');
+ s+=shape(oct(x+184,y-44,68),W.stone,W.edge,2.6)+dome(x+184,y-44,50);
+ s+=shape(cbox(x+106,y+58,x+244,y+152,14),W.grass,W.light,2.4)+circ(x+150,y+104,20,W.grassL)+circ(x+206,y+98,15,W.grassL);
+ for(let k=0;k<7;k++)s+=`<rect x="${f1(x-88+k*28)}" y="${f1(y-156)}" width="12" height="12" fill="${W.light}" stroke="${W.edge}" stroke-width="1.6"/>`;
+ return s+court(n,CW,CH);}
+// 물레방아: an octagonal mill house under a bronze cone, the race running through, the wheel beside it, a shed
+export function watermill(n,CW,CH){const x=n.x,y=n.y;const base=cbox(x-200,y-150,x+230,y+150,32);let s=rimOf(base)+platform(base);
+ s+=`<rect x="${f1(x+22)}" y="${f1(y-150)}" width="36" height="300" fill="${W.water}" stroke="${W.edge}" stroke-width="1.6"/>`+line(x+32,y-130,x+32,y+130,W.ripple,1.6,'stroke-dasharray="14 10"')+line(x+48,y-120,x+48,y+140,W.ripple,1.2,'stroke-dasharray="10 12"');
+ s+=shape(oct(x-116,y-32,76,0),W.stone,W.edge,2.6)+dome(x-116,y-32,58,0);
+ s+=circ(x+150,y+34,66,'none',W.bronzeD,12)+circ(x+150,y+34,66,'none',W.bronzeEdge,2);for(let k=0;k<8;k++){const a=k/8*6.2832;s+=line(x+150,y+34,x+150+Math.cos(a)*60,y+34+Math.sin(a)*60,W.bronzeL,4);}s+=circ(x+150,y+34,13,W.bronzeD,W.bronzeEdge,1.6)+circ(x+150,y+34,5,W.light);
+ s+=shape(cbox(x-190,y+66,x-104,y+132,10),W.stone,W.edge,2.2)+gable(x-182,y+74,x-112,y+124,'v');
+ return s+court(n,CW,CH);}
+// 정자: an open octagonal pavilion — a white platform, a bronze roof ring round the open centre, ribs, steps
+export function gazebo(n,CW,CH){const x=n.x,y=n.y;const plat=oct(x,y,190),outer=oct(x,y,150);let s=rimOf(plat)+shape(plat,W.stone,W.edge,3)+shape(oct(x,y,172),W.light,null);
+ s+=shape(outer,W.bronze,W.bronzeEdge,2.6)+shape(oct(x,y,120),'none',W.bronzeD,2);
+ const open=cbox(x-CW/2-18,y-CH/2-18,x+CW/2+18,y+CH/2+18,14);
+ for(let k=0;k<8;k++){const [ox,oy]=outer[k];s+=line(x+(ox-x)*.56,y+(oy-y)*.56,ox,oy,W.bronzeL,3.5);s+=circ(ox,oy,4.5,W.bronzeL,W.bronzeEdge,1.2);}
+ s+=shape(open,W.light,W.bronzeEdge,2.4);
+ for(const [sx,sy,w,h] of [[x-24,y-190,48,16],[x-24,y+174,48,16],[x-190,y-24,16,48],[x+174,y-24,16,48]])s+=`<rect x="${f1(sx)}" y="${f1(sy)}" width="${w}" height="${h}" fill="${W.stone}" stroke="${W.edge}" stroke-width="1.6"/>`;
+ return s;}
 export const KINDS={harbor:(n,CW,CH)=>harbor(n,CW,CH),hall:(n,CW,CH)=>hall(n,CW,CH),radio:(n,CW,CH)=>radio(n,CW,CH),lighthouse:(n,CW,CH,l)=>lighthouse(n,CW,CH,l.oct),
- station,greenhouse,pier,library,mill,pavilion,dig,ziggurat,cistern,tower,plant,stadium,village,pool,boulders};
+ station,greenhouse,pier,library,mill,pavilion,dig,ziggurat,cistern,tower,plant,stadium,village,pool,boulders,scriptorium,watermill,gazebo};
 // landmarks drawn over the cards too (water over a sunk card)
 export const OVER={pool:poolOver};
 // footprints: what the still decoration clears under a building (world box)
@@ -292,4 +328,5 @@ export const FOOTPRINT={harbor:n=>[n.x-296,n.y-122,n.x+156,1278],hall:n=>[n.x-22
  library:n=>[n.x-204,n.y-124,n.x+204,n.y+160],mill:n=>[n.x-124,n.y-104,n.x+124,n.y+104],pavilion:n=>[n.x-154,n.y-124,n.x+304,n.y+124],
  dig:n=>[n.x-134,n.y-154,n.x+334,n.y+144],ziggurat:n=>[n.x-204,n.y-164,n.x+204,n.y+164],cistern:n=>[n.x-116,n.y-100,n.x+308,n.y+108],
  tower:n=>[n.x-174,n.y-134,n.x+174,n.y+134],plant:n=>[n.x-180,n.y-108,n.x+272,n.y+112],stadium:n=>[n.x-114,n.y-100,n.x+392,n.y+100],
- village:n=>[n.x-160,n.y-140,n.x+160,n.y+128],pool:n=>[n.x-157,n.y-125,n.x+157,n.y+125],boulders:n=>[n.x-224,n.y-140,n.x+214,n.y+140]};
+ village:n=>[n.x-160,n.y-140,n.x+160,n.y+128],pool:n=>[n.x-157,n.y-125,n.x+157,n.y+125],boulders:n=>[n.x-224,n.y-140,n.x+214,n.y+140],
+ scriptorium:n=>[n.x-274,n.y-184,n.x+274,n.y+184],watermill:n=>[n.x-214,n.y-164,n.x+244,n.y+164],gazebo:n=>[n.x-204,n.y-204,n.x+204,n.y+204]};

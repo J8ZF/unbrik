@@ -136,17 +136,28 @@ for k, i in enumerate(rocks):
         i['cap'] = rect(cx + rng.uniform(-.12, .12) * w, cy + rng.uniform(-.12, .12) * h, w * f, h * f, deg)
 rockM = mask([i['pts'] for i in rocks])
 landM = landBase | beachM | rockM
-# ---- the rock the island sits on: a ledge showing above the water round the land (wider where big blocks are
-# set), and a shelf under the water beyond it. The ledge counts as land for the coast lines.
-ledge, shelfP = [], []
-shelf = G.get('rockShelf')
-if shelf:
-    ledgeM = dil(landBase, int(shelf.get('ledge', 40))) | mask([rect(*b) for b in shelf.get('blocks', [])])
-    ledgeM = ero(dil(ledgeM, 40), 40)
-    shelfM = dil(ledgeM, int(shelf.get('shelf', 200))) | mask([rect(*b) for b in shelf.get('shelfBlocks', [])])
-    shelfM = ero(dil(shelfM, 60), 60)
-    ledge = trace(ledgeM, eps=5, min_area=400); shelfP = trace(shelfM, eps=8, min_area=400)
-    landM |= ledgeM
+# ---- sunken rock: where a zone says so, its big blocks continue under the water in steps away from the island,
+# each step smaller and deeper (drawn fainter), like a mountain's flank going down ----
+sunken = []
+for z in G.get('rockZones', []):
+    steps = int(z.get('sunken', 0))
+    if not steps:
+        continue
+    zone_items = sorted([i for i in rocks if i['zone'] == z['name']], key=lambda i: -i['area'])[:int(z.get('sunkenFrom', 5))]
+    for i in zone_items:
+        cx = sum(p[0] for p in i['pts']) / 4; cy = sum(p[1] for p in i['pts']) / 4
+        e0, e1 = i['pts'][0], i['pts'][1]; w = math.dist(e0, e1); h = math.dist(i['pts'][1], i['pts'][2])
+        deg = math.degrees(math.atan2(e1[1] - e0[1], e1[0] - e0[0]))
+        # outward: away from the middle of the piece the block belongs to
+        piece = min(pieces.values(), key=lambda poly: math.dist((cx, cy), (sum(p[0] for p in poly) / len(poly), sum(p[1] for p in poly) / len(poly))))
+        mx, my = sum(p[0] for p in piece) / len(piece), sum(p[1] for p in piece) / len(piece)
+        dx, dy = cx - mx, cy - my; L = math.hypot(dx, dy) or 1; dx, dy = dx / L, dy / L
+        for k in range(1, steps + 1):
+            f = 1 - .14 * k; d = (.62 * max(w, h)) * k * (.92 + rng.uniform(0, .16))
+            px, py = cx + dx * d + rng.uniform(-30, 30), cy + dy * d + rng.uniform(-30, 30)
+            if landM[min(H - 1, max(0, int(py + OY))), min(W - 1, max(0, int(px + OX)))]:
+                continue
+            sunken.append(dict(pts=rect(px, py, w * f, h * f, deg + rng.gauss(0, 14)), level=k))
 # fill gaps between blocks so a rock zone reads as one mass; given rock polygons (a plateau) join the base
 rockBaseM = ero(dil(rockM, 34), 34) & (landM | rockM)
 rockBaseM |= mask(G.get('rockPolys', [])) & landBase
@@ -296,6 +307,6 @@ out = dict(
     land=trace(landM, eps=1.4), rockBase=trace(rockBaseM, eps=1.4),
     rocks=[dict(pts=i['pts'], tone=i['tone'], cap=i.get('cap'), zone=i['zone']) for i in rocks],
     sand=trace(sandM, eps=1.4), wet=trace(wetM, eps=1.4), beach=trace(beachM & ~landBase, eps=1.4), dunes=dunes,
-    layers=layers, surf=surf, near=near, waves=waves, waveRuns=waveRuns, zones=zones, offLand=bad, bands=bands, ledge=ledge, shelf=shelfP)
+    layers=layers, surf=surf, near=near, waves=waves, waveRuns=waveRuns, zones=zones, offLand=bad, bands=bands, sunken=sunken)
 json.dump(out, open(sys.argv[2], 'w'))
 print(os.path.basename(sys.argv[1]), 'rocks', len(rocks), 'dunes', len(dunes), 'layers', len(layers), 'cards too close to water', bad)

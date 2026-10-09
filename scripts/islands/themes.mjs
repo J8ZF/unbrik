@@ -202,7 +202,8 @@ export const THEMES={
   layer:{a:['#3d6d5f','#62a08c'],b:['#4b7f68','#7fb996'],c:['#5f9470','#9fcf9a']},
   // the shores are dark earth, not sand; the island rests on blue-grey rock
   sand:['#6b593b','#8c7850'],wet:'#4f4230',dune:['#7c6844','#9e8a5a'],duneTop:['#8d7850','#b09b66'],
-  rock:[['#2d4256','#415a72'],['#3a5168','#546e8a'],['#486079','#6683a0'],['#587090','#7c99b4'],['#6a829e','#92aec6']],shelf:['#22384c','#36516a','#2a4256'],
+  // five blue-grey tones a step apart you can see; under the water the rock goes on in three steps that fade into the sea
+  rock:[['#243649','#3a5168'],['#35506a','#4f6d8a'],['#4a6a8a','#6f90ad'],['#6688a6','#8fb0cc'],['#86a7c2','#b3cde0']],rockRim:true,sunken:[['#2f4a60',.82],['#243a4c',.58],['#1b2f40',.36]],
   sea:{far:'#0c1620',mid:'#0f1d27',near:'#142a33',tones:{far:'#304250',mid:'#3a4c5c',near:'#44586a'}},color:'#ff6b86',zones:{grass:'#5fd3b8',sand:'#c9a86a',rock:'#9fbbd6'},
   // fewer, bigger, translucent: maple canopies and teal brush in chains, gold birches, fallen birch logs on the grass
   decor:[

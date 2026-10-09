@@ -67,7 +67,7 @@ for(const name of DESIGNS){
   const sandBands=(D.sandBands||[]).map(b=>Array.isArray(b)?b:{...b,from:[b.from[0]+o[0],b.from[1]+o[1]],to:[b.to[0]+o[0],b.to[1]+o[1]]});
   fs.writeFileSync(gin,JSON.stringify({land,nodes:nodes.map(n=>[n.id,n.x,n.y]),sandBands,sandPieces:D.sandPieces||[],beach:(D.beach||[]).map(([x0,y0,x1,y1,w])=>[x0+o[0],y0+o[1],x1+o[0],y1+o[1],w]),
    rockZones:(D.rockZones||[]).map(z=>({...z,area:W2(z.area,o),core:(z.core||[]).map(([cx,cy,w,h,a])=>[cx+o[0],cy+o[1],w,h,a])})),rockPolys:(D.extras?.plateau||[]).map(p=>W2(p.pts||p,o)),
-   sandHoles:(D.sandHoles||[]).map(p=>W2(p,o)),terrain:(D.terrain||[]).map(t=>({c:t.c,pts:W2(t.pts,o)})),reefs:SEA.reefs.flatMap(r=>r.parts),...(D.geom||{}),duneCount:D.duneCount,rockShelf:D.rockShelf?{...D.rockShelf,blocks:(D.rockShelf.blocks||[]).map(([cx,cy,w,h,a])=>[cx+o[0],cy+o[1],w,h,a]),shelfBlocks:(D.rockShelf.shelfBlocks||[]).map(([cx,cy,w,h,a])=>[cx+o[0],cy+o[1],w,h,a])}:null}));
+   sandHoles:(D.sandHoles||[]).map(p=>W2(p,o)),terrain:(D.terrain||[]).map(t=>({c:t.c,pts:W2(t.pts,o)})),reefs:SEA.reefs.flatMap(r=>r.parts),...(D.geom||{}),duneCount:D.duneCount}));
   execFileSync('python3',[here('geom.py').pathname,gin.pathname,gfile.pathname],{stdio:'inherit'});fs.unlinkSync(gin);}
  const GM=JSON.parse(fs.readFileSync(gfile));
  for(const n of nodes)n.zone=GM.zones[n.id];
@@ -80,12 +80,8 @@ for(const name of DESIGNS){
  if(depth.some(d=>!d.c))throw Error('unknown sea band colour');
  // ---- land: reefs, ground, grass layers, sand, rocks ----
  let ground='';
- // the rock under the island: the shelf lies under the water, the ledge shows above it with the game's dark rim round it, big blocks on the ledge
- if(GM.shelf?.length){for(const p of GM.shelf)ground+=poly(p,`fill="${T.shelf[0]}" fill-opacity=".9" stroke="${T.shelf[1]}" stroke-width="3" stroke-linejoin="round"`);
-  for(const b of D.rockShelf.shelfBlocks||[])ground+=poly(rectPts(b[0]+o[0],b[1]+o[1],b[2]*.8,b[3]*.8,b[4]),`fill="${T.shelf[2]}" stroke="${T.shelf[1]}" stroke-width="2.4" stroke-linejoin="miter"`);
-  for(const p of GM.ledge)ground+=poly(p,'fill="none" stroke="#04080c" stroke-opacity=".5" stroke-width="44" stroke-linejoin="round"');
-  for(const p of GM.ledge)ground+=poly(p,`fill="${T.rock[1][0]}" stroke="${T.rock[1][1]}" stroke-width="3" stroke-linejoin="round"`);
-  const rr=rng(D.id*7+3);for(const b of D.rockShelf.blocks||[]){const [f,st]=T.rock[2+Math.floor(rr()*2)],pts=rectPts(b[0]+o[0],b[1]+o[1],b[2]*.82,b[3]*.82,b[4]+(rr()-.5)*8);ground+=poly(pts,`fill="${f}" stroke="${st}" stroke-width="2.6" stroke-linejoin="miter"`);}}
+ // sunken rock: the big coast blocks go on under the water in steps, each step deeper and fainter (the deepest first)
+ if(GM.sunken?.length&&T.sunken)for(const b of [...GM.sunken].sort((a,c)=>c.level-a.level)){const [f,op]=T.sunken[Math.min(T.sunken.length,b.level)-1];ground+=poly(b.pts,`fill="${f}" fill-opacity="${op}"`);}
  for(const p of pieces)ground+=poly(p,`fill="${T.land[0]}" stroke="${T.land[1]}" stroke-width="3" stroke-linejoin="round"`);
  if(T.plateau)for(const p of GM.rockBase)ground+=T.plateau(p);
  const layersSvg=()=>{let g='';for(const l of GM.layers)for(const p of l.polys){const c=T.layer[l.c];if(!c)throw Error('unknown layer '+l.c);g+=poly(p,`fill="${c[0]}" stroke="${c[1]}" stroke-width="3" stroke-linejoin="round"`);}return g;};
@@ -95,6 +91,8 @@ for(const name of DESIGNS){
  for(const d of GM.dunes){for(const p of d.polys)ground+=poly(p,`fill="${T.dune[0]}" stroke="${T.dune[1]}" stroke-width="2.5" stroke-linejoin="round"`);for(const p of d.top)ground+=poly(p,`fill="${T.duneTop[0]}" stroke="${T.duneTop[1]}" stroke-width="2" stroke-linejoin="round"`);}
  if(T.layersOverSand)ground+=layersSvg();
  const ROCK=T.rock;
+ // the rock masses part from the land with the game's dark rim where the theme asks (the sky islands' band)
+ if(T.rockRim)for(const p of GM.rockBase)ground+=poly(p,'fill="none" stroke="#04080c" stroke-opacity=".5" stroke-width="44" stroke-linejoin="round"');
  if(!T.plateau)for(const p of GM.rockBase)ground+=poly(p,`fill="${ROCK[0][0]}" stroke="${ROCK[0][1]}" stroke-width="3" stroke-linejoin="round"`);
  for(const r of GM.rocks){const [f,s]=ROCK[r.tone];ground+=poly(r.pts,`fill="${f}" stroke="${s}" stroke-width="2.6" stroke-linejoin="miter"`);
   if(r.cap){const [f2,s2]=ROCK[Math.min(4,r.tone+1)];ground+=poly(r.cap,`fill="${f2}" stroke="${s2}" stroke-width="2.2" stroke-linejoin="miter"`);}}
@@ -136,7 +134,7 @@ for(const name of DESIGNS){
  const terse=svg=>svg.replace(/ (d|points)="([^"]*)"/g,(m,k,v)=>` ${k}="${v.replace(/-?\d+\.\d+/g,n=>String(Math.round(+n)))}"`).replace(/ (cx|cy|x|y|x1|y1|x2|y2)="(-?\d+)\.\d+"/g,' $1="$2"');
  if(!D.seaFile)for(const d of cleared)d.svg=terse(d.svg);
  // ---- moving-sea data ----
- const fx={surfIn:GM.surf[16],surfOut:GM.surf[38],waves:GM.waveRuns,mask:[...GM.land,...(GM.ledge||[]),...SEA.reefs.flatMap(r=>r.parts),...(T.maskExtra?T.maskExtra({D,o,nodes,land:pieces}):[])],coast:GM.land,depth};
+ const fx={surfIn:GM.surf[16],surfOut:GM.surf[38],waves:GM.waveRuns,mask:[...GM.land,...SEA.reefs.flatMap(r=>r.parts),...(T.maskExtra?T.maskExtra({D,o,nodes,land:pieces}):[])],coast:GM.land,depth};
  // ---- game data ----
  const content=D.nodes?D.content||{}:null;
  const idOf=id=>firstId-1+id;

@@ -9,15 +9,15 @@ export const DESIGN={
  rotate:[{at:[1800,900],ccw:22.5,shift:[230,30]}],
  label:[1900,60],
  tree:{root:[2140,560],gate:[360,1180],marks:[{at:[700,900],free:'side'},{at:[1900,1440],free:'none'},{at:[640,1560],free:'side'}],count:40,seed:9,bridge:820},
- landmarks:[{kind:'library',max:20},{kind:'mill',max:10},{kind:'pavilion',max:5}],
+ landmarks:[{kind:'scriptorium',max:20},{kind:'watermill',max:10},{kind:'gazebo',max:5}],
  sandBands:[{from:[620,1860],to:[1120,1700],depths:[0,130,180,120,0],seed:7},{from:[1420,1820],to:[2080,1620],depths:[0,110,170,90,0],seed:8}],
  beach:[[500,1500,1250,2100,30],[1300,1500,2000,2100,26]],
- // the island sits on blue-grey rock: a ledge shows above the water all round (wide, in big blocks, on the
- // upper-left of each piece), a shelf lies under the water beyond it; nothing stacked on the grass
- rockShelf:{ledge:44,shelf:210,
-  blocks:[[300,420,360,250,-14],[180,760,300,230,12],[560,250,330,210,20],[1320,220,340,240,-10],[1660,120,360,230,8],[1180,540,260,220,24]],
-  shelfBlocks:[[140,520,420,300,-12],[80,1000,380,280,18],[1240,60,420,300,-6],[1900,40,400,280,14],[2300,420,360,300,30]]},
- rockZones:[],
+ // the island sits on blue-grey rock: big blocks of clearly different tones make the upper-left coast of each
+ // piece (they change the outline), and the biggest go on under the water in three fainter steps
+ rockZones:[
+  {name:'w',area:[[40,1160],[110,540],[250,290],[760,110],[920,330],[700,560],[560,800],[500,1050],[460,1260]],count:6,size:[160,300],core:[[300,460,380,260,-12],[170,800,320,240,14],[560,250,340,230,22]],sunken:3,sunkenFrom:4},
+  {name:'en',area:[[1170,90],[1800,-10],[2110,120],[2010,430],[1740,550],[1470,610],[1270,490]],count:5,size:[160,300],core:[[1340,230,360,250,-8],[1700,120,380,250,10],[1210,520,280,220,26]],sunken:3,sunkenFrom:4},
+ ],
  terrain:[
   {c:'a',pts:[[320,900],[520,640],[860,560],[1140,660],[1160,1000],[1020,1300],[760,1480],[460,1400],[300,1180]]},
   {c:'b',pts:[[440,960],[640,760],[900,720],[1060,860],[1020,1120],[800,1300],[560,1260],[420,1120]]},
