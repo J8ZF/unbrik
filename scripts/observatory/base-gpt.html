@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#060d13">
+  <meta name="description" content="검은 바다 위의 거대한 관측소. 여러 겹의 건축과 기계 궤도, 여섯 개의 하위 관측소와 회전하는 눈을 탐험하세요.">
+  <title>프로젝트 관측소</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23060d13'/%3E%3Cpath d='M22 8h20l14 14v20L42 56H22L8 42V22Z' fill='none' stroke='%23d5dfdc' stroke-width='3'/%3E%3Cellipse cx='32' cy='32' rx='19' ry='9' fill='none' stroke='%235dcced' stroke-width='2'/%3E%3Cpath d='m32 17 12 15-12 15-12-15Z' fill='none' stroke='%2374c5ed' stroke-width='2'/%3E%3C/svg%3E">
+  <style>
+:root{color-scheme:dark;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#d8e5e4;background:#060d13;font-synthesis:none}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}body{overscroll-behavior:none}button{font:inherit}#viewport{position:fixed;inset:0;outline:none;touch-action:none;cursor:grab;background:radial-gradient(ellipse at 49% 46%,#10222b 0%,#09151c 45%,#050b10 100%)}#viewport.dragging{cursor:grabbing}#observatory{width:100%;height:100%;display:block;overflow:visible;user-select:none;-webkit-user-select:none}#viewport:focus-visible{outline:1px solid #5da8bc;outline-offset:-4px}.masthead{position:fixed;top:max(28px,env(safe-area-inset-top));left:30px;display:flex;gap:15px;align-items:center;pointer-events:none}.mark{width:36px;height:36px;fill:none;stroke:#a8c3c8;stroke-width:1}.eyebrow{font-size:10px;font-weight:500;letter-spacing:.2em;margin:0 0 6px;color:#809da7}h1{font-size:21px;letter-spacing:.16em;margin:0;font-weight:400}.edition{font-size:12px;align-self:flex-end;margin:0 0 3px 16px;color:#69838d;font-variant-numeric:tabular-nums}.corner-note{position:fixed;right:30px;top:40px;display:flex;gap:13px;align-items:center;color:#647f8c;font-size:10px;letter-spacing:.16em;pointer-events:none}.corner-note i{width:36px;height:1px;background:#49616b}footer{position:fixed;bottom:max(24px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:14px;pointer-events:none;width:max-content;max-width:100%}#gesture-hint{margin:0;font-size:12px;letter-spacing:.04em;color:#9db1b7;transition:opacity 1s;white-space:nowrap}#gesture-hint.dimmed{opacity:0}.controls{pointer-events:auto;display:flex;align-items:center;gap:3px;padding:5px 7px;border:1px solid #91bac22d;background:#071017e8;border-radius:8px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}button{width:44px;height:44px;display:flex;align-items:center;justify-content:center;border:0;border-radius:4px;background:transparent;color:#c5d5d8;cursor:pointer;-webkit-tap-highlight-color:transparent}button:hover{background:#6ba9bc1c}button:active{background:#6ba9bc38}button:focus-visible{outline:1px solid #7dcfe7;outline-offset:-2px}button[aria-pressed=true]{color:#6dcaed;background:#32658128}button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round}output{width:49px;text-align:center;color:#9cb3bc;font-size:12px;font-variant-numeric:tabular-nums}.divider{width:1px;height:18px;background:#8099a333;margin:0 5px}@media(max-width:600px){.masthead{top:max(23px,env(safe-area-inset-top));left:21px;gap:12px}.mark{width:31px;height:31px}.eyebrow{font-size:9px;letter-spacing:.16em}h1{font-size:19px}.edition{margin-left:6px}.corner-note{display:none}footer{bottom:max(23px,env(safe-area-inset-bottom))}}@media(prefers-reduced-motion:reduce){#gesture-hint{transition:none}}@media(min-width:900px){footer{bottom:26px}.masthead{left:34px;top:32px}}
+
+</style>
+</head>
+<body>
+  <main id="viewport" tabindex="0" aria-label="관측소 탐색 화면. 드래그로 이동하고 두 손가락이나 마우스 휠로 확대합니다. 방향키로 이동하고 더하기와 빼기 키로 확대와 축소가 가능합니다.">
+    <svg id="observatory" xmlns="http://www.w3.org/2000/svg" aria-labelledby="scene-title scene-description" role="img">
+      <title id="scene-title">프로젝트 관측소</title>
+      <desc id="scene-description">안개 낀 검은 바다 위의 백색 관측소. 십자형 건축과 파란 지붕, 거대한 회전 기계와 수중 골격이 여러 겹으로 이어지고 여섯 하위 관측소가 공전합니다. 중앙의 검은 팔각형 안에서는 정다면체가 회전합니다.</desc>
+    </svg>
+  </main>
+  <header class="masthead">
+    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M10 2h12l8 8v12l-8 8H10l-8-8V10Z"/><ellipse cx="16" cy="16" rx="10" ry="4.5"/><path d="m16 7 7 9-7 9-7-9Z"/></svg>
+    <div><p class="eyebrow">PROJECT OBSERVATORY</p><h1>관측소</h1></div>
+    <span class="edition">01</span>
+  </header>
+  <div class="corner-note" aria-hidden="true"><span>ARCHITECTURE IN ORBIT</span><i></i></div>
+  <footer>
+    <p id="gesture-hint">드래그하여 이동 · 두 손가락으로 확대</p>
+    <nav class="controls" aria-label="관측소 보기 조작">
+      <button id="zoom-out" aria-label="축소" title="축소"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg></button>
+      <output id="zoom-label" aria-label="확대 배율">100%</output>
+      <button id="zoom-in" aria-label="확대" title="확대"><svg viewBox="0 0 24 24"><path d="M6 12h12M12 6v12"/></svg></button>
+      <span class="divider"></span>
+      <button id="fit" aria-label="전체 보기" title="전체 보기"><svg viewBox="0 0 24 24"><path d="M9 4H4v5M15 4h5v5M4 15v5h5M20 15v5h-5M9 9h6v6H9Z"/></svg></button>
+      <button id="pause" aria-label="동작 일시정지" aria-pressed="false" title="동작 일시정지"><svg viewBox="0 0 24 24"><path id="pause-icon" d="M9 6v12M15 6v12"/></svg></button>
+    </nav>
+  </footer>
+  <script>
+/* All visual architecture is native SVG. Units are world coordinates; z-order is explicit. */
+function createObservatoryScene(){
+  const C={stone:'#d0dcd7',light:'#e5eae1',edge:'#849e9f',mid:'#a8bcba',dark:'#263e4b',machine:'#1b303e',steel:'#466575',blue:'#2463a5',roof:'#387bbb',cyan:'#73d3ed',moss:'#647d59',mossDark:'#445e4a'};
+  const p=(r,a)=>[Math.cos(a*Math.PI/180)*r,Math.sin(a*Math.PI/180)*r];
+  const xy=q=>q.map(n=>+n.toFixed(2)).join(',');
+  const circle=(r,fill,stroke='none',sw=1,extra='')=>`<circle r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" ${extra}/>`;
+  const poly=(n,r,fill,stroke='none',sw=1,offset=0)=>`<polygon points="${Array.from({length:n},(_,i)=>xy(p(r,i*360/n+offset))).join(' ')}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+  const rect=(x,y,w,h,fill,stroke='none',sw=1)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+  const arc=(r,w,a,b,fill,stroke='none',sw=1)=>{
+    const q=[p(r+w/2,a),p(r+w/2,b),p(r-w/2,b),p(r-w/2,a)];
+    const large=b-a>180?1:0;
+    return `<path d="M${xy(q[0])} A${r+w/2},${r+w/2} 0 ${large} 1 ${xy(q[1])} L${xy(q[2])} A${r-w/2},${r-w/2} 0 ${large} 0 ${xy(q[3])}Z" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+  };
+  const group=(inner,trans='',extra='')=>`<g ${trans?`transform="${trans}"`:''} ${extra}>${inner}</g>`;
+  const roundTemple=(r=45,blue=true)=>{
+    let s=circle(r,C.stone,C.edge,1.8)+circle(r*.83,'#344b54')+circle(r*.72,C.light);
+    for(let i=0;i<12;i++)s+=group(rect(-r*.07,-r*.95,r*.14,r*.22,C.light),`rotate(${i*30})`);
+    s+=circle(r*.5,blue?C.blue:C.mid)+circle(r*.37,blue?C.roof:C.stone)+arc(r*.36,2,194,305,blue?'#6fa0c5':C.light);
+    return s;
+  };
+  const moss=(seed=0)=>`<path d="M-42,-8l18,-10 10,7 11,-9 20,6 9,18 -16,4 -7,-6 -18,10 -11,-6 -13,3Z" fill="${seed%2?C.moss:C.mossDark}" opacity=".76"/>`;
+  const fins=(n,r,h,w,fill,offset=0)=>Array.from({length:n},(_,i)=>group(rect(-w/2,-r-h/2,w,h,fill),`rotate(${i*360/n+offset})`)).join('');
+  let defs=`<defs>
+    <radialGradient id="halo"><stop stop-color="#1c7eb7" stop-opacity=".22"/><stop offset=".55" stop-color="#18709c" stop-opacity=".09"/><stop offset="1" stop-color="#1b6589" stop-opacity="0"/></radialGradient>
+    <radialGradient id="fog"><stop stop-color="#819a9c" stop-opacity=".10"/><stop offset=".45" stop-color="#6a888c" stop-opacity=".04"/><stop offset="1" stop-color="#617e82" stop-opacity="0"/></radialGradient>
+    <radialGradient id="subFade"><stop stop-color="#6c8089" stop-opacity=".08"/><stop offset=".67" stop-color="#6c8089" stop-opacity=".12"/><stop offset="1" stop-color="#6c8089" stop-opacity="0"/></radialGradient>
+    <radialGradient id="pupil"><stop stop-color="#10202e"/><stop offset="1" stop-color="#03080d"/></radialGradient>
+    <g id="temple">${roundTemple()}</g>
+  </defs>`;
+  let submerged='';
+  for(let i=0;i<12;i++){
+    let rib=rect(-44,-1190,88,410,'#607783')+rect(-71,-1075,142,160,'#607783')+rect(-28,-1270,56,120,'#607783');
+    rib+=group(rect(-39,-95,78,190,'#607783'),`translate(74 -1100) rotate(31)`);
+    rib+=group(rect(-31,-80,62,160,'#607783'),`translate(-70 -1040) rotate(-29)`);
+    rib+=group(poly(8,88,'#617886')+poly(8,62,'#07121a'),`translate(0 -1154)`);
+    submerged+=group(rib,`rotate(${i*30+15})`);
+  }
+  for(let i=0;i<16;i++)submerged+=arc(1158,39,i*22.5+1,i*22.5+19,'#697d86')+arc(1025,15,i*22.5+2,i*22.5+20,'#75878c');
+  submerged+=circle(1255,'none','#617886',2)+circle(969,'none','#71868c',20)+circle(842,'none','#5e7987',32);
+  for(let i=0;i<8;i++)submerged+=group(rect(-72,-1455,144,170,'#5b7281')+rect(-106,-1390,212,46,'#5b7281')+rect(-45,-1455,90,28,'#7298a9'),`rotate(${i*45+22.5})`);
+  let water=group(submerged,'','id="submerged-structure" opacity=".18"')+circle(1600,'url(#subFade)');
+  water+=circle(1325,'none','#598097',1.4,'opacity=".25"')+circle(1340,'none','#496b80',.7,'opacity=".22"');
+  for(let i=0;i<3;i++)water+=arc(1420+i*36,1,i*80+8,i*80+145,'#376477');
+  // Large, articulated mechanical base. The gaps between arms remain open water.
+  let machines=circle(920,'url(#halo)');
+  for(let i=0;i<8;i++){
+    let m=`<path d="M-95 -637 L-125 -734 -105 -903 -67 -944 -37 -1015 37 -1015 67 -944 105 -903 125 -734 95 -637Z" fill="${C.machine}" stroke="${C.steel}" stroke-width="3"/>`;
+    m+=rect(-34,-997,68,204,'#314d60')+rect(-16,-982,32,170,'#0a1b27')+rect(-4,-975,8,135,C.cyan);
+    m+=group(poly(8,97,C.machine,C.steel,3)+circle(75,'#0b1b27',C.edge,3)+circle(57,'none',C.blue,15)+circle(54,'none',C.cyan,3)+circle(31,'#193747',C.steel,3),`translate(0 -828)`);
+    m+=group(rect(-32,-135,64,270,C.machine,C.steel,2)+rect(-18,-125,36,200,'#4b6677')+rect(-3,-110,6,150,C.cyan),`translate(103 -822) rotate(24)`);
+    m+=group(rect(-27,-115,54,230,C.machine,C.steel,2)+rect(-11,-100,22,165,'#4b6677'),`translate(-110 -794) rotate(-30)`);
+    machines+=group(m,`rotate(${i*45+22.5})`);
+  }
+  machines+=circle(770,'#0e1e28',C.steel,3)+circle(733,'none','#34596c',27)+circle(749,'none','#9caeaf',5);
+  let mechanicalRing='';
+  for(let i=0;i<32;i++)mechanicalRing+=arc(726,32,i*11.25+1,i*11.25+8.8,C.machine)+arc(735,3,i*11.25+1,i*11.25+7.5,C.cyan);
+  mechanicalRing+=fins(24,764,49,21,C.steel,7.5);
+  machines+=group(mechanicalRing,'','data-spin="0.25"');
+  for(let i=0;i<16;i++)machines+=arc(668,44,i*22.5+1,i*22.5+20,C.dark,C.steel,2);
+  machines+=circle(572,'#101f28',C.edge,3)+circle(553,'none',C.cyan,3);
+  // Four massive architectural arms. Interlocked platforms create the silhouette.
+  let arms='';
+  for(let i=0;i<4;i++){
+    let arm=`<path d="M-126 -340 L-126 -472 -164 -510 -164 -652 -124 -692 -124 -810 -82 -859 -82 -969 -47 -1004 47 -1004 82 -969 82 -859 124 -810 124 -692 164 -652 164 -510 126 -472 126 -340Z" fill="${C.stone}" stroke="${C.edge}" stroke-width="3"/>`;
+    arm+=rect(-94,-750,188,324,'#a5b8b6')+rect(-83,-743,166,305,C.light)+rect(-58,-740,116,255,'#263e4b')+rect(-40,-735,80,255,C.blue)+rect(-29,-735,58,255,C.roof);
+    arm+=rect(-145,-617,290,49,C.mid)+rect(-149,-602,298,17,C.light)+rect(-144,-546,288,17,C.light);
+    arm+=group(rect(-52,-115,104,230,C.stone,C.edge,2)+rect(-36,-92,72,155,C.light)+rect(-21,-88,42,110,C.blue),`translate(130 -550) rotate(28)`);
+    arm+=group(rect(-48,-106,96,212,C.stone,C.edge,2)+rect(-33,-83,66,164,C.light),`translate(-124 -675) rotate(-24)`);
+    arm+=group(roundTemple(99),`translate(0 -805)`)+group(roundTemple(45,false),`translate(0 -951)`);
+    for(let side of [-1,1])for(let k=0;k<6;k++)arm+=rect(side===1?88:-111,-744+k*43,23,28,C.light);
+    arm+=group(moss(i),`translate(-66 -850) rotate(${i*19})`)+group(moss(i+1),`translate(113 -609) scale(.8)`);
+    arms+=group(arm,`rotate(${i*90})`);
+  }
+  // Concentric inhabited terraces, split into distinct districts by the cross.
+  let city='';
+  for(let q=0;q<4;q++){
+    let district='';
+    district+=arc(644,99,14,76,C.stone,C.edge,3)+arc(641,71,15.2,74.8,'#9fb4b2')+arc(643,58,15.8,74.2,C.light);
+    district+=arc(565,26,14,76,C.stone,C.edge,2)+arc(485,97,19,71,C.stone,C.edge,3)+arc(485,73,20,70,C.light);
+    district+=arc(387,42,24,66,C.stone,C.edge,2);
+    for(let i=0;i<7;i++){
+      const a=18+i*8;
+      const outer=p(652,a),inner=p(474,a+2);
+      district+=group(rect(-26,-43,52,86,'#bacbc4',C.edge,1.5)+rect(-18,-37,36,55,i%3===0?C.blue:C.light),`translate(${xy(outer)}) rotate(${a+90})`);
+      if(i%2===0)district+=group(roundTemple(31+i%3*4),`translate(${xy(p(620,a+2))})`);
+      district+=group(rect(-25,-36,50,72,C.mid,C.edge,1.5)+rect(-17,-26,34,52,i%2===0?C.blue:C.light),`translate(${xy(inner)}) rotate(${a+90})`);
+    }
+    for(let i=0;i<3;i++){
+      const a=26+i*19;
+      district+=group(rect(-18,-97,36,194,C.stone,C.edge,2)+rect(-7,-88,14,178,C.mid),`translate(${xy(p(542,a))}) rotate(${a+90})`);
+      district+=group(roundTemple(52),`translate(${xy(p(560,a))})`);
+      district+=group(moss(i+q),`translate(${xy(p(683,a+3))}) rotate(${a}) scale(.85)`);
+    }
+    // Architectural masses extend the perimeter, giving each quadrant a stepped edge.
+    for(let i=0;i<3;i++){
+      const a=28+i*17;
+      let out=rect(-46,-82,92,164,C.stone,C.edge,2)+rect(-32,-70,64,120,C.light)+rect(-23,-61,46,69,C.blue);
+      out+=group(rect(-26,-53,52,106,C.stone,C.edge,2),`translate(48 15) rotate(-22)`);
+      district+=group(out,`translate(${xy(p(724,a))}) rotate(${a+90})`);
+      district+=group(roundTemple(35),`translate(${xy(p(747,a))})`);
+    }
+    district+=group(moss(q),`translate(${xy(p(498,56))}) rotate(60) scale(1.4)`);
+    district+=group(moss(q+1),`translate(${xy(p(606,36))}) rotate(-25)`);
+    city+=group(district,`rotate(${q*90})`);
+  }
+  // Inner sanctuary: machines, colonnades, four radial promenades and the black eye.
+  let inner=circle(397,'none',C.dark,38)+circle(397,'none',C.steel,2)+circle(347,C.machine,C.edge,3);
+  let rotor='';
+  for(let i=0;i<12;i++)rotor+=arc(332,22,i*30+2,i*30+25,C.steel)+arc(331,3,i*30+3,i*30+23,C.cyan)+arc(288,18,i*30+7,i*30+22,'#21455a');
+  inner+=group(rotor,'','data-spin="-0.8"');
+  inner+=circle(252,C.stone,C.edge,3)+circle(229,'#344e57')+circle(205,C.light);
+  inner+=fins(32,231,35,12,C.light,5.625);
+  for(let i=0;i<8;i++){
+    inner+=group(rect(-20,-408,40,192,C.stone,C.edge,2)+rect(-8,-405,16,144,C.mid),`rotate(${i*45})`);
+    inner+=group(roundTemple(i%2===0?48:33),`translate(${xy(p(374,i*45))})`);
+  }
+  inner+=circle(182,C.dark,C.edge,2)+circle(172,'none',C.cyan,2);
+  let iris='';for(let i=0;i<8;i++)iris+=group(`<path d="M-27 -159L17 -159 44 -132 31 -110 -8 -114 -26 -137Z" fill="${C.steel}" stroke="${C.edge}" stroke-width="1.5"/>`,`rotate(${i*45})`);
+  inner+=group(iris,'','data-spin="1.2"');
+  inner+=poly(8,134,C.stone,C.edge,3,22.5)+poly(8,123,'#173241','#537c8e',2,22.5)+poly(8,113,'url(#pupil)','#04090d',3,22.5)+poly(8,109,'none','#72bed6',1,22.5);
+  inner+='<g id="polyhedron"></g>';
+  // Luminous tracks run both around and across built terraces.
+  let orbital='';
+  [433,594,804,1098].forEach((r,i)=>{let t='';for(let j=0;j<3;j++)t+=arc(r,.9+i*.2,j*120+i*17,j*120+84+i*17,C.cyan);t+=group(circle(7,'#a7edfc')+circle(19,'none','#58aaca',1),`translate(${xy(p(r,50))})`);orbital+=group(t,'',`data-spin="${[.6,-.32,.2,-.15][i]}" opacity="${i===3?.38:.56}"`);});
+  let satellite=(index)=>{
+    let s=circle(185,'url(#halo)');
+    s+=circle(131,'none','#4b768a',2)+circle(123,C.machine,C.steel,3)+circle(111,'none',C.cyan,2);
+    for(let i=0;i<4;i++){
+      let a=`<path d="M-25 -78L-38 -101 -38 -142 -20 -165 20 -165 38 -142 38 -101 25 -78Z" fill="${C.stone}" stroke="${C.edge}" stroke-width="2"/>`+rect(-12,-148,24,40,C.blue);
+      a+=group(roundTemple(22),`translate(0 -111)`);
+      s+=group(a,`rotate(${i*90})`);
+    }
+    for(let i=0;i<4;i++)s+=arc(87,32,i*90+13,i*90+77,C.stone,C.edge,2)+arc(88,12,i*90+17,i*90+65,C.blue);
+    s+=fins(12,88,39,7,C.light)+circle(55,C.stone,C.edge,2)+circle(43,'#143044')+circle(31,'none',C.cyan,4)+poly(8,20,'#07121a',C.edge,1,22.5);
+    s+=group(moss(index),`translate(76 44) scale(.36)`);
+    return s;
+  };
+  let satellites='';
+  for(let i=0;i<6;i++)satellites+=group(group(group(satellite(i),'',`data-satellite-spin="${i%2===0?2.8:-2.1}"`),`translate(1325 0)`),`rotate(${i*60+30})`);
+  let fog='';
+  [{x:-580,y:-850,rx:920,ry:440},{x:690,y:780,rx:1060,ry:460},{x:-920,y:520,rx:760,ry:340}].forEach((f,i)=>fog+=`<g data-fog="${i}"><ellipse cx="${f.x}" cy="${f.y}" rx="${f.rx}" ry="${f.ry}" fill="url(#fog)" transform="rotate(${i*27-20} ${f.x} ${f.y})"/></g>`);
+  return defs+`<g id="world">${water}<g id="mechanical-foundation">${machines}</g><g id="architecture">${arms}${city}${inner}</g><g id="luminous-orbits">${orbital}</g><g id="satellites" data-spin=".34">${satellites}</g><g id="sea-mist" pointer-events="none">${fog}</g></g>`;
+}
+if(typeof module!=='undefined')module.exports={createObservatoryScene};
+
+</script>
+  <script>
+(() => {
+  'use strict';
+  const stage=document.getElementById('viewport'), svg=document.getElementById('observatory');
+  svg.insertAdjacentHTML('beforeend',createObservatoryScene());
+  const world=document.getElementById('world');
+  const zoomLabel=document.getElementById('zoom-label');
+  const pointerMap=new Map();
+  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let w=innerWidth,h=innerHeight,base=1,zoom=1,tx=0,ty=0,paused=reduced,last=0,time=0,pinching=false;
+  let hintTimer;
+  function activity(){clearTimeout(hintTimer);hintTimer=setTimeout(()=>document.getElementById('gesture-hint').classList.add('dimmed'),1800);}
+  function dimensions(){w=stage.clientWidth;h=stage.clientHeight;base=Math.min((w-22)/3140,(h-180)/3140);svg.setAttribute('viewBox',`0 0 ${w} ${h}`);renderView();}
+  function renderView(){world.setAttribute('transform',`translate(${w/2+tx} ${h/2+ty+8}) scale(${base*zoom})`);zoomLabel.value=`${Math.round(zoom*100)}%`;}
+  function scaleTo(next,x=w/2,y=h/2+8){next=Math.max(.65,Math.min(12,next));const ratio=next/zoom;tx=x-w/2-(x-w/2-tx)*ratio;ty=y-h/2-8-(y-h/2-8-ty)*ratio;zoom=next;renderView();activity();}
+  function metrics(){const a=[...pointerMap.values()];return {x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2,d:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)};}
+  stage.addEventListener('pointerdown',e=>{if(e.button!==0&&e.pointerType==='mouse')return;stage.setPointerCapture(e.pointerId);pointerMap.set(e.pointerId,{x:e.clientX,y:e.clientY});pinching=pointerMap.size>1;stage.classList.add('dragging');activity();});
+  stage.addEventListener('pointermove',e=>{
+    if(!pointerMap.has(e.pointerId))return;
+    const previous=pointerMap.get(e.pointerId),before=pointerMap.size>=2?metrics():null;
+    pointerMap.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(before){const after=metrics();scaleTo(zoom*after.d/Math.max(before.d,1),before.x,before.y);tx+=after.x-before.x;ty+=after.y-before.y;pinching=true;}
+    else {tx+=e.clientX-previous.x;ty+=e.clientY-previous.y;}
+    renderView();
+  });
+  function release(e){pointerMap.delete(e.pointerId);if(pointerMap.size===0){stage.classList.remove('dragging');pinching=false;}}
+  ['pointerup','pointercancel','lostpointercapture'].forEach(type=>stage.addEventListener(type,release));
+  stage.addEventListener('wheel',e=>{e.preventDefault();scaleTo(zoom*Math.exp(-e.deltaY*.0015),e.clientX,e.clientY);},{passive:false});
+  stage.addEventListener('dblclick',e=>{if(!pinching)scaleTo(zoom<3?zoom*1.8:1,e.clientX,e.clientY);});
+  document.getElementById('zoom-in').onclick=()=>scaleTo(zoom*1.35);
+  document.getElementById('zoom-out').onclick=()=>scaleTo(zoom/1.35);
+  function fit(){zoom=1;tx=0;ty=0;renderView();activity();}
+  document.getElementById('fit').onclick=fit;
+  const pauseBtn=document.getElementById('pause');
+  function syncPause(){pauseBtn.setAttribute('aria-pressed',String(paused));pauseBtn.setAttribute('aria-label',paused?'동작 재생':'동작 일시정지');pauseBtn.title=paused?'동작 재생':'동작 일시정지';document.getElementById('pause-icon').setAttribute('d',paused?'M8 5l11 7-11 7Z':'M9 6v12M15 6v12');}
+  pauseBtn.onclick=()=>{paused=!paused;syncPause();};syncPause();
+  stage.addEventListener('keydown',e=>{const k=e.key;let used=true;if(k==='+'||k==='=')scaleTo(zoom*1.2);else if(k==='-')scaleTo(zoom/1.2);else if(k==='0'||k==='Home')fit();else if(k==='ArrowLeft')tx+=55;else if(k==='ArrowRight')tx-=55;else if(k==='ArrowUp')ty+=55;else if(k==='ArrowDown')ty-=55;else if(k===' '){paused=!paused;syncPause();}else used=false;if(used){e.preventDefault();renderView();}});
+  window.addEventListener('resize',dimensions);
+  document.addEventListener('visibilitychange',()=>{last=0;});
+  const spins=[...svg.querySelectorAll('[data-spin]')].map(el=>[el,+el.dataset.spin]);
+  const satelliteSpins=[...svg.querySelectorAll('[data-satellite-spin]')].map(el=>[el,+el.dataset.satelliteSpin]);
+  const fogs=[...svg.querySelectorAll('[data-fog]')];
+  // An orthographically projected, continuously rotating regular icosahedron.
+  const phi=(1+Math.sqrt(5))/2;
+  const vertices=[];for(const a of [-1,1])for(const b of [-1,1])vertices.push([0,a,b*phi],[a,b*phi,0],[b*phi,0,a]);
+  const edges=[];for(let i=0;i<vertices.length;i++)for(let j=i+1;j<vertices.length;j++)if(Math.abs(Math.hypot(...vertices[i].map((v,k)=>v-vertices[j][k]))-2)<.001)edges.push([i,j]);
+  const faces=[];for(let i=0;i<12;i++)for(let j=i+1;j<12;j++)for(let k=j+1;k<12;k++)if([[i,j],[j,k],[i,k]].every(([a,b])=>edges.some(([c,d])=>a===c&&b===d)))faces.push([i,j,k]);
+  const eye=document.getElementById('polyhedron'),ns='http://www.w3.org/2000/svg';
+  const faceEls=faces.map(()=>{const el=document.createElementNS(ns,'polygon');eye.appendChild(el);return el;});
+  const lines=edges.map(()=>{const el=document.createElementNS(ns,'line');el.setAttribute('stroke-width','1.7');eye.appendChild(el);return el;});
+  function drawEye(t){
+    const a=t*.21+.37,b=t*.14+.55,c=t*.075;
+    const points=vertices.map(([x,y,z])=>{let y1=y*Math.cos(a)-z*Math.sin(a),z1=y*Math.sin(a)+z*Math.cos(a);let x2=x*Math.cos(b)+z1*Math.sin(b),z2=-x*Math.sin(b)+z1*Math.cos(b);return [(x2*Math.cos(c)-y1*Math.sin(c))*39,(x2*Math.sin(c)+y1*Math.cos(c))*39,z2];});
+    const sorted=faces.map(f=>({f,z:f.reduce((n,i)=>n+points[i][2],0)/3})).sort((a,b)=>a.z-b.z);
+    sorted.forEach(({f,z},i)=>{faceEls[i].setAttribute('points',f.map(v=>points[v].slice(0,2).join(',')).join(' '));faceEls[i].setAttribute('fill',z>0?'#19567a':'#0c263b');faceEls[i].setAttribute('fill-opacity',z>0?'.28':'.12');});
+    edges.forEach(([a,b],i)=>{const el=lines[i],z=(points[a][2]+points[b][2])/2;el.setAttribute('x1',points[a][0]);el.setAttribute('y1',points[a][1]);el.setAttribute('x2',points[b][0]);el.setAttribute('y2',points[b][1]);el.setAttribute('stroke',z>0?'#b4edee':'#32617c');el.setAttribute('opacity',z>0?'.94':'.43');});
+  }
+  function animate(now){
+    if(last&&!paused&&!document.hidden)time+=Math.min((now-last)/1000,.06);last=now;
+    if(!paused){spins.forEach(([el,speed])=>el.setAttribute('transform',`rotate(${time*speed})`));satelliteSpins.forEach(([el,speed])=>el.setAttribute('transform',`rotate(${time*speed})`));fogs.forEach((el,i)=>el.setAttribute('transform',`translate(${Math.sin(time*.025+i)*95} ${Math.cos(time*.019+i)*55})`));drawEye(time);}
+    requestAnimationFrame(animate);
+  }
+  dimensions();drawEye(0);requestAnimationFrame(animate);
+  if(matchMedia('(pointer:fine)').matches)document.getElementById('gesture-hint').textContent='드래그하여 이동 · 스크롤하여 확대';
+})();
+
+</script>
+</body>
+</html>
