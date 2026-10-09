@@ -231,6 +231,9 @@ export function relicIsland(i){
  for(let k=0;k<8;k++)s+=group(rect(-9,-282,18,34,C.cyan),`rotate(${k*45+22.5})`);
  s+=fins(16,270,22,12,C.steel,11.25);
  s+=shape(scalePts(land,1.13,0,0),ROCK[0][0],ROCK[0][1]);if(i===0)s+=shape(scalePts(ISLET,1.2,310,165),ROCK[0][0],ROCK[0][1]);
+ // a thick translucent dark rim round the floating rock: the game's shadow, parting the island from what is below
+ const rim=pts=>`<polygon points="${pts.map(q=>f1(q[0])+','+f1(q[1])).join(' ')}" fill="none" stroke="#04080c" stroke-opacity=".5" stroke-width="44" stroke-linejoin="round"/>`;
+ s+=rim(scalePts(land,1.13,0,0));if(i===0)s+=rim(scalePts(ISLET,1.2,310,165));
  s+=shape(land,T.g[0],T.g[1]);if(i===0)s+=shape(ISLET,T.g[0],T.g[1]);
  s+=shape(scalePts(land,.7,hx,hy,r,.05),T.t1[0],T.t1[1])+shape(scalePts(land,.42,hx,hy,r,.06),T.t2[0],T.t2[1]);
  if(i===0){s+=shape([[90,150],[200,100],[250,170],[160,260],[40,240]],'#c9af7f','#e1cb9d')+shape([[120,170],[190,150],[200,200],[140,220]],'#d6be8e','#e9d8ae');s+=rocks(r,-215,-120,6,110,[0,1,2]);}
