@@ -8,6 +8,9 @@ PATHS.ChevronUp=[['path',{d:'m18 15-6-6-6 6'}]];
 PATHS.ChevronDown=[['path',{d:'m6 9 6 6 6-6'}]];
 PATHS.ChevronLeft=[['path',{d:'m15 18-6-6 6-6'}]];
 PATHS.ChevronRight=[['path',{d:'m9 18 6-6-6-6'}]];
+// 4.0: view mode (an eye in viewfinder corners — RESNET keeps the plain eye) and its exit
+PATHS.ScanEye=[['path',{d:'M3 7V5a2 2 0 0 1 2-2h2'}],['path',{d:'M17 3h2a2 2 0 0 1 2 2v2'}],['path',{d:'M21 17v2a2 2 0 0 1-2 2h-2'}],['path',{d:'M7 21H5a2 2 0 0 1-2-2v-2'}],['circle',{cx:'12',cy:'12',r:'1'}],['path',{d:'M18.944 12.33a1 1 0 0 0 0-.66 7.5 7.5 0 0 0-13.888 0 1 1 0 0 0 0 .66 7.5 7.5 0 0 0 13.888 0'}]];
+PATHS.LogOut=[['path',{d:'m16 17 5-5-5-5'}],['path',{d:'M21 12H9'}],['path',{d:'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'}]];
 // 3.0.3: distinct Lucide icons for the map button and the 36 prestige studies
 PATHS.Map=[["path",{"d":"M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"}],["path",{"d":"M15 5.764v15"}],["path",{"d":"M9 3.236v15"}]];
 PATHS.Bookmark=[["path",{"d":"m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"}]];

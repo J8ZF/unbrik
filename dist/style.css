@@ -614,3 +614,46 @@ body:not(.theme-bloom) .node.locked{border-color:#46505a}
 #centerNode .hub-inset{display:none;fill:none;stroke:#f2f4f7;stroke-width:3}
 #centerNode.selected .hub-inset{display:block}
 #centerNode .hub-wire{transform:translate(0,69px) scale(1.5)}
+
+/* 4.0: three zoom stages — under 9% the studies and links go, one badge per island stays (its first study's icon, name, progress). The badge keeps its screen size (--inv = 1/scale). */
+#islandBadges{position:absolute;left:0;top:0;z-index:7;display:none}
+#world.far #islandBadges{display:block}
+#world.far #nodes,#world.far #edges,#world.far #edgeCasings,#world.far #spokes,#world.far #chapterMarks{display:none}
+.island-badge{position:absolute;width:132px;transform:translate(-50%,-50%) scale(var(--inv,1));transform-origin:center;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 10px 10px;border:2px solid var(--sector-color);border-radius:11px;background:#0f1820;color:var(--text);box-shadow:0 0 0 3px #0b101799;pointer-events:auto;cursor:pointer}
+.island-badge .badge-icon{width:44px;height:44px;border-radius:11px;background:var(--sector-color);color:#0b1017;display:grid;place-items:center}
+.island-badge .badge-icon .glyph{width:28px;height:28px;stroke-width:2}
+.island-badge .badge-name{font:700 14px/1 Arial,'Apple SD Gothic Neo',sans-serif;letter-spacing:1px;color:var(--sector-color)}
+.island-badge .bar{display:block;width:100%;height:7px;border-radius:4px;background:#263541;overflow:hidden}
+.island-badge .bar i{display:block;height:100%;background:var(--sector-color)}
+.island-badge .badge-progress{font:11px/1 var(--mono);letter-spacing:.02em;color:var(--muted)}
+.island-badge.complete .badge-progress{color:var(--sector-color)}
+/* view mode: the map alone; the exit arrow sits where the top bar was */
+body.viewing #hud,body.viewing #nodePanel,body.viewing footer,body.viewing #mapTools,body.viewing #hint,body.viewing .coordinates,body.viewing #toasts{display:none!important}
+.exit-view{position:absolute;right:12px;top:12px;z-index:31;width:38px;height:38px;background:#111b24;border:1px solid #2a3540;border-radius:7px}
+.map-tools #fit{grid-column:auto;width:auto}
+/* collapsed top bar: smaller currency cells with the width to themselves, less vertical room */
+.hud.is-collapsed .topbar{min-height:50px;padding:5px 10px;gap:8px}
+.hud.is-collapsed .hud-actions{gap:4px}
+.hud.is-collapsed .hud-actions .icon-button,.hud.is-collapsed #toggleHud{width:32px;height:34px}
+.hud.is-collapsed .compact-resources{gap:6px}
+.compact-currency{overflow:hidden}
+.compact-currency.currency-coin,.compact-currency.currency-token{padding-left:6px}
+.compact-value-line{gap:4px;overflow:hidden}
+.hud .compact-resources strong{font-size:15px;line-height:1.2}
+.hud .compact-resources .cache-gain{font-size:9.5px}
+.hud .compact-resources .currency-rate{font-size:11px;line-height:1.2;margin-top:2px}
+.compact-value-line.is-tight strong{font-size:13px}
+.compact-value-line.is-tight .cache-gain{font-size:8.5px}
+.hud.is-collapsed .cache-meter{height:24px}
+.hud.is-collapsed .cache-meter-meta{height:21px}
+/* open top bar: one full-width row per currency (dollar above, coin below) — balance with decimals, rate and the cache gain beside it */
+.hud .resources,.hud.has-coin .resources{display:flex;flex-direction:column;gap:5px;padding:4px 12px 8px;overflow:visible;scroll-snap-type:none}
+.currency-card{flex:0 0 auto;display:flex;align-items:center;gap:8px;min-width:0;height:38px;padding:0 8px 0 42px;scroll-snap-align:none}
+.currency-card .currency-symbol{width:32px;font-size:15px}
+.currency-card .balance,.hud:not(.has-coin) .balance{display:block;font-size:19px;line-height:1;min-width:0;flex:0 1 auto;overflow:hidden}
+.currency-secondary{margin:0 0 0 auto;min-height:0;flex-direction:row-reverse;overflow:visible;gap:7px;flex-shrink:0}
+.currency-card .currency-rate{font-size:12px;line-height:1}
+.currency-secondary .cache-gain{transform:translateX(4px)}
+.currency-secondary .cache-gain.is-visible{transform:none}
+@media(max-width:400px){.currency-card{min-width:0;height:36px;padding:0 7px 0 38px}.currency-card .currency-symbol{width:30px}.currency-card .balance,.hud:not(.has-coin) .balance{font-size:18px}.currency-card .currency-rate{font-size:11px}}
+@media(max-width:350px){.currency-card{min-width:0;padding-left:34px}.currency-card .currency-symbol{width:26px}.currency-card .balance,.hud:not(.has-coin) .balance{font-size:16px}.currency-card .currency-rate{font-size:10.5px}.currency-secondary .cache-gain{font-size:9px}}

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {VERTICES,EDGES,FACES,EDGE_FACES,projectHub,wireframePaths,ORBIT_PATH} from './dist/hub.js';
-import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './dist/camera.js';
+import {interpolateCamera,overviewMode,farMode,mapFrames,fitCamera} from './dist/camera.js';
 import {updatePage} from './dist/updates.js';
 assert.equal(VERTICES.length,20);assert.equal(EDGES.length,30);assert.equal(FACES.length,12);
 for(let i=0;i<20;i++)assert.equal(EDGES.filter(pair=>pair.includes(i)).length,3);
@@ -17,8 +17,8 @@ for(let t=0;t<120;t+=.25){
 assert.equal((ORBIT_PATH.match(/L/g)||[]).length,7);assert(ORBIT_PATH.endsWith('Z'));
 assert(overviewMode(.31,false));assert(overviewMode(.39,true));assert(!overviewMode(.41,true));assert(!overviewMode(.35,false));
 const app=readFileSync('dist/app.js','utf8'),code=app.slice(app.indexOf('let cameraAnim='),app.indexOf('function freeMapFrames'));
-const harness=new Function('interpolateCamera','overviewMode',`
- let camera={x:0,y:0,scale:1},cameraMoving=false,clock=0,seed=0,renderCount=0;const state={},queue=new Map();
+const harness=new Function('interpolateCamera','overviewMode','farMode',`
+ let camera={x:0,y:0,scale:1},cameraMoving=false,clock=0,seed=0,renderCount=0;const state={settings:{farView:true}},queue=new Map();
  const classes=new Set(),world={classList:{toggle(k,v){v?classes.add(k):classes.delete(k)},contains:k=>classes.has(k)}};
  const moving=new Set(),viewport={classList:{add:k=>moving.add(k),remove:k=>moving.delete(k)}};
  const document={body:{classList:{contains:()=>false}}},performance={now:()=>clock};
@@ -26,7 +26,7 @@ const harness=new Function('interpolateCamera','overviewMode',`
  ${code}
  return {moveCamera,stopCamera,advance(now){clock=now;const pending=[...queue.values()];queue.clear();for(const cb of pending)cb(now);},get camera(){return camera},get moving(){return cameraMoving},get frames(){return queue.size},get renders(){return renderCount}};
 `);
-const h=harness(interpolateCamera,overviewMode);let obsolete=0,latest=0;
+const h=harness(interpolateCamera,overviewMode,farMode);let obsolete=0,latest=0;
 h.moveCamera({x:100,y:100,scale:.1},()=>obsolete++);h.advance(150);assert(h.moving);h.moveCamera({x:200,y:-300,scale:.8},()=>latest++);h.advance(530);assert.deepEqual(h.camera,{x:200,y:-300,scale:.8});assert(!h.moving);assert.equal(h.frames,0);assert.equal(h.renders,1);assert.equal(obsolete,0);assert.equal(latest,1);
 h.moveCamera({x:50,y:50,scale:.3},()=>latest++);h.advance(600);const stopped={...h.camera};h.stopCamera();h.advance(1200);assert.deepEqual(h.camera,stopped);assert.equal(h.frames,0);assert.equal(latest,2,'Interrupted navigation completes once');
 for(const width of [320,360,390,430,520])for(const height of [170,240,340,440,600])for(const top of [32,68]){
