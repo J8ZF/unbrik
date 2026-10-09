@@ -25,7 +25,7 @@ const slice=(start,end)=>{const a=app.indexOf(start),b=app.indexOf(end,a);assert
 const source=[slice('const CENTER_SELECTION','const KEY='),slice('function compactFormat(', 'function time('),slice('function syncOpalMotion(){','function save('),slice('function sectorUnlocked(','const visibility='),slice('function createGraph(){','function animatePanel('),slice('function animatePanel(','function ripple('),slice('function buySelected(){','const pointers='),slice('const pointers=',"$('zoomIn').onclick="),slice('let previousWidth=','new ResizeObserver(reframeViewport)'),slice('function renderUpdates(','function suspend('),
  slice("$('toggleHud').onclick=", "$('settings').onclick="),slice("for(const k of ['motion','sea','touch','haptic','mapControls'])", "$('format').onchange="),slice("$('purchaseCheat').onchange=", "$('saveNow').onclick="),slice('let autoClock=0;','function frame(now){'),slice('function applyMapTheme(){',"$('maps').onclick="),slice('function openPrestigeDialog(){','function weatherMode(){')].join('\n');
 const createUI=new Function('deps','$','document',`
- const {createIslandView,ZONE_COLORS,NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,purchase,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,BRANCHES,CENTER,boundsOf,connectionPath,centerPath,iconSvg,setIcon,UPDATES,updatePage,interpolateCamera,overviewMode,mapFrames,fitCamera,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeReady,prestige,autoResearch,PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress,wireframePaths,formatNumber,compactNumber,Big}=deps;
+ const {createIslandView,zoneColor,islandOpen,ISLANDS,NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,purchase,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,BRANCHES,CENTER,boundsOf,connectionPath,centerPath,iconSvg,setIcon,UPDATES,updatePage,interpolateCamera,overviewMode,mapFrames,fitCamera,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeGateMet,PRESTIGE_GATE,prestigeReady,prestige,autoResearch,PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress,wireframePaths,formatNumber,compactNumber,Big}=deps;
  let sessionSeconds=0;let state=defaultState(),selected=1,econ=economy(state),saved=null,camera={x:0,y:0,scale:1},cameraMoving=false,updatesPage=1;
  let suspended=false,opalMotion={refresh(){}},weatherFx=null,islandView=null,motionPreference={matches:false};
  let selectionPending=false,selectionEpoch=0,navigationFrame=0,panelAnimation=null,navigatorCloseTimer=0,cameraIntent=null;
@@ -44,10 +44,12 @@ const createUI=new Function('deps','$','document',`
 `);
 const documentAdapter={...element(),createElement:element,createElementNS:element,body:element()};
 // The island picture is drawn by island-view.js in the browser; here a stub records what the app asks of it.
-const islandCalls=[];let islandsDone=()=>[];const createIslandView=o=>({...(islandsDone=o.islandsDone||islandsDone,{}),setCamera(c){islandCalls.push(['camera',{...c}]);},resize(){},setMotion(v){islandCalls.push(['motion',v]);},setObsMotion(v){islandCalls.push(['obsMotion',v]);},setVisible(v){islandCalls.push(['visible',v]);},render(){islandCalls.push(['render']);}});
+const islandCalls=[];let islandsDone=()=>[],islandOpenHook=()=>true;const createIslandView=o=>({...(islandsDone=o.islandsDone||islandsDone,islandOpenHook=o.islandOpen||islandOpenHook,{}),setCamera(c){islandCalls.push(['camera',{...c}]);},resize(){},setMotion(v){islandCalls.push(['motion',v]);},setObsMotion(v){islandCalls.push(['obsMotion',v]);},setVisible(v){islandCalls.push(['visible',v]);},render(){islandCalls.push(['render']);},reveal(id,done){islandCalls.push(['reveal',id]);done&&done();},revealTarget:()=>null,isRevealing:()=>false});
 const ui=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,...units,iconSvg,setIcon,createIslandView},$,documentAdapter);
 // 4.0 stage 1: one island. LONG is an upgradeable study deep in it, LAST its final study, CACHE the cache study.
-const LONG=data.byId.get(23),LAST=data.NODES.at(-1),CACHE=data.NODES.find(n=>n.effects.some(e=>e.type==='cache'));assert(LONG.max>1&&LAST.gate);
+const LONG=data.byId.get(23),LAST=data.byId.get(data.ISLANDS[0].last),CACHE=data.NODES.find(n=>n.effects.some(e=>e.type==='cache'));assert(LONG.max>1&&LAST.gate&&LAST.id===30);
+// every level of every study, taking the first side of each A/B pair
+const maxAll=st=>{for(const n of data.NODES)if(!data.choiceTaken(st,n))st.levels[n.id]=n.max;};
 let now=0;function finishNavigation(){ui.advance(now+=16);ui.advance(now+=500);}
 ui.applySettings();ui.render();
 // Actual click and captured-pointer event paths, including reselecting the same node.
@@ -126,12 +128,12 @@ $('togglePanel').onclick();assert(!$('panelDetails').hidden);assert.equal(ui.sel
 $('togglePanel').onclick();ui.state.levels[1]=1;assert(ui.selectNode(2));assert.equal(ui.selected,2);assert(!$('panelDetails').hidden);assert.equal($('togglePanel').attributes['aria-expanded'],'true');
 const displayedPrice=$('panelCost').textContent;assert(data.Big.from(ui.state.currencies.money).lt(data.cost(ui.state,data.byId.get(2)).money));$('purchaseCheat').checked=true;$('purchaseCheat').onchange();assert(ui.state.settings.purchaseCheat);assert(ui.saved.settings.purchaseCheat);assert(!$('cheatBadge').hidden);assert.equal($('panelCost').textContent,displayedPrice);assert.equal($('costLabel').textContent,'RESEARCH COST');assert.equal($('buyDetail').textContent,'무료 연구');assert.equal($('buy').className,'');assert(!$('buy').disabled);assert(ui.nodeEls.get(2).className.includes('available'));assert(!ui.nodeEls.get(1).className.includes('available'));
 $('purchaseCheat').checked=false;$('purchaseCheat').onchange();assert(!ui.state.settings.purchaseCheat);assert($('cheatBadge').hidden);assert.equal($('costLabel').textContent,'RESEARCH COST');assert.equal($('panelCost').textContent,displayedPrice);assert.equal($('buy').className,'waiting');
-ui.openCenter();assert.equal(ui.selected,-1);assert.equal($('panelName').textContent,'UNBRIK');assert(!$('sectorDialog').open);assert.equal($('buyText').textContent,'내비게이터');assert($('panelEffect').hidden);assert($('requirements').hidden);assert($('purchaseTrack').hidden);ui.buySelected();assert($('sectorDialog').open);assert.equal(ui.jumpToSector(1),false);assert($('sectorDialog').open,'An island that does not exist cannot navigate');ui.jumpToSector(0);assert.equal($('buy').className,'pending');assert($('buy').disabled);assert.equal($('buyText').textContent,'…');assert.equal(ui.buySelected(),false);finishNavigation();assert(!$('sectorDialog').open);assert.equal(ui.selected,2);assert(!ui.pending);assert.equal($('buy').className,'waiting');
+ui.openCenter();assert.equal(ui.selected,-1);assert.equal($('panelName').textContent,'UNBRIK');assert(!$('sectorDialog').open);assert.equal($('buyText').textContent,'내비게이터');assert($('panelEffect').hidden);assert($('requirements').hidden);assert($('purchaseTrack').hidden);ui.buySelected();assert($('sectorDialog').open);assert.equal(ui.jumpToSector(1),false);assert($('sectorDialog').open,'A closed island cannot navigate');assert(!islandOpenHook(2),'island 2 is closed at the start');ui.jumpToSector(0);assert.equal($('buy').className,'pending');assert($('buy').disabled);assert.equal($('buyText').textContent,'…');assert.equal(ui.buySelected(),false);finishNavigation();assert(!$('sectorDialog').open);assert.equal(ui.selected,2);assert(!ui.pending);assert.equal($('buy').className,'waiting');
 for(const n of data.MAP_LAYOUT.sectors[0].members)ui.state.levels[n.id]=1;ui.render();assert.equal(ui.sectorEls[0].style.display,'none');
-for(const n of data.MAP_LAYOUT.sectors[0].members)ui.state.levels[n.id]=n.max;ui.render();assert.equal(ui.sectorEls[0].style.display,'');assert.equal($('centerProgress').textContent,'30 / 30 연구');assert.deepEqual(islandsDone(),[true],'a finished island lights its relic');
+for(const n of data.MAP_LAYOUT.sectors[0].members)ui.state.levels[n.id]=n.max;ui.render();assert.equal(ui.sectorEls[0].style.display,'');assert.equal($('centerProgress').textContent,'30 / 253 연구');assert.deepEqual(islandsDone(),[true,false,false,false,false],'a finished island lights its relic');assert(islandOpenHook(2)&&!islandOpenHook(3),'the next island opens with the last study');assert(ui.sectorUnlocked(1)&&!ui.sectorUnlocked(2));
 assert.equal(ui.chapterEls[0].querySelector('.island-progress').textContent,'30 / 30');
-for(const n of data.NODES)ui.state.levels[n.id]=n.max;ui.state.levels[LONG.id]--;ui.render();assert.equal(ui.sectorEls[0].style.display,'none');ui.openCenter();ui.buySelected();ui.jumpToSector(0);assert(ui.pending);finishNavigation();assert.equal(ui.selected,LONG.id);assert(!$('sectorDialog').open);
-assert.deepEqual(islandsDone(),[false]);
+maxAll(ui.state);ui.state.levels[LONG.id]--;ui.render();assert.equal(ui.sectorEls[0].style.display,'none');ui.openCenter();ui.buySelected();ui.jumpToSector(0);assert(ui.pending);finishNavigation();assert.equal(ui.selected,LONG.id);assert(!$('sectorDialog').open);
+assert.deepEqual(islandsDone(),[false,true,true,true,true]);
 // Update log: two entries per page, page numbers five at a time; previous/next step to the neighbouring set.
 {const P=updates.updatePage(1).pages,nums=()=>$('updatePages').children.map(b=>b.textContent),cur=()=>$('updatePages').children.find(b=>b.attributes['aria-current']==='page').textContent;assert(P>10);
  assert.equal($('updateEntries').children.length,2);assert.deepEqual(nums(),['1','2','3','4','5']);assert($('updatesPrev').disabled);assert(!$('updatesNext').disabled);
@@ -151,7 +153,7 @@ ui.state.settings.purchaseCheat=true;ui.jumpToSector(0);finishNavigation();asser
 ui.jumpToSector(0);ui.advance(now+=16);ui.resize(360,240);assert(ui.pending);ui.advance(now+=500);assert(!ui.pending);assert.equal($('buyDetail').textContent,'무료 연구');
 ui.state.levels[LONG.id]=LONG.max;ui.render();assert.equal($('navigatorHint').textContent,'섬으로 이동');
 ui.state.levels[LONG.id]--;ui.jumpToSector(0);ui.advance(now+=16);for(const r of LONG.req)ui.state.levels[r.id]=0;ui.advance(now+=500);assert.equal($('buy').className,'blocked');assert($('buy').disabled);
-for(const n of data.NODES)ui.state.levels[n.id]=n.max;ui.state.levels[LONG.id]--;ui.reduced(true);ui.jumpToSector(0);ui.advance(now+=16);assert(!ui.pending);assert(!ui.moving);assert.equal($('buyDetail').textContent,'무료 연구');
+maxAll(ui.state);ui.state.levels[LONG.id]--;ui.reduced(true);ui.jumpToSector(0);ui.advance(now+=16);assert(!ui.pending);assert(!ui.moving);assert.equal($('buyDetail').textContent,'무료 연구');
 // Actual settings changes while a navigation is in flight must settle the action once.
 ui.reduced(false);ui.state.settings.motion=true;ui.jumpToSector(0);ui.advance(now+=16);assert(ui.pending&&ui.moving);
 ui.state.settings.motion=false;ui.applySettings();assert(!ui.pending&&!ui.moving);assert.equal($('buyDetail').textContent,'무료 연구');assert(!$('motion').checked);
@@ -162,20 +164,20 @@ $('mapControls').checked=true;$('mapControls').onchange();assert(ui.pending&&ui.
 // Islands: links are straight white lines over a dark casing that follows them; cards take the color of their ground.
 for(const {el,casing}of ui.edgeEls){assert.equal(el.style['--edge-color'],undefined);assert.equal(casing.attributes.d,el.attributes.d);assert.equal(casing.style.display,el.style.display);assert(/^M[-\d.]+ [-\d.]+L[-\d.]+ [-\d.]+$/.test(el.attributes.d));}
 assert(readFileSync('dist/style.css','utf8').includes('body:not(.theme-bloom) #edges{--edge-color:#f2f4f7}'));
-assert.deepEqual(data.ZONE_COLORS,{grass:'#b9f36d',sand:'#ecd29a',rock:'#93a9be'});for(const n of data.NODES)assert.equal(ui.nodeEls.get(n.id).style['--node-color'],data.ZONE_COLORS[n.zone]);
+assert.deepEqual(data.ZONE_COLORS,{grass:'#b9f36d',sand:'#ecd29a',rock:'#93a9be'});for(const n of data.NODES)assert.equal(ui.nodeEls.get(n.id).style['--node-color'],data.zoneColor(n));for(const n of data.NODES.filter(n=>n.chapter===0))assert.equal(data.zoneColor(n),data.ZONE_COLORS[n.zone],'island 1 keeps its colours');assert.notEqual(data.zoneColor(data.NODES.find(n=>n.chapter===1&&n.zone==='grass')),data.ZONE_COLORS.grass,'islands tint their ground colours');
 assert(islandCalls.some(c=>c[0]==='render'),'The island picture follows every render');
 // Border decoration belongs only to sector 8 and becomes eligible after purchase.
 for(const n of data.NODES){const border=ui.nodeEls.get(n.id).children.find(el=>el.className==='opal-border');assert.equal(!!border,n.chapter===7);if(border)assert.equal(border.attributes['aria-hidden'],'true');}
-for(const n of data.NODES)ui.state.levels[n.id]=n.id<LAST.id?n.max:0;
+ui.state.levels={};for(const n of data.NODES)if(n.id<LAST.id)ui.state.levels[n.id]=n.max;
 ui.state.settings.purchaseCheat=false;ui.state.currencies.money=0;ui.selectNode(LAST.id);ui.render();assert(!ui.nodeEls.get(LAST.id).className.includes('bought'));assert(!ui.nodeEls.get(LAST.id).className.includes('available'));
 ui.state.settings.purchaseCheat=true;ui.render();assert(ui.nodeEls.get(LAST.id).className.includes('available'));assert(!ui.nodeEls.get(LAST.id).className.includes('bought'));
 assert(data.purchase(ui.state,LAST));ui.render();assert(ui.nodeEls.get(LAST.id).className.includes('bought'));assert(!ui.nodeEls.get(LAST.id).className.includes('available'));
-for(const n of data.NODES)ui.state.levels[n.id]=n.max;
+maxAll(ui.state);
 // Original detail panel/center interfaces have no added opal decorations.
 ui.selectNode(LAST.id);assert(!app.includes('opal-surface'));ui.selectCenter();
 ui.state.levels[LAST.id]=0;ui.render();assert.equal(ui.sectorEls[0].style.display,'none');
 for(const {el,from,to}of ui.edgeEls)if(ui.visibility.get(from.id)<2||ui.visibility.get(to.id)<2)assert.equal(el.style.display,'none');
-assert.equal(iconSvg('brand').includes('<svg'),true);assert(!iconSvg('brand').includes('⟁'));assert.deepEqual(data.CHAPTERS.map(c=>c.name),['섬 1']);
+assert.equal(iconSvg('brand').includes('<svg'),true);assert(!iconSvg('brand').includes('⟁'));assert.deepEqual(data.CHAPTERS.map(c=>c.name),['섬 1','섬 2','섬 3','섬 4','섬 5']);
 // Island discovery: island 1 is open from the start, cards appear one step ahead of what is owned.
 for(const through of [0,1,2,12,17,18,29,30]){
  ui.interruptMapMotion();ui.state.levels={};for(const n of data.NODES)if(n.id<=through)ui.state.levels[n.id]=1;
@@ -194,6 +196,16 @@ for(const through of [0,1,2,12,17,18,29,30]){
  for(const {el,from,to}of ui.edgeEls)if(!ui.sectorUnlocked(from.chapter)||!ui.sectorUnlocked(to.chapter))assert.equal(el.style.display,'none');
  assert(ui.sectorUnlocked(0));for(const n of data.NODES){assert.equal(ui.nodeEls.get(n.id).hidden,!ui.visibility.get(n.id));if(data.level(ui.state,n))assert.equal(ui.visibility.get(n.id),3);}
 }
+// Opening the next island: buying island 1's last study holds island 2 back, glides the camera over, fades the island in, then shows its studies.
+{ui.interruptMapMotion();ui.state.levels={};for(const n of data.MAP_LAYOUT.sectors[0].members)if(!n.gate)ui.state.levels[n.id]=n.max;ui.state.settings.purchaseCheat=true;ui.reduced(false);ui.state.settings.motion=true;ui.applySettings();
+ ui.selectNode(LAST.id);ui.render();const before=islandCalls.length;assert(ui.buySelected());assert(data.islandOpen(ui.state,1));
+ assert(!ui.sectorUnlocked(1),'island 2 waits for its reveal');assert(!islandOpenHook(2));assert($('viewport').classList.contains('cutscene'));assert(ui.moving,'the camera glides to the island');
+ for(let i=0;i<90;i++)ui.advance(now+=16);
+ assert(islandCalls.slice(before).some(c=>c[0]==='reveal'&&c[1]===2),'the island picture fades in once the camera is there');
+ assert(ui.sectorUnlocked(1)&&islandOpenHook(2)&&!$('viewport').classList.contains('cutscene'),'island 2 shows after the reveal');assert(!ui.chapterEls[1].hidden);
+ const root=data.MAP_LAYOUT.sectors[1].members[0];assert.equal(ui.visibility.get(root.id),2,'the first study of island 2 is open');
+ for(let i=0;i<120;i++)ui.advance(now+=16);assert.equal(ui.selected,root.id,'the camera settles on the island\'s first study');
+ ui.state.settings.purchaseCheat=false;}
 // Fresh application instances: the very first map tap after loading saved UI preferences.
 for(const restoredCollapsed of [true,false]){
  const freshElements=new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(([,id])=>[id,element()])),get=id=>freshElements.get(id);
@@ -244,7 +256,7 @@ for(const restoredCollapsed of [true,false]){
   assert.equal(doc.body.classList.contains('reduced-motion'),!motion||os);
  }
 }
-console.log(JSON.stringify({uiControls:'passed',updatePager:'5 per set',cacheHud:'passed',dualCurrencyRewardDisplay:'no duplicate economy mutations',cacheSettingsCases:4,nativeClickReopens:'passed',lowerTapClickThrough:'blocked',targetBeforeRepaint:'passed',initialPanelLayoutCases:8,freshSessionCases:2,lostCaptureRecovery:'passed',dragPinchCancellation:'passed',inputSettingsCombinations:24,saveCompatibility:'passed',originalNodeMarkup:'restored',islandDiscoveryCases:8,lockedSectorMenuAndStats:'hidden',crossPrerequisiteLeaks:'blocked',invalidNavigation:'blocked',atomicFinalButton:'passed',motionToggleDuringNavigation:'passed'}));
+console.log(JSON.stringify({uiControls:'passed',updatePager:'5 per set',cacheHud:'passed',dualCurrencyRewardDisplay:'no duplicate economy mutations',cacheSettingsCases:4,nativeClickReopens:'passed',lowerTapClickThrough:'blocked',targetBeforeRepaint:'passed',initialPanelLayoutCases:8,freshSessionCases:2,lostCaptureRecovery:'passed',dragPinchCancellation:'passed',inputSettingsCombinations:24,saveCompatibility:'passed',originalNodeMarkup:'restored',islandDiscoveryCases:8,islandReveal:"passed",lockedSectorMenuAndStats:'hidden',crossPrerequisiteLeaks:'blocked',invalidNavigation:'blocked',atomicFinalButton:'passed',motionToggleDuringNavigation:'passed'}));
 
 // Coin visibility, data wiring, and real dual-currency cache awards in both HUD states.
 ui.interruptMapMotion();ui.state.levels={};ui.state.currencies={money:0,coin:0,token:0};ui.render();
@@ -294,7 +306,7 @@ console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',
  ui3.openMaps();assert.equal(get('mapMenu').children.length,2);assert.equal(data.MAPS[1].ko,'환생');assert(get('mapMenu').children[1].disabled);assert(!get('mapMenu').children[0].disabled);
  assert.equal(ui3.switchMap('prestige'),false,'Locked map cannot be entered');
  // Finish the tree and clear the threshold: the button appears, the note changes.
- for(const n of data.NODES)ui3.state.levels[n.id]=n.max;ui3.state.currencies.money=data.PRESTIGE_THRESHOLD/2;
+ maxAll(ui3.state);ui3.state.currencies.money=data.PRESTIGE_THRESHOLD/2;
  ui3.selectCenter();assert(!get('prestigeButton').hidden&&get('prestigeButton').disabled,'Tree complete but short: the button waits');assert(get('prestigeDetail').innerHTML.includes('더'));assert(get('hubBadge').hidden);
  ui3.state.currencies.money=data.PRESTIGE_THRESHOLD*4;ui3.state.currencies.coin=50;
  ui3.selectCenter();assert(!get('prestigeButton').hidden&&!get('prestigeButton').disabled);assert.equal(get('tokenNote').textContent,'환생 가능');assert(get('prestigeDetail').innerHTML.includes('20'),'Four times the threshold doubles the tokens');
@@ -347,7 +359,7 @@ console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',
  const doc={...element(),createElement:element,createElementNS:element,body:element()};
  const ui4=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,...units,iconSvg,setIcon,createIslandView},get,doc);
  const B=data.Big.from;
- for(const n of data.NODES)ui4.state.levels[n.id]=n.max;
+ maxAll(ui4.state);
  ui4.state.currencies.money=B('1.5e400');ui4.state.currencies.coin=B('2.5e330');ui4.state.stats.earned=B('3e400');ui4.state.stats.coinEarned=B('4e330');
  ui4.reduced(true);ui4.applyMapTheme();ui4.selectCenter();ui4.render();
  assert.equal(get('compactMoneyValue').textContent,'1.50e400');assert.equal(get('compactCoin').textContent,'2.50e330');

@@ -1,4 +1,4 @@
-import {ZONE_COLORS,NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeReady,prestige,autoResearch} from './data.js?v=4.0.0-dev.1';
+import {zoneColor,islandOpen,ISLANDS,NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeGateMet,PRESTIGE_GATE,prestigeReady,prestige,autoResearch} from './data.js?v=4.0.0-dev.1';
 import {PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress} from './prestige.js?v=4.0.0-dev.1';
 import {createWeatherFx} from './weather.js?v=4.0.0-dev.1';
 import {iconSvg,setIcon} from './icons.js?v=4.0.0-dev.1';
@@ -19,7 +19,10 @@ const CENTER_SELECTION=-1;
 const onPrestige=()=>state.map==='prestige';
 const lookupNode=id=>prestigeById.get(id)||byId.get(id);
 const activeNodes=()=>onPrestige()?PRESTIGE_NODES:NODES;
-const activeBounds=()=>onPrestige()?PRESTIGE_LAYOUT.bounds:MAP_LAYOUT.bounds;
+// The map frame grows as islands open: the observatory and everything in orbit, plus every open island.
+function openBounds(){const b={minX:CENTER.x-CENTER.reach,minY:CENTER.y-CENTER.reach,maxX:CENTER.x+CENTER.reach,maxY:CENTER.y+CENTER.reach};
+ ISLANDS.forEach((i,k)=>{if(!islandOpen(state,k))return;b.minX=Math.min(b.minX,i.bounds.minX);b.minY=Math.min(b.minY,i.bounds.minY);b.maxX=Math.max(b.maxX,i.bounds.maxX);b.maxY=Math.max(b.maxY,i.bounds.maxY);});return b;}
+const activeBounds=()=>onPrestige()?PRESTIGE_LAYOUT.bounds:openBounds();
 const selectionByMap={};
 const SYMBOLS={money:'$',coin:'¢',token:'✿'};
 function defaultSelection(){if(state.map==='prestige')return PRESTIGE_NODES.filter(n=>prestigeLevel(state,n)).at(-1)?.id||CENTER_SELECTION;return NODES.filter(n=>level(state,n)).at(-1)?.id||1;}
@@ -146,19 +149,21 @@ function save(notify=false){
  localStorage.setItem(KEY,JSON.stringify(state));storageOK=true;$('saveState').innerHTML='<i></i> 자동 저장';if(notify)toast('진행 상황을 저장했습니다.');}
  catch{storageOK=false;setText($('saveState'),'저장 불가 · 설정에서 내보내기');if(notify)toast('브라우저 저장에 실패했습니다. 저장 데이터를 내보내 주세요.');}
 }
-function sectorUnlocked(chapter){const root=MAP_LAYOUT.sectors[chapter]?.members[0];return !!root&&(level(state,root)>0||unlocked(state,root));}
+// An island shows once it is open and its reveal has played (the reveal holds a newly opened island back until the camera is there).
+function sectorUnlocked(chapter){if(pendingReveal.has(chapter))return false;const root=MAP_LAYOUT.sectors[chapter]?.members[0];return !!root&&(level(state,root)>0||unlocked(state,root));}
+const pendingReveal=new Set();
 function discovery(n){if(!sectorUnlocked(n.chapter))return 0;if(level(state,n))return 3;if(n.id===1||n.req.some(r=>level(state,r.id)>0))return 2;if(n.req.some(r=>{const p=byId.get(r.id);return p.id===1||p.req.some(q=>level(state,q.id)>0);}))return 1;return 0;}
 const visibility=new Map();
 function createGraph(){
  const b=MAP_LAYOUT.bounds;for(const id of ['edges','edgeCasings','sectorRegions','spokes']){const svg=$(id);svg.setAttribute('viewBox',`${b.minX} ${b.minY} ${b.maxX-b.minX} ${b.maxY-b.minY}`);svg.style.left=b.minX+'px';svg.style.top=b.minY+'px';svg.style.width=(b.maxX-b.minX)+'px';svg.style.height=(b.maxY-b.minY)+'px';}
  for(const n of NODES){
- const el=document.createElement('button');el.className='node';el.hidden=true;el.id=`node-${n.id}`;el.dataset.id=n.id;el.style.left=n.x+'px';el.style.top=n.y+'px';el.style.setProperty('--node-color',ZONE_COLORS[n.zone]||CHAPTERS[n.chapter].color);
+ const el=document.createElement('button');el.className='node';el.hidden=true;el.id=`node-${n.id}`;el.dataset.id=n.id;el.style.left=n.x+'px';el.style.top=n.y+'px';el.style.setProperty('--node-color',zoneColor(n)||CHAPTERS[n.chapter].color);
  el.innerHTML='<div class="node-top"><span class="symbol"></span><span class="node-id"></span></div><span class="node-name"></span><span class="node-price"><span></span><span class="node-status"></span></span><i class="level-dots"></i>';
  if(n.chapter===7){const border=document.createElement('span');border.className='opal-border';border.setAttribute('aria-hidden','true');el.append(border);}
  el.addEventListener('click',ev=>handleMapClick(ev,n.id));
  $('nodes').append(el);nodeEls.set(n.id,el);
  // islands: straight white links over a dark casing
- for(const r of n.req){const p=byId.get(r.id),d=`M${p.x} ${p.y}L${n.x} ${n.y}`,path=document.createElementNS('http://www.w3.org/2000/svg','path'),casing=document.createElementNS('http://www.w3.org/2000/svg','path');
+ for(const r of n.req){const p=byId.get(r.id);if(p.chapter!==n.chapter)continue;const d=`M${p.x} ${p.y}L${n.x} ${n.y}`,path=document.createElementNS('http://www.w3.org/2000/svg','path'),casing=document.createElementNS('http://www.w3.org/2000/svg','path');
  for(const e of [casing,path]){e.style.display='none';e.setAttribute('d',d);}casing.setAttribute('class','edge-casing');$('edgeCasings').append(casing);$('edges').append(path);edgeEls.push({el:path,casing,from:p,to:n,cross:false});}
  }
  for(const sector of MAP_LAYOUT.sectors){
@@ -167,7 +172,7 @@ function createGraph(){
  const region=document.createElementNS('http://www.w3.org/2000/svg','path');region.setAttribute('d',sector.path);region.setAttribute('class','sector-region');region.style.setProperty('--sector-color',c.color);region.style.display='none';$('sectorRegions').append(region);sectorEls.push(region);
  const jump=document.createElement('button');jump.className='sector-jump';jump.hidden=true;jump.style.setProperty('--sector-color',c.color);jump.innerHTML=`<span class="sector-jump-icon">${iconSvg(sector.members[0].icon)}</span><span class="sector-jump-copy"><span class="sector-jump-name">${c.name}</span><span class="sector-jump-progress"></span></span><span class="sector-jump-state" aria-hidden="true"></span>`;jump.onclick=()=>jumpToSector(i);$('sectorMenu').append(jump);
  }
- islandView=createIslandView({viewport,back:$('islandBack'),canvas:$('seaFx'),world,decorSvg:$('islandDecor'),beamSvg:$('islandBeam'),buildSvg:$('islandBuild'),mossSvg:$('islandMoss'),nodes:NODES,level:n=>level(state,n),islandsDone:()=>CHAPTERS.map((_,i)=>sectorProgress(state,i).complete)});
+ islandView=createIslandView({viewport,back:$('islandBack'),canvas:$('seaFx'),world,decorSvg:$('islandDecor'),beamSvg:$('islandBeam'),buildSvg:$('islandBuild'),mossSvg:$('islandMoss'),nodes:NODES,level:n=>level(state,n),islandsDone:()=>CHAPTERS.map((_,i)=>sectorProgress(state,i).complete),islandOpen:id=>{const k=ISLANDS.findIndex(i=>i.id===id);return k>=0&&islandOpen(state,k)&&!pendingReveal.has(k);}});
  $('centerNode').style.left=CENTER.x+'px';$('centerNode').style.top=CENTER.y+'px';
  $('centerNode').addEventListener('click',ev=>handleMapClick(ev,CENTER_SELECTION));
  createHeader();createPrestigeGraph();
@@ -372,10 +377,10 @@ function renderPrestigeNode(n){
  $('purchaseProgress').style.width=(max||n.reserved?100:Math.min(100,Big.from(state.currencies.token).div(p.token).toNumber()*100))+'%';
 }
 // The center panel's prestige button, left of the navigator: shown once the
-// tree is complete, enabled when the balance clears the threshold.
+// prestige study (#105, the last of island 3) is bought, enabled when the balance clears the threshold.
 function renderPrestigeButton(center){
  const button=$('prestigeButton');
- if(!center||onPrestige()||!treeComplete(state)){button.hidden=true;return;}
+ if(!center||onPrestige()||!prestigeGateMet(state)){button.hidden=true;return;}
  const ready=prestigeReady(state),left=Big.from(PRESTIGE_THRESHOLD).sub(state.currencies.money);
  button.hidden=false;button.disabled=!ready;
  setHtml($('prestigeDetail'),symbolMarkup(ready?`✿${tokenFormat(tokensFor(state))}`:`$${compactFormat(left)} 더`));
@@ -410,13 +415,13 @@ function stopCamera(settle=true){
 }
 // test hook: jump the camera to a target without animation
 if(typeof window!=='undefined')window.__cam=c=>{stopCamera(false);camera={...c};constrain();transform();state.camera={...camera};render();};
-function moveCamera(target,onComplete=null){
+function moveCamera(target,onComplete=null,duration=380){
  stopCamera(false);const epoch=cameraEpoch;cameraComplete=onComplete;
  world.classList.toggle('overview',overviewMode(target.scale,world.classList.contains('overview')));
  const finish=()=>{const done=cameraComplete;stopCamera(false);state.camera={...camera};done?.();render();};
  if(document.body.classList.contains('reduced-motion')){camera={...target};transform();finish();return;}
  const start={...camera},t0=performance.now();cameraMoving=true;viewport.classList.add('camera-moving');
- function step(now){if(epoch!==cameraEpoch)return;const t=Math.min(1,(now-t0)/380);camera=t===1?{...target}:interpolateCamera(start,target,t);transform();if(t<1)cameraAnim=requestAnimationFrame(step);else finish();}
+ function step(now){if(epoch!==cameraEpoch)return;const t=Math.min(1,(now-t0)/duration);camera=t===1?{...target}:interpolateCamera(start,target,t);transform();if(t<1)cameraAnim=requestAnimationFrame(step);else finish();}
  cameraAnim=requestAnimationFrame(step);
 }
 function freeMapFrames(){const controls=viewport.querySelector('.map-tools');return mapFrames(viewport.clientWidth,viewport.clientHeight,{left:controls.offsetLeft,top:controls.offsetTop},state.settings.purchaseCheat?44:32);}
@@ -426,6 +431,16 @@ function cameraForIntent(){
  const found=activeNodes().filter(n=>discoveryOf(n)>0),visible=onPrestige()||!found.length?[...found,{x:-184,y:-184},{x:184,y:184}]:found;return fitCamera(boundsOf(visible),freeMapFrames(),1);
 }
 function focusNode(id,onComplete=null){cameraIntent={type:'node',id};moveCamera(cameraForIntent(),onComplete);}
+// A finished island opens the next one: the camera glides over, the island fades in, then its studies appear.
+function maybeReveal(chapter){if(onPrestige()||chapter>=CHAPTERS.length||!islandOpen(state,chapter)||pendingReveal.has(chapter)||!islandView)return false;
+ pendingReveal.add(chapter);cancelSelection();cameraIntent=null;closeNavigator();render();
+ const island=ISLANDS[chapter],b=islandView.revealTarget(island.id)||island.bounds,reduced=document.body.classList.contains('reduced-motion');
+ viewport.classList.add('cutscene');
+ const finish=()=>{pendingReveal.delete(chapter);viewport.classList.remove('cutscene');render();toast(`${island.name} 발견`);
+  // then settle on the island's first study
+  const root=MAP_LAYOUT.sectors[chapter].members[0];setTimeout(()=>{if(pendingReveal.has(chapter)||onPrestige()||cameraMoving||gesture)return;if(selectNode(root.id,{animate:false}))moveCamera((cameraIntent={type:'node',id:root.id},cameraForIntent()),null,900);},reduced?0:900);};
+ moveCamera(fitCamera({minX:b.minX+60,minY:b.minY+60,maxX:b.maxX-60,maxY:b.maxY-60},freeMapFrames(),1),()=>{if(reduced){pendingReveal.delete(chapter);islandView.render();finish();}else islandView.reveal(island.id,finish);},reduced?0:1200);
+ return true;}
 function fit(){cancelSelection();render();cameraIntent={type:'fit'};moveCamera(cameraForIntent());}
 function openCenter(){selectCenter();cameraIntent={type:'center'};moveCamera(cameraForIntent());}
 function updateNavigatorScroll(){const content=$('sectorDialog').querySelector('.navigator-content');$('navigatorScrollHint').hidden=content.scrollHeight-content.clientHeight-content.scrollTop<12;}
@@ -448,7 +463,7 @@ function buySelected(){if(selectionPending)return false;if(selected===CENTER_SEL
  if(state.settings.haptic&&navigator.vibrate)navigator.vibrate(14);
  const el=nodeEls.get(n.id);if(state.settings.motion){el.classList.add('pop');setTimeout(()=>el.classList.remove('pop'),550);for(const edge of edgeEls.filter(e=>e.from.id===n.id)){edge.el.classList.add('flashing');setTimeout(()=>edge.el.classList.remove('flashing'),1250);}}
  if(n.id===22&&level(state,n)===1)toast('코인 해금 · 1 ¢/s 생산을 시작합니다.');
- render();save();if(econ.count===NODES.length&&before<NODES.length)toast(`${NODES.length}개 노드 연구 완료. AXIOM에 도달했습니다.`,0,'important');return true;
+ render();save();if(econ.count===NODES.length&&before<NODES.length)toast(`${NODES.length}개 노드 연구 완료. AXIOM에 도달했습니다.`,0,'important');if(n.gate&&level(state,n)===1)maybeReveal(n.chapter+1);return true;
 }
 function buyPrestige(n){
  if(!prestigePurchase(state,n)){if(state.settings.motion){$('buy').classList.remove('shake');void $('buy').offsetWidth;$('buy').classList.add('shake');}if(n.reserved)toast('예약 연구 · 설계 전');else if(prestigeUnlocked(state,n)&&prestigeLevel(state,n)<n.max)toast(`✿${tokenFormat(Big.max(0,Big.from(prestigeCost(state,n).token).sub(state.currencies.token)))} 더 필요합니다.`);return false;}
@@ -498,7 +513,7 @@ $('exportSave').onclick=()=>{const txt=exportText();const blob=new Blob([txt],{t
 $('importSave').onclick=()=>{$('transfer').hidden=false;$('saveText').value='';setText($('transferStatus'),'현재 진행을 교체할 저장 파일을 선택하거나 데이터를 붙여넣으세요.');$('saveText').focus();};
 $('copySave').onclick=async()=>{try{await navigator.clipboard.writeText($('saveText').value);setText($('transferStatus'),'복사했습니다.');}catch{$('saveText').select();setText($('transferStatus'),'선택한 데이터를 직접 복사해 주세요.');}};
 $('loadFile').onclick=()=>$('saveFile').click();$('saveFile').onchange=async()=>{const f=$('saveFile').files[0];if(!f)return;if(f.size>1000000){setText($('transferStatus'),'저장 파일이 너무 큽니다.');return;}$('saveText').value=await f.text();setText($('transferStatus'),'데이터를 읽었습니다. 아래 복원 버튼을 누르면 적용됩니다.');$('saveFile').value='';};
-function restore(input){cacheReward={money:0,coin:0,until:0};cancelSelection();cameraIntent=null;const next=validateSave(input);checkpointOffline(next);state=next;suspended=document.hidden;econ=economy(state);for(const k of Object.keys(selectionByMap))delete selectionByMap[k];selected=defaultSelection();applyMapTheme();camera=state.camera||initialCamera();applySettings();render();transform();lastFrame=performance.now();save();}
+function restore(input){cacheReward={money:0,coin:0,until:0};pendingReveal.clear();viewport.classList.remove('cutscene');cancelSelection();cameraIntent=null;const next=validateSave(input);checkpointOffline(next);state=next;suspended=document.hidden;econ=economy(state);for(const k of Object.keys(selectionByMap))delete selectionByMap[k];selected=defaultSelection();applyMapTheme();camera=state.camera||initialCamera();applySettings();render();transform();lastFrame=performance.now();save();}
 $('applySave').onclick=()=>{try{const txt=$('saveText').value;if(txt.length>1000000)throw Error('저장 데이터가 너무 큽니다.');restore(JSON.parse(txt));setText($('transferStatus'),'저장 데이터를 복원했습니다.');toast('저장 데이터를 복원했습니다.');}catch(e){setText($('transferStatus'),e instanceof SyntaxError?'JSON 형식을 확인해 주세요.':e.message);}};
 $('resetButton').onclick=()=>{$('resetConfirm').hidden=!$('resetConfirm').hidden;$('resetInput').value='';$('confirmReset').disabled=true;};$('resetInput').oninput=()=>$('confirmReset').disabled=$('resetInput').value!=='RESET';
 $('confirmReset').onclick=()=>{if($('resetInput').value!=='RESET')return;restore(defaultState());try{localStorage.removeItem(BACKUP);}catch{}sessionSeconds=0;$('resetConfirm').hidden=true;$('transfer').hidden=true;$('saveText').value='';$('settingsDialog').close();toast('새 연구를 시작합니다.',0,'important');focusNode(1);};
@@ -509,7 +524,7 @@ function renderStats(){
  const e=economy(state),pb=prestigeBonuses(state),pr=state.prestige,purchasable=PRESTIGE_NODES.filter(n=>!n.reserved),owned=purchasable.filter(n=>prestigeLevel(state,n)>0).length,levels=purchasable.reduce((a,n)=>a+prestigeLevel(state,n),0),levelsTotal=purchasable.reduce((a,n)=>a+n.max,0);
  // Lifetime coin totals stay listed after a prestige locks coins again.
  const coinStats=e.coinUnlocked||Big.from(state.stats.coinEarned).gt(0);
- const condition=prestigeReady(state)?`충족 · ✿${tokenFormat(tokensFor(state))}`:treeComplete(state)?`$${format(Big.from(PRESTIGE_THRESHOLD).sub(state.currencies.money))} 더`:`${NODES.length}개 연구 + $${format(PRESTIGE_THRESHOLD)}`;
+ const condition=prestigeReady(state)?`충족 · ✿${tokenFormat(tokensFor(state))}`:prestigeGateMet(state)?`$${format(Big.from(PRESTIGE_THRESHOLD).sub(state.currencies.money))} 더`:`${byId.get(PRESTIGE_GATE).name} 연구 + $${format(PRESTIGE_THRESHOLD)}`;
  // 2.2.2 entries and order, minus the removed ones; prestige entries follow.
  const entries=[['구매한 노드',`${e.count} / ${NODES.length}`],['총 연구 레벨',format(e.total,0)],['총 달러 획득','$'+format(state.stats.earned)],...(coinStats?[['총 코인 획득','¢'+format(state.stats.coinEarned)]]:[]),...(e.coinUnlocked?[['코인 생산','¢'+format(e.coinRate)+' /s']]:[]),['현재 생산','$'+format(e.rate)+' /s'],['캐시 보너스',e.burst?`${priceText({money:e.rate.mul(e.burst),...(e.coinUnlocked?{coin:e.coinRate.mul(e.coinBurst)}:{})})} / ${Math.round(e.interval)}s`:'미해금'],['총 플레이 시간',time(state.stats.seconds)],['오프라인 경과',time(state.stats.offlineSeconds)],['오프라인 수입',priceText({money:state.stats.offlineEarned,...(coinStats?{coin:state.stats.offlineCoinEarned}:{})})]];
  const rebirth=[['환생 횟수',`${pr.count}회`],['환생 조건',condition],...(pr.count?[['보유 토큰','✿'+tokenFormat(state.currencies.token)],['누적 토큰','✿'+tokenFormat(pr.tokensEarned)],['환생 노드',`${owned} / ${purchasable.length} · ${levels} / ${levelsTotal} 레벨`],['생산 배율',`$ ×${format(pb.moneyMul*pb.allMul)} · ¢ ×${format(pb.coinMul*pb.allMul)}`],['자동 연구 섹터',`${pb.auto.size} / 8 해금 · ${Object.keys(pr.auto).length} 켜짐`],['이번 회차',time(state.stats.seconds-(state.stats.runStart||0))],...(pr.last?[['마지막 환생',`$${format(pr.last.money)} → ✿${tokenFormat(pr.last.tokens)}`]]:[])]:[])];
@@ -553,7 +568,7 @@ function runAutomation(){
  econ=economy(state);
  if(!onPrestige()&&state.settings.motion)for(const n of bought){const el=nodeEls.get(n.id);el.classList.add('pop');setTimeout(()=>el.classList.remove('pop'),550);}
  if(econ.count===NODES.length&&before<NODES.length)toast(`${NODES.length}개 노드 연구 완료. AXIOM에 도달했습니다.`,0,'important');
- render();
+ render();for(const n of bought)if(n.gate&&level(state,n)===1)maybeReveal(n.chapter+1);
 }
 function frame(now){animateHub(now);const dt=Math.max(0,Math.min(1,(now-lastFrame)/1000));lastFrame=now;if(!document.hidden&&!suspended){sessionSeconds+=dt;const events=tick(state,dt);for(const e of events){if(e.type==='cache')showCacheReward({money:e.money,coin:e.coin});else if(e.type==='weather')toast(WEATHER_NOTICES[e.weather],6000,'weather-'+e.weather);}
  autoClock+=dt;if(autoClock>=1){autoClock=0;runAutomation();}
@@ -567,7 +582,7 @@ for(const el of document.querySelectorAll('[data-ui-icon]'))setIcon(el,el.datase
 // logo pink and the background blue-gray; every surface follows body.theme-bloom.
 function applyMapTheme(){const p=onPrestige();document.body.dataset.map=state.map;document.body.classList.toggle('theme-bloom',p);world.classList.toggle('map-prestige',p);$('prestigeLayer').hidden=!p;for(const id of ['sectorRegions','spokes','edges','edgeCasings','centerNode','chapterMarks','nodes'])$(id).toggleAttribute('hidden',p);islandView?.setVisible(!p);if(!p)islandView?.setCamera(camera);weatherFx?.refresh();}
 const cameraByMap={};
-function presentMap(){selected=selectionByMap[state.map]??defaultSelection();state.settings.panelCollapsed=false;applyMapTheme();econ=economy(state);render();const kept=cameraByMap[state.map];if(kept)camera={...kept};else{cameraIntent={type:'fit'};camera=cameraForIntent();cameraIntent=null;}constrain();transform();state.camera={...camera};}
+function presentMap(){pendingReveal.clear();viewport.classList.remove('cutscene');selected=selectionByMap[state.map]??defaultSelection();state.settings.panelCollapsed=false;applyMapTheme();econ=economy(state);render();const kept=cameraByMap[state.map];if(kept)camera={...kept};else{cameraIntent={type:'fit'};camera=cameraForIntent();cameraIntent=null;}constrain();transform();state.camera={...camera};}
 let themeTimer=0;
 function switchMap(id){
  const target=MAPS.find(m=>m.id===id);if(!target||id===state.map||target.locked?.(state))return false;
@@ -581,7 +596,7 @@ function switchMap(id){
 function renderMapMenu(){
  const menu=$('mapMenu');menu.replaceChildren();const purchasable=PRESTIGE_NODES.filter(n=>!n.reserved),owned=purchasable.filter(n=>prestigeLevel(state,n)>0).length;
  for(const m of MAPS){const locked=!!m.locked?.(state),current=state.map===m.id,main=m.id==='main',b=document.createElement('button');b.className='sector-jump map-jump';b.disabled=locked;b.classList.toggle('is-current',current);b.setAttribute('aria-current',current?'true':'false');b.style.setProperty('--sector-color',main?'#b9f36d':'#f7a8c4');
-  const progress=main?`${econ.count} / ${NODES.length} 연구 · $${format(state.currencies.money)}`:locked?`${NODES.length}개 연구 완료 후 $${format(PRESTIGE_THRESHOLD)} 보유 시 환생`:`${owned} / ${purchasable.length} 연구 · ✿${tokenFormat(state.currencies.token)}`;
+  const progress=main?`${econ.count} / ${NODES.length} 연구 · $${format(state.currencies.money)}`:locked?`${byId.get(PRESTIGE_GATE).name} 연구 후 $${format(PRESTIGE_THRESHOLD)} 보유 시 환생`:`${owned} / ${purchasable.length} 연구 · ✿${tokenFormat(state.currencies.token)}`;
   b.innerHTML=`<span class="sector-jump-icon">${iconSvg(main?'brand':'Flower')}</span><span class="sector-jump-copy"><span class="sector-jump-name">${m.ko}</span><span class="sector-jump-progress"></span></span><span class="sector-jump-state" aria-hidden="true">${iconSvg(current?'Check':locked?'LockKeyhole':'ChevronRight')}</span>`;
   b.querySelector('.sector-jump-progress').innerHTML=symbolMarkup(progress);b.onclick=()=>{closeMaps();if(!current)switchMap(m.id);};menu.append(b);}
 }

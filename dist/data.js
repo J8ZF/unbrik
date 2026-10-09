@@ -4,12 +4,15 @@ import {ISLANDS,ISLAND_NODES} from './islands.js?v=4.0.0-dev.1';
 import {PRICES} from './prices.js?v=4.0.0-dev.1';
 import {Big,ZERO,ONE} from './big.js?v=4.0.0-dev.1';
 import {PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,prestigeLevel} from './prestige.js?v=4.0.0-dev.1';
-export {PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,Big};
+export {PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,Big,ISLANDS};
 // 4.0: AXIOM is a sea of islands. The engine's "sectors" are the islands, in
 // order; only the islands that have studies yet are listed.
-export const CHAPTERS=ISLANDS.map(i=>({name:i.name,ko:i.name,color:'#b9f36d',island:i.id}));
-// A bought card takes the colour of the ground it stands on.
+export const CHAPTERS=ISLANDS.map(i=>({name:i.name,ko:i.name,color:i.color||'#b9f36d',island:i.id}));
+// A bought card takes the colour of the ground it stands on, in its island's tones.
 export const ZONE_COLORS={grass:'#b9f36d',sand:'#ecd29a',rock:'#93a9be'};
+export const zoneColor=n=>(ISLANDS[n.chapter]?.zones||ZONE_COLORS)[n.zone]||ZONE_COLORS[n.zone];
+// An island is open once the island before it is finished (its last study bought).
+export const islandOpen=(s,chapter)=>chapter===0||level(s,ISLANDS[chapter-1].last)>0;
 export const ECONOMY_EPOCH='unbrik-4.0';
 export const CURRENCIES=['money','coin'];
 // Amounts (balances, rates, costs, earnings) are Big values with no upper
@@ -30,11 +33,12 @@ export const MAPS=[
  {id:'prestige',name:'환생',ko:'환생',currencies:['token'],theme:'bloom',locked:s=>(s.prestige?.count||0)===0},
 ];
 export const defaultPrestige=()=>({count:0,tokensEarned:ZERO,tokensSpent:ZERO,purchases:0,levels:{},auto:{},last:null,noticed:false});
-export const treeComplete=s=>NODES.every(n=>level(s,n)>=n.max);
+export const treeComplete=s=>NODES.every(n=>choiceTaken(s,n)||level(s,n)>=n.max);
 // 4.0: ready once study #105 (the last study of island 3) is bought and the
 // balance clears the threshold. Until island 3 exists, the last placed study stands in.
 export const PRESTIGE_GATE=Math.min(105,ISLANDS.at(-1).last);
-export const prestigeReady=s=>byId.has(PRESTIGE_GATE)&&level(s,PRESTIGE_GATE)>0&&amount(s.currencies.money).gte(PRESTIGE_THRESHOLD);
+export const prestigeGateMet=s=>byId.has(PRESTIGE_GATE)&&level(s,PRESTIGE_GATE)>0;
+export const prestigeReady=s=>prestigeGateMet(s)&&amount(s.currencies.money).gte(PRESTIGE_THRESHOLD);
 // Start over: studies, dollars and coins reset, tokens are granted, automation
 // checks are cleared, lifetime statistics and settings stay. The world clock
 // keeps running. Returns the tokens granted, or 0 when not ready.
@@ -101,7 +105,8 @@ export const level=(s,n)=>s.levels[typeof n==='number'?n:n.id]||0;
 // the next prestige resets both.
 export const choiceTaken=(s,n)=>!!n.choice&&NODES.some(o=>o.choice===n.choice&&o.id!==n.id&&level(s,o)>0);
 export function unlocked(s,n){if(choiceTaken(s,n))return false;return n.req.length===0||(n.any?n.req.some(r=>level(s,r.id)>=r.level):n.req.every(r=>level(s,r.id)>=r.level));}
-export function sectorProgress(s,chapter){const nodes=MAP_LAYOUT.sectors[chapter].members;const total=nodes.reduce((a,n)=>a+n.max,0),done=nodes.reduce((a,n)=>a+level(s,n),0);return {done,total,complete:done===total};}
+// Completion counts every level; of an A/B pair only the chosen side counts once one is taken.
+export function sectorProgress(s,chapter){const nodes=MAP_LAYOUT.sectors[chapter].members.filter(n=>!choiceTaken(s,n));const total=nodes.reduce((a,n)=>a+n.max,0),done=nodes.reduce((a,n)=>a+level(s,n),0);return {done,total,complete:done===total};}
 export function defaultState(){const now=Date.now();return {version:2,economyEpoch:ECONOMY_EPOCH,contentVersion:5,layoutVersion:3,currencies:{money:ZERO,coin:ZERO,token:ZERO},levels:{},prestige:defaultPrestige(),stats:{earned:ZERO,spent:ZERO,coinEarned:ZERO,coinSpent:ZERO,purchases:0,seconds:0,peak:ONE,coinPeak:ZERO,offlineSeconds:0,offlineEarned:ZERO,offlineCoinEarned:ZERO,offlineEffectiveSeconds:0},timers:{cache:0},settings:{motion:true,sea:true,touch:true,haptic:true,format:'named',formatV2:true,purchaseCheat:false,mapControls:false,hudCollapsed:false,panelCollapsed:false},camera:null,map:'main',world:{seconds:0,weather:'clear',weatherUntil:WEATHER_INTERVAL},offline:{since:now,through:now,rate:ONE,coinRate:ZERO},savedAt:now};}
 export function economy(s){
  const owned=NODES.filter(n=>level(s,n)>0),count=owned.length,total=owned.reduce((a,n)=>a+level(s,n),0),coinUnlocked=COIN_UNLOCK!=null&&level(s,COIN_UNLOCK)>0;

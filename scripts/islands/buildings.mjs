@@ -125,3 +125,129 @@ export function lighthouse(n,CW,CH,R){const x=n.x,y=n.y;let s='';
  s+=shape(oct(x,y,R-34),K.roof,K.red,7)+shape(oct(x,y,R-48),'none',K.roofSeam,2);
  for(let i=0;i<8;i++){const a=i/8*6.2832+.3927;s+=line(x+Math.cos(a)*(R-52),y+Math.sin(a)*(R-52),x+Math.cos(a)*(R-38),y+Math.sin(a)*(R-38),K.raisedLine,1.6);}
  return s+well(n,CW,CH);}
+
+// ---- more landmarks for islands 2–5, same flat top-down manner ----
+// a coast stretch's outward direction from a point: away from the nearest shore segment
+function seaward(n,coast){let best=1e9,dir=[1,0];for(const p of coast){for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length],dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((n.x-a[0])*dx+(n.y-a[1])*dy)/(dx*dx+dy*dy))),qx=a[0]+t*dx,qy=a[1]+t*dy,d=Math.hypot(n.x-qx,n.y-qy);if(d<best){best=d;dir=[(qx-n.x)/d,(qy-n.y)/d];}}}return dir;}
+const rot=(pts,cx,cy,a)=>{const c=Math.cos(a),s=Math.sin(a);return pts.map(([x,y])=>[cx+c*(x-cx)-s*(y-cy),cy+s*(x-cx)+c*(y-cy)]);};
+// 섬 2: marine station — L-shaped block round the card, a round tank and a solar yard
+export function station(n,CW,CH){const x=n.x,y=n.y;let s='';
+ const yard=cbox(x-150,y+86,x+40,y+170,10);s+=paving(yard,20)+solar(x-140,y+96,80,64,3,3)+solar(x-50,y+96,80,64,3,3);
+ const L=chamfer([[x-150,y-108],[x+108,y-108],[x+108,y-20],[x+160,y-20],[x+160,y+84],[x+108,y+84],[x+108,y+96],[x-150,y+96]],[16,16,6,10,10,6,10,16]);
+ s+=mass(L,{seams:24,dir:'h'});
+ s+=glass(x-138,y-96,44,70,2,4)+glass(x+116,y-10,36,84,2,5)+ac(x+60,y-90)+vent(x-20,y-92)+hatch(x+80,y+80)+vent(x-110,y+82);
+ s+=tank(x+128,y+130,24)+tank(x+88,y+150,14)+line(x+104,y+134,x+114,y+134,K.rail,4);
+ for(const [lx,ly] of [[x-160,y+180],[x+50,y+180]])s+=lamp(lx,ly);
+ return s+well(n,CW,CH);}
+// 섬 2: greenhouse — a long glass hall beside the card, a white service block round it
+export function greenhouse(n,CW,CH){const x=n.x,y=n.y;let s='';
+ const body=cbox(x-118,y-104,x+118,y+104,18);s+=mass(body);
+ const hall=cbox(x+128,y-120,x+300,y+70,10);s+=shape(hall,K.wall,K.wallLine,3);
+ let g='';for(let yy=y-112;yy<y+70;yy+=18)g+=line(x+128,yy,x+300,yy,K.glassLine,1.3);for(let xx=x+150;xx<x+300;xx+=22)g+=line(xx,y-120,xx,y+70,K.glassLine,1.3);
+ s+=`<rect x="${x+136}" y="${y-112}" width="156" height="174" fill="${K.glass}"/>`+clip(hall,g)+line(x+214,y-120,x+214,y+70,K.roofSeam,2.5);
+ const bed=cbox(x+136,y+84,x+300,y+124,6);s+=planter(x+136,y+84,164,40,5);
+ s+=glass(x-104,y-90,46,40,2,2)+glass(x+58,y-90,46,40,2,2)+ac(x-70,y+86)+vent(x+40,y+88)+hatch(x+92,y-92)+tank(x-96,y+78,13);
+ s+=line(x+118,y-30,x+128,y-30,K.rail,6)+line(x+118,y+30,x+128,y+30,K.rail,6);
+ return s+well(n,CW,CH);}
+// 섬 2: pier — a stilt boardwalk out over the water from a coast card, a hut at the end
+export function pier(n,CW,CH,l,{coast}){const x=n.x,y=n.y,[dx,dy]=seaward(n,coast),a=Math.atan2(dy,dx);let s='';
+ const g=(u,v)=>[x+dx*u-dy*v,y+dy*u+dx*v];
+ const deck=[g(60,-26),g(330,-26),g(330,26),g(60,26)];s+=poly(deck,'fill="#7d6a52"');for(let u=70;u<330;u+=14){const p=g(u,-26),q=g(u,26);s+=line(p[0],p[1],q[0],q[1],'#5c4c3a',2);}
+ for(const u of [120,200,280])for(const v of [-32,32]){const p=g(u,v);s+=circ(p[0],p[1],4.5,'#5c4c3a');}
+ const hut=rot(box(x+300,y-62,x+380,y+62),x,y,a);s+=mass(hut,{seams:14,dir:'v'});const hc=g(340,0);s+=vent(hc[0],hc[1],7);
+ const boat=(u,v,r2)=>{const c=g(u,v);return `<g transform="translate(${f1(c[0])} ${f1(c[1])}) rotate(${(a*180/Math.PI+r2).toFixed(1)})">${poly([[-34,0],[-22,-11],[26,-11],[38,0],[26,11],[-22,11]],'fill="#d9dfe1"')}${poly([[-14,-6],[14,-6],[18,0],[14,6],[-14,6]],'fill="#8c99a2"')}</g>`;};
+ s+=boat(180,-66,-6)+boat(260,70,10);
+ const apron=rot(cbox(x-100,y-96,x+70,y+96,12),x,y,0);s+=paving(apron,22)+lamp(x-86,y-82)+lamp(x-86,y+82);
+ return s+well(n,CW,CH);}
+// 섬 3: library — a big hall with a cloister court, reading wings either side
+export function library(n,CW,CH){const x=n.x,y=n.y;let s='';
+ const body=chamfer([[x-200,y-120],[x+200,y-120],[x+200,y+120],[x-200,y+120]],[22,22,22,22]);s+=mass(body);
+ const court=cbox(x-CW/2-24,y-CH/2-22,x+CW/2+24,y+CH/2+22,10);s+=paving(court,18)+poly(inset(court,-8),`fill="none" stroke="${K.rail}" stroke-width="2.2" stroke-dasharray="4 8"`);
+ for(const sx of [-1,1]){const wing=cbox(x+sx*120-40,y-100,x+sx*120+40,y+100,8);s+=raised(wing);for(let i=0;i<4;i++)s+=glass(x+sx*120-30,y-88+i*48,60,30,3,1);}
+ s+=ac(x-60,y-104)+ac(x+60,y-104)+vent(x,y-106)+hatch(x-60,y+104)+hatch(x+60,y+104)+vent(x,y+106);
+ for(const [tx,ty] of [[x-186,y-106],[x+186,y-106],[x+186,y+106],[x-186,y+106]])s+=raised(cbox(tx-16,ty-16,tx+16,ty+16,6));
+ const steps=stairs(x-60,y+122,120,26,4);s+=steps;for(let i=0;i<3;i++)s+=lamp(x-50+i*50,y+156);
+ return s+well(n,CW,CH);}
+// 섬 3: mill — a water wheel on the shore side of a round mill house, a store beside the card
+export function mill(n,CW,CH,l,{coast}){const x=n.x,y=n.y,[dx,dy]=seaward(n,coast);let s='';
+ const store=cbox(x-120,y-100,x+120,y+100,14);s+=mass(store,{seams:20,dir:'v'})+glass(x-104,y-86,36,50,2,3)+vent(x+96,y-86)+hatch(x+96,y+84)+ac(x-96,y+80);
+ const mx=x+dx*196,my=y+dy*196,R=58;s+=shape(oct(mx,my,R),K.wall,K.wallLine,3)+shape(oct(mx,my,R-8),K.roof,null);
+ for(let i=0;i<8;i++){const a=i/8*6.2832+.3927;s+=line(mx+Math.cos(a)*14,my+Math.sin(a)*14,mx+Math.cos(a)*(R-10),my+Math.sin(a)*(R-10),K.roofSeam,1.8);}
+ s+=circ(mx,my,12,K.glass,K.glassFrame,1.8);
+ const wx=mx+dx*74,wy=my+dy*74,px=-dy,py=dx;s+=line(wx-px*48,wy-py*48,wx+px*48,wy+py*48,'#6b5a42',14)+line(wx-px*48,wy-py*48,wx+px*48,wy+py*48,'#8b7357',8);
+ for(let i=-4;i<=4;i++)s+=line(wx+px*i*11-dx*8,wy+py*i*11-dy*8,wx+px*i*11+dx*8,wy+py*i*11+dy*8,'#4f4030',2.2);
+ s+=line(x+dx*120,y+dy*120,mx-dx*R,my-dy*R,K.rail,6)+line(x+dx*120,y+dy*120,mx-dx*R,my-dy*R,K.ground,3);
+ return s+well(n,CW,CH);}
+// 섬 3: pavilion — an open octagonal hall on a terrace, a pond and a footbridge
+export function pavilion(n,CW,CH){const x=n.x,y=n.y;let s='';
+ const terr=cbox(x-150,y-120,x+150,y+120,20);s+=paving(terr,24);
+ s+=shape(oct(x,y,118),K.wall,K.wallLine,3)+shape(oct(x,y,106),K.roof,null);for(let i=0;i<8;i++){const a=i/8*6.2832+.3927;s+=line(x+Math.cos(a)*92,y+Math.sin(a)*92,x+Math.cos(a)*104,y+Math.sin(a)*104,K.raisedLine,2);s+=circ(x+Math.cos(a)*98,y+Math.sin(a)*98,5,K.roof,K.raisedLine,1.6);}
+ const pond=[[x+150,y-40],[x+230,y-70],[x+300,y-20],[x+292,y+60],[x+220,y+96],[x+156,y+50]];s+=shape(pond,'#1f3a46','#3f6a78',2.5)+circ(x+236,y+10,10,'#5f8f44')+circ(x+262,y+36,8,'#5f8f44');
+ s+=line(x+150,y+10,x+300,y+16,'#8b7357',10)+line(x+150,y+10,x+300,y+16,'#a58c6c',3);
+ for(const [lx,ly] of [[x-136,y-106],[x+136,y-106],[x-136,y+106],[x+136,y+106]])s+=lamp(lx,ly);
+ for(let i=0;i<3;i++)s+=planter(x-140+i*40,y+100,30,16,1);
+ return s+well(n,CW,CH);}
+// 섬 4: dig site — a gridded excavation beside the card, the finds' store and a crane
+export function dig(n,CW,CH){const x=n.x,y=n.y;let s='';
+ const store=cbox(x-118,y-100,x+118,y+100,16);s+=mass(store,{seams:22,dir:'h'})+glass(x-100,y-84,40,56,2,3)+ac(x+80,y-84)+hatch(x+92,y+82)+vent(x-92,y+84)+tank(x+40,y-80,12);
+ const pit=cbox(x+136,y-130,x+330,y+120,8);s+=shape(pit,'#8a6f44','#5f4a2c',3);
+ let g='';for(let xx=x+160;xx<x+330;xx+=28)g+=line(xx,y-130,xx,y+120,'#5f4a2c',1.4);for(let yy=y-106;yy<y+120;yy+=28)g+=line(x+136,yy,x+330,yy,'#5f4a2c',1.4);s+=clip(pit,g);
+ s+=shape(cbox(x+170,y-96,x+250,y-30,4),'#6b5434','#4a3822',2)+shape(cbox(x+262,y+10,x+312,y+84,4),'#6b5434','#4a3822',2)+shape(cbox(x+160,y+40,x+230,y+100,4),'#7a6140','#4a3822',2);
+ s+=poly([[x+190,y-80],[x+226,y-74],[x+222,y-48],[x+186,y-52]],'fill="#c9b07c"')+circ(x+288,y+48,10,'#c9b07c');
+ s+=line(x+140,y-150,x+140,y+140,K.rail,4)+line(x+120,y-150,x+330,y-150,K.rail,4)+circ(x+140,y-150,8,K.equip,K.equipLine,1.5)+line(x+140,y-150,x+200,y-110,K.dark,2.2);
+ for(const [lx,ly] of [[x-130,y-112],[x-130,y+112]])s+=lamp(lx,ly);
+ return s+well(n,CW,CH);}
+// 섬 4: ziggurat — stepped terraces round the card, a stair up the front
+export function ziggurat(n,CW,CH){const x=n.x,y=n.y;let s='';
+ const tiers=[[200,160,'#b89a66','#8d7449'],[164,130,'#c6a974','#9a8050'],[128,100,'#d2b885','#a88a58']];
+ for(const [w,h,f,st] of tiers)s+=shape(cbox(x-w,y-h,x+w,y+h,18),f,st,3);
+ for(const [w,h] of [[200,160],[164,130],[128,100]])s+=poly(inset(cbox(x-w,y-h,x+w,y+h,18),8),'fill="none" stroke="#e5d2a3" stroke-width="1.6"');
+ s+=stairs(x-22,y+100,44,60,6)+stairs(x-22,y-160,44,60,6);
+ for(const [sx,sy] of [[-1,-1],[1,-1],[1,1],[-1,1]])s+=shape(oct(x+sx*176,y+sy*136,16),'#4a3f32','#2f2822',2)+circ(x+sx*176,y+sy*136,5,'#ffbf4a');
+ return s+well(n,CW,CH);}
+// 섬 4: cistern — a sunken round water store with a pump house, channels to the card
+export function cistern(n,CW,CH){const x=n.x,y=n.y;let s='';
+ const house=cbox(x-112,y-96,x+112,y+96,14);s+=mass(house,{seams:20,dir:'v'})+glass(x-96,y-80,34,46,2,3)+vent(x+88,y-80)+hatch(x+88,y+78)+ac(x-88,y+76);
+ const cx=x+220,cy=y+20,R=84;s+=circ(cx,cy,R,'#b89a66','#8d7449',3)+circ(cx,cy,R-14,'#1f3a46','#3f6a78',2.5)+circ(cx,cy,R-40,'#27485a');
+ for(let i=0;i<6;i++){const a=i/6*6.2832;s+=line(cx+Math.cos(a)*(R-14),cy+Math.sin(a)*(R-14),cx+Math.cos(a)*R,cy+Math.sin(a)*R,'#8d7449',3);}
+ s+=line(x+112,y+20,cx-R,cy,'#8d7449',12)+line(x+112,y+20,cx-R,cy,'#27485a',5);
+ s+=shape(cbox(cx-20,cy-R-36,cx+20,cy-R+6,4),K.equip,K.equipLine,2)+circ(cx,cy-R-15,7,K.dark);
+ return s+well(n,CW,CH);}
+// 섬 5: tower block — a tall building's roof: lift house, vents, a dark glass band
+export function tower(n,CW,CH){const x=n.x,y=n.y;let s='';
+ const body=cbox(x-170,y-130,x+170,y+130,14);s+=shape(body,'#7a838b','#525a61',3)+shape(inset(body,10),'#8a939b',null);
+ for(let i=-1;i<=1;i+=2)s+=`<rect x="${x-160}" y="${y+i*96-10}" width="320" height="20" fill="${K.glass}" stroke="${K.glassFrame}" stroke-width="1.4"/>`;
+ s+=raised(cbox(x-40,y-CH/2-56,x+40,y-CH/2-16,6))+hatch(x,y-CH/2-36);
+ s+=ac(x-130,y-110)+ac(x+130,y-110)+ac(x-130,y+110)+ac(x+130,y+110)+vent(x-100,y)+vent(x+100,y)+tank(x+140,y+40,14)+tank(x-140,y-40,12);
+ s+=`<rect x="${x-120}" y="${y+CH/2+18}" width="240" height="30" fill="${K.solar}" stroke="${K.equipLine}" stroke-width="1.6"/>`;for(let i=1;i<8;i++)s+=line(x-120+i*30,y+CH/2+18,x-120+i*30,y+CH/2+48,K.solarLine,1.2);
+ s+=circ(x-150,y+2,9,'#4f7d3a')+circ(x+148,y-2,11,'#4f7d3a')+circ(x+40,y+118,8,'#4f7d3a');
+ return s+well(n,CW,CH);}
+// 섬 5: power plant — turbine hall, two cooling towers, pipes
+export function plant(n,CW,CH){const x=n.x,y=n.y;let s='';
+ const hall=cbox(x-150,y-104,x+150,y+104,14);s+=mass(hall,{seams:20,dir:'h'});
+ let saw='';for(let yy=y-90;yy<y+90;yy+=30)saw+=`<rect x="${x-140}" y="${yy}" width="280" height="8" fill="${K.glass}"/>`;s+=clip(inset(hall,8),saw);
+ for(const tx of [x+230,x+230]){}
+ for(const [tx,ty] of [[x+222,y-50],[x+222,y+62]]){s+=circ(tx,ty,46,'#9aa3aa','#5f6870',3)+circ(tx,ty,30,'#2a3238',null)+circ(tx,ty,22,'#3b4a52');}
+ s+=line(x+150,y-20,x+176,y-50,K.rail,7)+line(x+150,y+20,x+176,y+62,K.rail,7);
+ s+=ac(x-120,y-88)+vent(x-80,y+88)+hatch(x+120,y+86)+tank(x-120,y+78,14)+vent(x+110,y-88);
+ for(let i=0;i<3;i++)s+=line(x-150,y-60+i*50,x-176,y-60+i*50,K.rail,5);
+ s+=circ(x-166,y+96,10,'#4f7d3a')+circ(x+140,y+120,8,'#4f7d3a');
+ return s+well(n,CW,CH);}
+// 섬 5: stadium — an oval bowl beside the card, moss on the pitch
+export function stadium(n,CW,CH){const x=n.x,y=n.y;let s='';
+ const gate=cbox(x-110,y-96,x+110,y+96,14);s+=mass(gate,{seams:18,dir:'v'})+glass(x-94,y-80,40,44,2,2)+ac(x+76,y-80)+hatch(x+88,y+78)+vent(x-88,y+80);
+ const cx=x+256,cy=y;const ell=(rx,ry,f,st,w)=>`<ellipse cx="${f1(cx)}" cy="${f1(cy)}" rx="${f1(rx)}" ry="${f1(ry)}" fill="${f}"${st?` stroke="${st}" stroke-width="${w}"`:''}/>`;
+ s+=ell(132,98,'#7a838b','#525a61',3)+ell(120,86,'#8a939b',null)+ell(96,64,'#5f9144','#3f6a30',2)+ell(80,50,'none','#9ccf6a',1.6);
+ s+=line(cx,cy-50,cx,cy+50,'#9ccf6a',1.6)+circ(cx,cy,12,'none','#9ccf6a',1.6);
+ for(let i=0;i<12;i++){const a=i/12*6.2832;s+=line(cx+Math.cos(a)*100,cy+Math.sin(a)*70,cx+Math.cos(a)*130,cy+Math.sin(a)*96,'#525a61',1.6);}
+ s+=line(x+110,y,cx-132,cy,K.rail,8)+line(x+110,y,cx-132,cy,K.ground,4);
+ s+=circ(cx-60,cy-82,7,'#4f7d3a')+circ(cx+70,cy+84,9,'#4f7d3a');
+ return s+well(n,CW,CH);}
+export const KINDS={harbor:(n,CW,CH)=>harbor(n,CW,CH),hall:(n,CW,CH)=>hall(n,CW,CH),radio:(n,CW,CH)=>radio(n,CW,CH),lighthouse:(n,CW,CH,l)=>lighthouse(n,CW,CH,l.oct),
+ station,greenhouse,pier,library,mill,pavilion,dig,ziggurat,cistern,tower,plant,stadium};
+// footprints: what the still decoration clears under a building (world box)
+export const FOOTPRINT={harbor:n=>[n.x-296,n.y-122,n.x+156,1278],hall:n=>[n.x-225,n.y-133,n.x+169,n.y+180],radio:n=>[n.x-224,n.y-104,n.x+254,n.y+104],lighthouse:(n,l)=>[n.x-l.oct-4,n.y-l.oct-4,n.x+l.oct+4,n.y+l.oct+66],
+ station:n=>[n.x-164,n.y-112,n.x+166,n.y+184],greenhouse:n=>[n.x-122,n.y-124,n.x+304,n.y+128],pier:n=>[n.x-104,n.y-100,n.x+74,n.y+100],
+ library:n=>[n.x-204,n.y-124,n.x+204,n.y+160],mill:n=>[n.x-124,n.y-104,n.x+124,n.y+104],pavilion:n=>[n.x-154,n.y-124,n.x+304,n.y+124],
+ dig:n=>[n.x-134,n.y-154,n.x+334,n.y+144],ziggurat:n=>[n.x-204,n.y-164,n.x+204,n.y+164],cistern:n=>[n.x-116,n.y-100,n.x+308,n.y+108],
+ tower:n=>[n.x-174,n.y-134,n.x+174,n.y+134],plant:n=>[n.x-180,n.y-108,n.x+272,n.y+112],stadium:n=>[n.x-114,n.y-100,n.x+392,n.y+100]};

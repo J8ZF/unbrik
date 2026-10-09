@@ -571,11 +571,11 @@ body.theme-bloom{--bg:#0e111c;--panel:#141a28;--line:#2a3348;--accent:#f3a1c8;--
 /* 4.0 islands: painted islands behind the studies (island-view.js) */
 body:not(.theme-bloom) #viewport{background-image:none}
 #islandBack{position:absolute;left:0;top:0;width:0;height:0;overflow:visible;transform-origin:0 0;will-change:transform;pointer-events:none}
-#islandBack .island-tri,#islandBack .island-tiles{position:absolute;left:0;top:0}
+#islandBack .island-tri,#islandBack .island-tiles,#islandBack .island-pic{position:absolute;left:0;top:0}#islandBack .island-pic{overflow:visible}
 #islandBack canvas,#islandBack .island-sheet{position:absolute}
 #islandBack .tri{position:absolute;overflow:visible;animation:islandDrift 26s ease-in-out infinite alternate}
 @keyframes islandDrift{from{transform:translate(0,0);opacity:.55}to{transform:translate(18px,-10px);opacity:1}}
-#seaFx,.obs-canvas{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+#seaFx,.obs-canvas{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}#viewport.cutscene{pointer-events:none}
 #world.moving{will-change:transform}
 .island-sheet{position:absolute;overflow:visible;pointer-events:none}
 #islandDecor{z-index:0}

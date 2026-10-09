@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {NODES,byId,defaultState,unlocked,level,economy,cost,purchase,tick,validateSave,affordable,prestige,tokensFor,PRESTIGE_THRESHOLD,Big,CHAPTERS,COIN_UNLOCK,choiceTaken} from './dist/data.js';
+import {NODES,byId,defaultState,unlocked,level,economy,cost,purchase,tick,validateSave,affordable,prestige,tokensFor,PRESTIGE_THRESHOLD,Big,CHAPTERS,COIN_UNLOCK,choiceTaken,islandOpen,sectorProgress} from './dist/data.js';
 import {ISLANDS,ISLAND_NODES} from './dist/islands.js';
 // Amounts are Big values; any implicit numeric use of one (big > 0) throws here.
 globalThis.BIG_STRICT=true;
@@ -9,18 +9,27 @@ const N=v=>Big.from(v).toNumber(),Ns=o=>Object.fromEntries(Object.entries(o).map
 const clone=o=>o instanceof Big?o:Array.isArray(o)?o.map(clone):o&&typeof o==='object'?Object.fromEntries(Object.entries(o).map(([k,v])=>[k,clone(v)])):o;
 import {iconSvg} from './dist/icons.js';
 import {checkpointOffline,settleOffline,effectiveOfflineSeconds} from './dist/offline.js';
-// 4.0 stage 1: one island of 30 nodes (content borrowed from 3.x studies 1–30).
-assert.equal(NODES.length,30);assert.equal(new Set(NODES.map(n=>n.id)).size,30);assert.equal(new Set(NODES.map(n=>n.content)).size,30);
-assert.equal(CHAPTERS.length,ISLANDS.length);assert.deepEqual(CHAPTERS.map((_,i)=>NODES.filter(n=>n.chapter===i).length),[30]);
-assert.equal(NODES.reduce((a,n)=>a+n.max,0),107);assert.deepEqual(NODES.filter(n=>n.gate).map(n=>n.id),ISLANDS.map(i=>i.last));
+// 4.0: five islands (30/35/40/60/88 studies). Islands 1–3 borrow 3.x studies 1–105 one to one;
+// islands 4–5 borrow again until the 4.0 content list is written.
+assert.equal(NODES.length,253);assert.equal(new Set(NODES.map(n=>n.id)).size,253);assert.equal(new Set(NODES.filter(n=>n.chapter<3).map(n=>n.content)).size,105);
+assert.equal(CHAPTERS.length,ISLANDS.length);assert.deepEqual(CHAPTERS.map((_,i)=>NODES.filter(n=>n.chapter===i).length),[30,35,40,60,88]);
+assert.equal(NODES.reduce((a,n)=>a+n.max,0),793);assert.deepEqual(NODES.filter(n=>n.gate).map(n=>n.id),ISLANDS.map(i=>i.last));
+assert.deepEqual(ISLANDS.map(i=>i.last),[30,65,105,165,253]);assert.equal(NODES.filter(n=>n.effects.some(e=>e.type==='unlock')).length,1,'one coin unlock');
+// each island's first study asks for the island before it; only the first island is open at the start
+for(let i=1;i<ISLANDS.length;i++){const root=NODES.find(n=>n.chapter===i);assert.deepEqual(root.req,[{id:ISLANDS[i-1].last,level:1}]);assert(!islandOpen(defaultState(),i));}assert(islandOpen(defaultState(),0));
+// A/B pairs: two studies of one island share a choice id; level requirements point at studies with levels
+for(const id of new Set(NODES.filter(n=>n.choice).map(n=>n.choice))){const pair=NODES.filter(n=>n.choice===id);assert.equal(pair.length,2);assert.equal(pair[0].chapter,pair[1].chapter);assert(!pair.some(n=>n.gate));}
+for(const n of NODES)for(const r of n.req)assert(byId.get(r.id).max>=r.level,`${n.id} asks ${r.id} for level ${r.level}`);
 for(const n of NODES){assert(['grass','sand','rock'].includes(n.zone));assert(Number.isFinite(n.x)&&Number.isFinite(n.y));}
 assert.equal(byId.get(COIN_UNLOCK).name,'BASIS');assert(NODES.filter(n=>n.payment.includes('coin')).every(n=>n.id!==COIN_UNLOCK));
 let s=defaultState();assert.deepEqual(Ns(economy(s).rates),{money:1,coin:0});tick(s,5);tick(s,5);assert.equal(N(s.currencies.money),10);assert(purchase(s,NODES[0]));assert.equal(N(economy(s).rate),2);assert.equal(N(s.currencies.money),0);assert(!purchase(s,NODES[0]));
 for(const n of NODES){assert.equal(n.costs.length,n.max);assert(n.effects.length);assert(!n.effects.some(e=>e.type==='automation'||e.type==='power'));for(const p of n.costs)for(const k of n.payment)assert(Number.isFinite(p[k])&&p[k]>0);for(const r of n.req)assert(byId.has(r.id)&&r.id<n.id);}
 const cheat=defaultState();cheat.settings.purchaseCheat=true;assert(!purchase(cheat,byId.get(COIN_UNLOCK)));const zero={...cheat.currencies};
-for(const n of NODES){assert(unlocked(cheat,n));assert(purchase(cheat,n));assert.deepEqual(cheat.currencies,zero);if(n.id<COIN_UNLOCK)assert.equal(N(economy(cheat).coinRate),0);if(n.id===COIN_UNLOCK)assert.equal(N(economy(cheat).coinRate),1);}
-for(const n of NODES){while(level(cheat,n)<n.max)assert(purchase(cheat,n));assert(!purchase(cheat,n));}
-assert.equal(N(cheat.stats.spent),0);assert.equal(N(cheat.stats.coinSpent),0);assert.equal(cheat.stats.purchases,107);assert(Number.isFinite(N(economy(cheat).rate)));
+for(const n of NODES){if(choiceTaken(cheat,n)){assert(!unlocked(cheat,n));continue;}for(const r of n.req)while(level(cheat,r.id)<r.level)assert(purchase(cheat,byId.get(r.id)));assert(unlocked(cheat,n));assert(purchase(cheat,n));assert.deepEqual(cheat.currencies,zero);if(n.id<COIN_UNLOCK)assert.equal(N(economy(cheat).coinRate),0);if(n.id===COIN_UNLOCK)assert.equal(N(economy(cheat).coinRate),1);}
+for(const n of NODES){if(choiceTaken(cheat,n)){assert(!purchase(cheat,n));continue;}while(level(cheat,n)<n.max)assert(purchase(cheat,n));assert(!purchase(cheat,n));}
+const closedLevels=NODES.filter(n=>choiceTaken(cheat,n)).reduce((a,n)=>a+n.max,0);assert.equal(NODES.filter(n=>choiceTaken(cheat,n)).length,3);
+assert.equal(N(cheat.stats.spent),0);assert.equal(N(cheat.stats.coinSpent),0);assert.equal(cheat.stats.purchases,793-closedLevels);assert(Number.isFinite(N(economy(cheat).rate)));
+for(let i=0;i<CHAPTERS.length;i++)assert(sectorProgress(cheat,i).complete,'every island completes with one side of each pair');
 assert.deepEqual(validateSave(JSON.parse(JSON.stringify(cheat))).levels,cheat.levels);
 const DUAL=NODES.find(n=>n.payment.length===2);const dual=defaultState();dual.settings.purchaseCheat=true;for(const n of NODES.filter(n=>n.id<DUAL.id))assert(purchase(dual,n));dual.settings.purchaseCheat=false;
 // Either shortage aborts the complete transaction, including levels and stats.
@@ -44,7 +53,7 @@ for(const k of ['money','coin'])assert(Math.abs(N(whole.currencies[k])-N(split.c
 // Island data: every placed node maps to one content id, prerequisites stay on known ids.
 for(const p of ISLAND_NODES){assert(byId.has(p.id));for(const r of p.req)assert(byId.has(typeof r==='number'?r:r.id));}
 const saved=JSON.parse(JSON.stringify(cheat));for(const corrupt of [{...saved,version:1},{...saved,economyEpoch:'old'},{...saved,currencies:{money:-1,coin:0}},{...saved,levels:{999:1}},{...saved,levels:{1:99}},{...saved,currencies:{money:NaN,coin:0}},{...saved,currencies:{money:0,coin:Infinity}}])assert.throws(()=>validateSave(corrupt));
-const icons=NODES.map(n=>iconSvg(n.icon));assert.equal(new Set(icons).size,30);for(const svg of icons){assert(svg.includes('viewBox="0 0 24 24"'));assert(!/<text|<image|<foreignObject|href=/.test(svg));assert.notEqual(svg,iconSvg('LockKeyhole'));}
+const icons=NODES.map(n=>iconSvg(n.icon));assert.equal(new Set(NODES.filter(n=>n.chapter<3).map(n=>iconSvg(n.icon))).size,105);for(const svg of icons){assert(svg.includes('viewBox="0 0 24 24"'));assert(!/<text|<image|<foreignObject|href=/.test(svg));assert.notEqual(svg,iconSvg('LockKeyhole'));}
 const html=fs.readFileSync('dist/index.html','utf8'),app=fs.readFileSync('dist/app.js','utf8');const ids=[...html.matchAll(/(?<![\w-])id="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);for(const match of app.matchAll(/\$\('([^']+)'\)/g))if(!match[1].endsWith('-'))assert(ids.includes(match[1]),`Missing ${match[1]}`);
 for(const ref of html.matchAll(/(?:src|href)="([^"?#]+)(?:\?[^"#]*)?"/g))if(!/^(https?:|data:|#)/.test(ref[1]))assert(fs.existsSync('dist/'+ref[1]),`Missing ${ref[1]}`);
 for(const [,name]of html.matchAll(/data-ui-icon="([^"]+)"/g))assert.notEqual(iconSvg(name),iconSvg('LockKeyhole'));
@@ -72,7 +81,7 @@ assert(!html.includes('id="progressBar"'));assert(!html.includes('coin-mark'));a
  for(const v of ['1.5e400','1e+293910','9.99e305',123,0])assert(Big.parse(JSON.parse(JSON.stringify(B(v)))).eq(B(v)));
  for(const bad of ['abc','-1e400','1e99999999999999999999',NaN,Infinity,null,{}])assert.equal(Big.parse(bad)?.sign>=0?'ok':'rejected','rejected');
  // A save past the old cap and past the double limit loads, ticks, buys and saves again.
- const huge=defaultState();for(const n of NODES)huge.levels[n.id]=n.max;huge.currencies.money=B('1.5e400');huge.currencies.coin=B('2e350');huge.stats.earned=B('3e400');
+ const huge=defaultState();for(const n of NODES)if(!choiceTaken(huge,n))huge.levels[n.id]=n.max;huge.currencies.money=B('1.5e400');huge.currencies.coin=B('2e350');huge.stats.earned=B('3e400');
  const loaded=validateSave(JSON.parse(JSON.stringify(huge)));assert(loaded.currencies.money.eq('1.5e400')&&loaded.currencies.coin.eq('2e350')&&loaded.stats.earned.eq('3e400'));
  assert(Number.isFinite(economy(loaded).rate.log10()),'Balance-based bonuses stay finite with a huge balance');
  tick(loaded,1);assert(loaded.currencies.money.gte('1.5e400')&&loaded.stats.earned.gte('3e400'));
@@ -92,4 +101,4 @@ assert(!html.includes('id="progressBar"'));assert(!html.includes('coin-mark'));a
  assert.deepEqual(['short','scientific','engineering'].map(m=>u.compactNumber(B('1.5e400'),m,3)),['1.50e400','1.50e400','15.0e399']);
  for(let e=300;e<=320;e++){const text=f(`1.234e${e}`);assert(e<306?/^[0-9.]+(Ce|[A-Za-z]+)$/.test(text):text===`1.23e${e}`,text);}
 }
-console.log(JSON.stringify({economy:'passed',nodes:30,totalLevels:107,icons:30,levelRequirement:'passed',choice:'passed',dualCurrencyAtomicPurchase:'passed',coinUnlock:'1 per second',cacheSnapshot:'passed',offlineTwoCurrencies:'passed',saveEpoch:'passed',DOMReferences:'passed',bigNumbers:'passed'}));
+console.log(JSON.stringify({economy:'passed',nodes:NODES.length,islands:ISLANDS.length,totalLevels:793,icons:105,levelRequirement:'passed',choice:'passed',dualCurrencyAtomicPurchase:'passed',coinUnlock:'1 per second',cacheSnapshot:'passed',offlineTwoCurrencies:'passed',saveEpoch:'passed',DOMReferences:'passed',bigNumbers:'passed'}));

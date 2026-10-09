@@ -140,8 +140,8 @@ function architecture(){
  for(let i=0;i<8;i++){inner+=group(rect(-20,-408,40,192,C.stone,C.edge,2)+rect(-8,-405,16,144,C.mid),`rotate(${i*45})`);
   inner+=group(building(INNER[i],i%2===0?48:33,i+60),`translate(${xy(p(374,i*45))}) rotate(${i*45-90})`);}
  inner+=circle(182,C.dark,C.edge,2)+circle(172,'none',C.cyan,2);
- let iris='';for(let i=0;i<8;i++)iris+=group(`<path d="M-27 -159L17 -159 44 -132 31 -110 -8 -114 -26 -137Z" fill="${C.steel}" stroke="${C.edge}" stroke-width="1.5"/>`,`rotate(${i*45})`);
- inner+=iris+ngon(8,134,C.stone,C.edge,3,22.5)+ngon(8,123,'#173241','#537c8e',2,22.5)+ngon(8,113,'#07111a','#04090d',3,22.5)+ngon(8,109,'none','#72bed6',1,22.5);
+ // the iris blades round the eye are drawn turning, over the map (iris()); none are painted here
+ inner+=ngon(8,134,C.stone,C.edge,3,22.5)+ngon(8,123,'#173241','#537c8e',2,22.5)+ngon(8,113,'#07111a','#04090d',3,22.5)+ngon(8,109,'none','#72bed6',1,22.5);
  return arms+city+inner;}
 
 // ---------- the machinery under the painted layer ----------
@@ -199,8 +199,9 @@ function sunken(){
  {const P=painter();P.add(dRing(2300,2360),DEEP[0]);for(let i=0;i<12;i++)P.add(dRect(-90,-2380,180,110,M(i*30)),DEEP[1]);layers.push({spin:.4,groups:P.groups});}
  return layers;}
 
-// The iris blades round the eye, turning.
-function iris(){const P=painter();for(let i=0;i<8;i++)P.add(dPoly([[-27,-159],[17,-159],[44,-132],[31,-110],[-8,-114],[-26,-137]],M(i*45)),C.steel,C.edge,1.5);return [{spin:5,groups:P.groups}];}
+// The iris round the eye: sixteen blades turning together.
+function iris(){const BLADE=[[-27,-159],[17,-159],[44,-132],[31,-110],[-8,-114],[-26,-137]],P=painter();
+ for(let i=0;i<16;i++)P.add(dPoly(BLADE,M(i*22.5)),C.steel,C.edge,1.5);return [{spin:5,groups:P.groups}];}
 // Canvas versions of the towers, for the upper ring (fewer shapes than the painted ones).
 const MOSS_PTS=[[-42,-8],[-24,-18],[-14,-11],[-3,-20],[17,-14],[26,4],[10,8],[3,2],[-15,12],[-26,6],[-39,9]];
 function towerShapes(kind,r,m){const o=[],a=(d,f,s='none',w=0)=>o.push([d,f,s,w]);
