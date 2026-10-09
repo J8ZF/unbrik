@@ -27,6 +27,24 @@ const bigleaf=(r,x,y)=>leafFan(r,x,y,52+r()*22,5+Math.floor(r()*2),['#2f8f55','#
 // a maple: three pink-red crowns, fallen leaves round it
 const maple=(r,x,y,R)=>tree(r,x,y,R,['#9c3a52','#c74c68','#e86f86'])+Array.from({length:5},()=>dot(x+(r()-.5)*R*3.2,y+(r()-.5)*R*3.2,2.2+r()*2,['#e86f86','#f29aa8','#c74c68'][Math.floor(r()*3)])).join('');
 const mapleGrove=(r,x,y)=>{let s='';const k=2+Math.floor(r()*3),parts=[];for(let i=0;i<k;i++){const R=30+r()*30;parts.push([x+(r()-.5)*130,y+(r()-.5)*100,R]);}parts.sort((a,b)=>a[1]-b[1]);for(const [px,py,R] of parts)s+=maple(r,px,py,R);return s;};
+// ---- island 3: a fantasy autumn forest. Translucent shapes laid in chains, so the overlaps thicken into dense foliage ----
+const MAPLE_COLS=['#c74c68','#e86f86','#ff8fa3','#b23a56','#f2a0b0','#d95a74'];
+const BRUSH_COLS=['#2f6b5c','#48927c','#5fb39a','#3a7f6c','#6fc4a8'];
+const BIRCH_COLS=['#e3c56a','#f0d98a','#cfae55','#f6e3a0'];
+// n blobs of radius about R, each stepping on from the last, colours cycling through cols with a random start
+const blobChain=(r,x,y,n,R,cols,op,step=.9)=>{let s='',px=x,py=y,a=r()*6.283;const k0=Math.floor(r()*cols.length);
+ for(let i=0;i<n;i++){const rad=R*(.72+r()*.56);s+=`<path d="${blobPath(r,px,py,rad,8,.14)}" fill="${cols[(k0+i)%cols.length]}" fill-opacity="${op}"/>`;a+=(r()-.5)*1.7;px+=Math.cos(a)*rad*step;py+=Math.sin(a)*rad*step;}return s;};
+const mapleCanopy=(r,x,y,k=1)=>blobChain(r,x,y,4+Math.floor(r()*3),(42+r()*20)*k,MAPLE_COLS,.74);
+const tealBrush=(r,x,y)=>blobChain(r,x,y,3+Math.floor(r()*3),30+r()*16,BRUSH_COLS,.64);
+const rockMoss=(r,x,y)=>blobChain(r,x,y,2+Math.floor(r()*2),22+r()*14,['#3f9a86','#5fb39a','#2f7f6f'],.6,.8);
+// a fallen birch: a pale log with its black bark marks and a cut end
+const birchLog=(r,x,y)=>{const a=r()*Math.PI,L=110+r()*60,w=16+r()*5,c=Math.cos(a),sn=Math.sin(a),g=(u,v)=>[x+c*u-sn*v,y+sn*u+c*v];
+ let s=poly([g(-L/2,-w/2),g(L/2,-w/2),g(L/2,w/2),g(-L/2,w/2)],'fill="#ece8df" stroke="#b9b2a6" stroke-width="1.6" stroke-linejoin="miter"');
+ for(let u=-L/2+12;u<L/2-10;u+=16+r()*14){const bw=5+r()*9,bh=w*(.35+r()*.45),off=(r()-.5)*(w-bh);s+=poly([g(u,off-bh/2),g(u+bw,off-bh/2),g(u+bw,off+bh/2),g(u,off+bh/2)],'fill="#262626"');}
+ const e=g(L/2,0);s+=`<ellipse cx="${f1(e[0])}" cy="${f1(e[1])}" rx="${f1(w*.28)}" ry="${f1(w*.5)}" transform="rotate(${f1(a*180/Math.PI)} ${f1(e[0])} ${f1(e[1])})" fill="#d8c7a4" stroke="#b9a680" stroke-width="1.4"/>`;return s;};
+// a stand of birches: pale trunks seen from above under a gold canopy chain
+const birchStand=(r,x,y)=>{let s=blobChain(r,x,y,3+Math.floor(r()*2),26+r()*12,BIRCH_COLS,.6,1);const k=2+Math.floor(r()*2);
+ for(let i=0;i<k;i++){const tx=x+(r()-.5)*70,ty=y+(r()-.5)*54;s+=dot(tx,ty,6.5,'#f1efe8')+`<path d="M${f1(tx-5)} ${f1(ty+1)}a5.5 5.5 0 0 0 9 3" stroke="#2b2b2b" stroke-width="2.2" fill="none"/>`;}return s;};
 const leafLitter=(r,x,y)=>{let s='';for(let i=0;i<9;i++){const px=x+(r()-.5)*90,py=y+(r()-.5)*64,a=r()*180,c=['#e86f86','#f29aa8','#d4556e','#f5b7c0'][i%4];s+=poly(rectPts(px,py,7+r()*5,4+r()*3,a),`fill="${c}"`);}return s;};
 // ruins: a rune stone (angular standing stone, an amber glyph), broken walls, dead scrub
 const runeStone=(r,x,y)=>{const a=r()*180,w=30+r()*16,h=60+r()*34,pts=rectPts(x,y,w,h,a).map(([px,py],i)=>i===1?[px+(r()-.5)*6,py-6]:[px,py]);let s=poly(pts,'fill="#3e3f49" stroke="#5c5e6a" stroke-width="2.2" stroke-linejoin="miter"');
@@ -182,15 +200,16 @@ export const THEMES={
  maple:{
   land:['#2f5a52','#4f8a7a'],
   layer:{a:['#3d6d5f','#62a08c'],b:['#4b7f68','#7fb996'],c:['#5f9470','#9fcf9a']},
-  sand:['#c2b08a','#dccba3'],wet:'#a69068',dune:['#d0bf98','#e4d7b4'],duneTop:['#dfd0ab','#efe5c9'],
-  rock:[['#5a4a32','#7a6646'],['#6b593b','#8c7850'],['#7c6844','#9e8a5a'],['#8d7850','#b09b66'],['#9f8a5e','#c2ad74']],
-  sea:{far:'#0c1620',mid:'#0f1d27',near:'#142a33',tones:{far:'#304250',mid:'#3a4c5c',near:'#44586a'}},color:'#ff6b86',zones:{grass:'#5fd3b8',sand:'#e8d6ad',rock:'#c9a86a'},
+  // the shores are dark earth, not sand; the island rests on blue-grey rock
+  sand:['#6b593b','#8c7850'],wet:'#4f4230',dune:['#7c6844','#9e8a5a'],duneTop:['#8d7850','#b09b66'],
+  rock:[['#2d4256','#415a72'],['#3a5168','#546e8a'],['#486079','#6683a0'],['#587090','#7c99b4'],['#6a829e','#92aec6']],
+  sea:{far:'#0c1620',mid:'#0f1d27',near:'#142a33',tones:{far:'#304250',mid:'#3a4c5c',near:'#44586a'}},color:'#ff6b86',zones:{grass:'#5fd3b8',sand:'#c9a86a',rock:'#9fbbd6'},
+  // fewer, bigger, translucent: maple canopies and teal brush in chains, gold birches, fallen birch logs on the grass
   decor:[
-   ['maples',13,120,'grass',mapleGrove,21],['litter',12,46,'grass',leafLitter,22],['bush',8,70,'grass',(r,x,y)=>bushes(r,x,y,['#2f6b5c','#48927c']),23],
-   ['fan',7,60,'grass',(r,x,y)=>leafFan(r,x,y,56+r()*30,5+Math.floor(r()*3),['#3f9a86','#2f7f6f'],'#1f5a50'),24],
-   ['tuft',24,26,'grass',(r,x,y)=>leafFan(r,x,y,26+r()*16,6+Math.floor(r()*3),['#4fb39a','#3f9a86'],null),25],
-   ['beachgrass',8,30,'sand',(r,x,y)=>leafFan(r,x,y,24+r()*16,7,['#b8bf73','#9fae5e'],null),31],['driftwood',3,50,'sand',driftwood,32],['shells',6,26,'sand',shells,33],
-   ['moss',14,40,'rock',(r,x,y)=>moss(r,x,y,['#6b8a45','#7e9f50','#5f7d3d'],'#b0c073'),41]]},
+   ['maple',11,110,'grass',(r,x,y)=>mapleCanopy(r,x,y),21],['maplebig',4,150,'grass',(r,x,y)=>mapleCanopy(r,x,y,1.45),29],
+   ['brush',9,74,'grass',tealBrush,23],['birch',4,90,'grass',birchStand,27],['birchlog',4,80,'grass',birchLog,26],
+   ['shorebrush',3,70,'sand',tealBrush,31],
+   ['moss',7,50,'rock',rockMoss,41]]},
  ruins:{
   land:['#8a7448','#a8905c'],
   layer:{oasis:['#4f7d40','#8fc25c'],oasis2:['#62904f','#a6d07a'],high:['#b08a52','#c9a66a'],high2:['#bf9a5e','#d6b47a']},

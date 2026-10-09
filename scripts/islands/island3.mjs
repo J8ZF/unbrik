@@ -1,18 +1,21 @@
-// Island 3 (단풍): east and west islands either side of a strait. Pink-red
-// maples on teal grass, bronze rock. Local coordinates, scaled; the pieces
+// Island 3 (단풍): east and west islands either side of a strait (the east one
+// turned a little). Pink-red maples on teal grass, blue-grey rock, dark earth shores. Local coordinates, scaled; the pieces
 // are cut from the outline by split.py.
 export const DESIGN={
  id:3,name:'섬 3',theme:'maple',origin:[-9100,3100],scale:1.45,eps:16,
  outline:[[200,1100],[320,420],[760,250],[1100,330],[1250,160],[1800,140],[2200,300],[2340,700],[2160,960],[2360,1300],[2080,1620],[1560,1580],[1420,1820],[900,1700],[620,1860],[380,1580],[440,1380]],
  cracks:[{pts:[[1230,100],[1160,500],[1280,900],[1180,1300],[1320,1900]],w:230}],
+ // the east piece turns a little so the strait is no longer a straight vertical cut
+ rotate:[{at:[1800,900],ccw:22.5,shift:[230,30]}],
  label:[1900,60],
- tree:{root:[2140,560],gate:[360,1180],marks:[{at:[700,900],free:'side'},{at:[1900,1440],free:'none'},{at:[640,1560],free:'side'}],count:40,seed:28,bridge:700},
+ tree:{root:[2140,560],gate:[360,1180],marks:[{at:[700,900],free:'side'},{at:[1900,1440],free:'none'},{at:[640,1560],free:'side'}],count:40,seed:9,bridge:820},
  landmarks:[{kind:'library',max:20},{kind:'mill',max:10},{kind:'pavilion',max:5}],
  sandBands:[{from:[620,1860],to:[1120,1700],depths:[0,130,180,120,0],seed:7},{from:[1420,1820],to:[2080,1620],depths:[0,110,170,90,0],seed:8}],
  beach:[[500,1500,1250,2100,30],[1300,1500,2000,2100,26]],
+ // blue-grey rock under the upper-left of each piece: few blocks, big and bold
  rockZones:[
-  {name:'ne',area:[[1700,180],[2000,260],[2250,460],[2300,760],[2120,700],[1900,560],[1720,420]],count:18,size:[90,240],core:[[2060,460,260,190,-12],[1900,340,200,160,14],[2180,640,180,150,20]]},
-  {name:'w',area:[[220,900],[320,420],[700,280],[760,500],[560,760],[340,900]],count:14,size:[90,220],core:[[460,520,230,170,8],[330,740,170,140,-20]]},
+  {name:'w',area:[[200,1100],[260,620],[320,420],[760,250],[840,420],[640,560],[520,780],[480,1020],[440,1280]],count:7,size:[170,340],core:[[440,470,330,230,6],[310,800,270,210,-18],[340,1120,240,190,10]]},
+  {name:'en',area:[[1250,160],[1800,140],[2020,230],[1980,430],[1720,520],[1460,600],[1300,500]],count:6,size:[170,340],core:[[1430,330,330,230,-8],[1770,300,300,210,12],[1570,500,250,180,24]]},
  ],
  terrain:[
   {c:'a',pts:[[320,900],[520,640],[860,560],[1140,660],[1160,1000],[1020,1300],[760,1480],[460,1400],[300,1180]]},
