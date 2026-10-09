@@ -639,8 +639,13 @@ body.viewing #hud,body.viewing #nodePanel,body.viewing footer,body.viewing #mapT
 .hud .hud-actions .icon-button,.hud #toggleHud,.hud.is-collapsed .hud-actions .icon-button,.hud.is-collapsed #toggleHud{width:32px;height:34px}
 .hud .topbar .wordmark{gap:7px}
 .hud .topbar .wordmark .logo,.hud .topbar .wordmark .logo .brand-mark{width:24px;height:24px}
-.hud .topbar .wordmark b{font-size:15px;letter-spacing:.14em}
-.hud .topbar .wordmark div>span{font-size:8px;letter-spacing:.16em;margin-top:1px}
+.hud .topbar .wordmark b{display:block;font-size:26px;line-height:1;letter-spacing:.14em}
+/* the wordmark stands as tall as the logo: where the browser knows the font's cap height the triangle is drawn exactly that tall and set on the baseline */
+@supports (width:1cap){
+ .hud .topbar .wordmark{align-items:baseline;font:700 26px/1 var(--mono)}
+ .hud .topbar .wordmark .logo{font:inherit;position:relative;top:calc(1cap*.233)}
+ .hud .topbar .wordmark .logo,.hud .topbar .wordmark .logo .brand-mark{width:calc(1cap*1.3675);height:calc(1cap*1.3675)}
+}
 .hud.is-collapsed .compact-resources{gap:6px}
 .compact-currency{overflow:hidden}
 .compact-currency.currency-coin,.compact-currency.currency-token{padding-left:6px}

@@ -98,20 +98,16 @@ function cityRim(){let d='';
  return `<path d="${d}" fill="none" stroke="${RIM}" stroke-opacity=".5" stroke-width="${RIM_W}" stroke-linejoin="round"/>`;}
 
 // The machine deck between the eight promenades: in each gap a black vent with
-// its outer corners cut, a raised block set against it (blocks keep their
-// corners), and lights the game draws over them (cyan; pink while a rebirth is
-// ready). Neighbouring gaps mirror each other, so the blocks flank the cross.
+// its outer corners cut, and a light the game draws over it (cyan; pink while a
+// rebirth is ready), blinking slowly.
 // Angles are local to the gap: 0 = its middle, the plate cut c degrees along the arc.
 const plate=(r0,r1,a0,a1,[co0=0,co1=0,ci0=0,ci1=0],fill,stroke='none',sw=0)=>
  `<path d="M${xy(p(r0+r0*R(ci0),a0))}L${xy(p(r0,a0+ci0))}A${r0},${r0} 0 0 1 ${xy(p(r0,a1-ci1))}L${xy(p(r0+r0*R(ci1),a1))}L${xy(p(r1-r1*R(co1),a1))}L${xy(p(r1,a1-co1))}A${r1},${r1} 0 0 0 ${xy(p(r1,a0+co0))}L${xy(p(r1-r1*R(co0),a0))}Z" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"/>`;
-const DECK={vent:[298,341,-13.5,13.5],block:[263,289,-17,2.5],lights:[[320,10,-10,10],[276,6,-14,-.5]]};
-function deck(){let s='';
- for(let k=0;k<8;k++){const [v0,v1,va,vb]=DECK.vent,[b0,b1,ba,bb]=DECK.block;
-  let g=plate(v0,v1,va,vb,[2.6,2.6],'#0d1e2a')+plate(v0+8,v1-8,va+2,vb-2,[1.5,1.5],'#03080c');
-  g+=plate(b0,b1,ba,bb,[],'#2c4557',C.steel,2.5)+plate(b0+7,b1-7,ba+1.6,bb-1.6,[],'#0d1e2a');
-  s+=group(g,`rotate(${k*45+22.5})${k%2?' scale(1 -1)':''}`);}
+const DECK={vent:[271,329,-14.5,14.5],light:[300,10,-11,11]};// measured off the user's sketch: the light at the middle of the deck (r 300), black from about 272 to 328
+function deck(){let s='';const [v0,v1,va,vb]=DECK.vent;
+ for(let k=0;k<8;k++)s+=group(plate(v0,v1,va,vb,[2.8,2.8],'#0d1e2a')+plate(v0+7,v1-7,va+1.8,vb-1.8,[1.8,1.8],'#03080c'),`rotate(${k*45+22.5})`);
  return s;}
-export const deckLights=()=>Array.from({length:8},(_,k)=>DECK.lights.map(([r,w,a,b])=>{const g=k*45+22.5,s=k%2?-1:1;return {r,w,a0:g+Math.min(s*a,s*b),a1:g+Math.max(s*a,s*b)};})).flat();
+export const deckLights=()=>Array.from({length:8},(_,k)=>{const [r,w,a,b]=DECK.light,g=k*45+22.5;return {r,w,a0:g+a,a1:g+b};});
 
 // ---------- the still architecture ----------
 function architecture(){

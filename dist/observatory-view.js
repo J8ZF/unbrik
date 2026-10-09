@@ -19,12 +19,13 @@ export function createObservatory(){
  const islands=A.islands.map(i=>{const img=new Image();img.decoding='async';img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(i.svg);const o={...i,img,ready:false,bitmaps:new Map()};
   img.onload=()=>{o.ready=true;};return o;});
  const lamp=new Path2D(Array.from({length:8},(_,k)=>{const a=(k*45+22.5)*Math.PI/180;return (k?'L':'M')+(Math.cos(a)*16).toFixed(1)+','+(Math.sin(a)*16).toFixed(1);}).join('')+'Z');
- let lit=[],time=0,lastT=0,halo=null,built=false,ready=false,pink=0;
- // the deck lights between the promenades: cyan, turning pink while a rebirth is ready
- const CYAN=[115,211,237],PINK=[243,161,200],mixed=k=>'rgb('+CYAN.map((c,i)=>Math.round(c+(PINK[i]-c)*k)).join(',')+')';
- function deckLights(ctx,scale){const c=mixed(pink),D=Math.PI/180;ctx.lineCap='butt';ctx.strokeStyle=c;
-  for(const [k,al] of [[1.9,.24],[1,1]]){ctx.globalAlpha=al;for(const l of A.deck){ctx.lineWidth=Math.max(l.w,1.6/scale)*k;ctx.beginPath();ctx.arc(0,0,l.r,l.a0*D,l.a1*D);ctx.stroke();}}
-  ctx.globalAlpha=.9;ctx.strokeStyle=pink>.5?'#ffe3f0':'#d9f6ff';for(const l of A.deck){ctx.lineWidth=Math.max(l.w*.28,.6/scale);ctx.beginPath();ctx.arc(0,0,l.r,(l.a0+.6)*D,(l.a1-.6)*D);ctx.stroke();}
+ let lit=[],time=0,lastT=0,halo=null,built=false,ready=false,pink=0,moving=true;
+ // the deck lights between the promenades: cyan, turning pink while a rebirth is ready.
+ // They blink slowly, all together (steady while animation is off).
+ const CYAN=[115,211,237],PINK=[243,161,200],mixed=k=>'rgb('+CYAN.map((c,i)=>Math.round(c+(PINK[i]-c)*k)).join(',')+')',BLINK=4.2;
+ function deckLights(ctx,scale){const c=mixed(pink),D=Math.PI/180,m=moving?.3+.7*(.5+.5*Math.cos(time/BLINK*2*Math.PI)):1;ctx.lineCap='butt';ctx.strokeStyle=c;
+  for(const [k,al] of [[1.9,.24],[1,1]]){ctx.globalAlpha=al*m;for(const l of A.deck){ctx.lineWidth=Math.max(l.w,1.6/scale)*k;ctx.beginPath();ctx.arc(0,0,l.r,l.a0*D,l.a1*D);ctx.stroke();}}
+  ctx.globalAlpha=.9*m;ctx.strokeStyle=pink>.5?'#ffe3f0':'#d9f6ff';for(const l of A.deck){ctx.lineWidth=Math.max(l.w*.28,.6/scale);ctx.beginPath();ctx.arc(0,0,l.r,(l.a0+.6)*D,(l.a1-.6)*D);ctx.stroke();}
   ctx.globalAlpha=1;}
  function fillGroups(ctx,groups){for(const g of groups){ctx.globalAlpha=g.alpha;if(g.f!=='none'){ctx.fillStyle=g.f;ctx.fill(g.path);}if(g.s!=='none'){ctx.strokeStyle=g.s;ctx.lineWidth=g.w;ctx.lineJoin='round';ctx.stroke(g.path);}}ctx.globalAlpha=1;}
  // a layer turns as one; a sub-layer turns inside a clip cut from the layer (lights chasing along a stripe)
@@ -37,7 +38,7 @@ export function createObservatory(){
  function levelFor(scale){for(const L of ISLAND_LEVELS)if(L>=scale*.9)return L;return ISLAND_LEVELS.at(-1);}
  // ctx is already in world space (scaled, camera applied); v is the visible world rect
  function inView(v,m){return CX+RAD+m>=v[0]&&CX-RAD-m<=v[2]&&CY+RAD+m>=v[1]&&CY-RAD-m<=v[3];}
- function tick(now,motion){const dt=lastT?Math.min(.1,(now-lastT)/1000):0;if(motion)time+=dt;lastT=now;const to=ready?1:0;pink=motion?(to>pink?Math.min(to,pink+dt/.7):Math.max(to,pink-dt/.7)):to;}
+ function tick(now,motion){const dt=lastT?Math.min(.1,(now-lastT)/1000):0;moving=!!motion;if(motion)time+=dt;lastT=now;const to=ready?1:0;pink=motion?(to>pink?Math.min(to,pink+dt/.7):Math.max(to,pink-dt/.7)):to;}
  function drawUnder(ctx,v,scale){if(!inView(v,0))return;
   ctx.save();ctx.translate(CX,CY);
   if(!halo){halo=ctx.createRadialGradient(0,0,0,0,0,A.halo.r);halo.addColorStop(0,A.halo.c+'38');halo.addColorStop(.55,A.halo.c+'17');halo.addColorStop(1,A.halo.c+'00');}
