@@ -85,6 +85,35 @@ const cityExtras=({D,o,nodes,land})=>{const r=mkRng(55);let s='';
  return s;};
 const cityMask=({nodes,land})=>bridges(nodes,land).map(b=>b.pts);
 
+// ---- Hawaii: big symbolic flowers (hibiscus, plumeria), plants at three sizes, loungers under parasols ----
+const FLOWER_COLS=[['#ff6f95','#e24e78'],['#e8475f','#c0344a'],['#ff7a5c','#dd5a3e'],['#ffd23f','#e8b32a'],['#ffe27a','#f0c84a'],['#f7f2e8','#ead9b8']];
+const petalPath=(cx,cy,a,L,w)=>{const dx=Math.cos(a),dy=Math.sin(a),px=-dy,py=dx;return `M${f1(cx)} ${f1(cy)}C${f1(cx+dx*L*.25+px*w)} ${f1(cy+dy*L*.25+py*w)} ${f1(cx+dx*L*.95+px*w*.7)} ${f1(cy+dy*L*.95+py*w*.7)} ${f1(cx+dx*L)} ${f1(cy+dy*L)}C${f1(cx+dx*L*.95-px*w*.7)} ${f1(cy+dy*L*.95-py*w*.7)} ${f1(cx+dx*L*.25-px*w)} ${f1(cy+dy*L*.25-py*w)} ${f1(cx)} ${f1(cy)}Z`;};
+const bigFlower=(r,x,y,scale=1)=>{const R=(38+r()*20)*scale,k=5+Math.floor(r()*2),a0=r()*6.283,cols=FLOWER_COLS[Math.floor(r()*FLOWER_COLS.length)],heart=cols[0]==='#f7f2e8'?'#ffd23f':r()<.55?'#ffd166':'#5b3a2a';let s='';
+ for(let i=0;i<k;i++){const a=a0+i/k*6.283;s+=`<path d="${petalPath(x,y,a,R,R*.42)}" fill="${cols[0]}"/>`;}
+ for(let i=0;i<k;i++){const a=a0+i/k*6.283;s+=`<path d="${petalPath(x,y,a+.08,R*.62,R*.2)}" fill="${cols[1]}"/>`;}
+ s+=dot(x,y,R*.2,heart);for(let i=0;i<k;i++){const a=a0+(i+.5)/k*6.283;s+=dot(x+Math.cos(a)*R*.3,y+Math.sin(a)*R*.3,R*.05,heart==='#5b3a2a'?'#ffd166':'#5b3a2a');}return s;};
+const flowerBed=(r,x,y)=>{let s=bigFlower(r,x,y,1);if(r()<.5)s+=bigFlower(r,x+(r()-.5)*150,y+(r()-.5)*110,.6+r()*.3);return s;};
+const giantLeaf=(r,x,y)=>leafFan(r,x,y,96+r()*44,5+Math.floor(r()*3),['#2f8f55','#3fa868','#1f7045'],'#145a35',2.8);
+const midLeaf=(r,x,y)=>leafFan(r,x,y,56+r()*26,5+Math.floor(r()*2),['#3fa868','#2f8f55','#52b874'],'#1f6a40',2.4);
+const smallLeaf=(r,x,y)=>leafFan(r,x,y,30+r()*14,5+Math.floor(r()*2),['#52b874','#3fa868'],null,2);
+const palmBig=(r,x,y)=>palm(r,x,y,112+r()*30),palmSmall=(r,x,y)=>palm(r,x,y,56+r()*14);
+const lounger=(x,y,a)=>{const c=Math.cos(a),sn=Math.sin(a),g=(u,v)=>[x+c*u-sn*v,y+sn*u+c*v];let s=poly([g(-12,-24),g(12,-24),g(12,24),g(-12,24)],'fill="#f2f4f7" stroke="#8c99a2" stroke-width="1.6" stroke-linejoin="miter"');
+ for(const v of [-6,4,14]){const p1=g(-12,v),p2=g(12,v);s+=`<path d="M${f1(p1[0])} ${f1(p1[1])}L${f1(p2[0])} ${f1(p2[1])}" stroke="#8c99a2" stroke-width="1.6"/>`;}
+ const h=[g(-9,-21),g(9,-21),g(9,-12),g(-9,-12)];return s+poly(h,'fill="#4fe0cf"');};
+const parasol=(x,y,col)=>{let s='';for(let i=0;i<8;i++){const a0=i/8*6.283,a1=(i+1)/8*6.283,R=27;s+=`<path d="M${f1(x)} ${f1(y)}L${f1(x+Math.cos(a0)*R)} ${f1(y+Math.sin(a0)*R)}A${R} ${R} 0 0 1 ${f1(x+Math.cos(a1)*R)} ${f1(y+Math.sin(a1)*R)}Z" fill="${i%2?'#f2f4f7':col}" stroke="#c9d2d8" stroke-width="1"/>`;}return s+dot(x,y,3.5,'#5b3a2a');};
+const beachSet=(r,x,y)=>{const a=(r()-.5)*.6,col=['#e8475f','#4fe0cf','#ffd23f'][Math.floor(r()*3)];let s=parasol(x,y-30,col);s+=lounger(x-22,y+18,a)+lounger(x+24,y+18,a);if(r()<.5)s+=lounger(x+70,y+14,a+.15);return s;};
+// the lagoon: a sand rim, deep water, a lighter shallow heart, two surf dashes
+const lagoonSvg=pts=>{const cx=pts.reduce((a,p)=>a+p[0],0)/pts.length,cy=pts.reduce((a,p)=>a+p[1],0)/pts.length,sh=k=>pts.map(([x,y])=>[cx+(x-cx)*k,cy+(y-cy)*k]);
+ return poly(sh(1.18),'fill="#e2cc98" stroke="#f0e2b8" stroke-width="3" stroke-linejoin="round"')+poly(sh(1.08),'fill="#c4ad7c"')+poly(pts,'fill="#1d5a5c" stroke="#3f9aa0" stroke-width="3" stroke-linejoin="round"')+poly(sh(.62),'fill="#2a7f82"')+poly(sh(.3),'fill="#3fa0a2"')
+  +`<path d="M${f1(cx-40)} ${f1(cy-18)}L${f1(cx+10)} ${f1(cy-26)}M${f1(cx-6)} ${f1(cy+22)}L${f1(cx+44)} ${f1(cy+14)}" stroke="#eef4f5" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"/>`;};
+// the volcano: a brown cone in three angular steps, a dark rim and the crater with a dull glow
+const volcanoSvg=(r,cx,cy,R)=>{const ring=(k,n,jit)=>{const a0=r()*6.283,o=[];for(let i=0;i<n;i++){const a=a0+i/n*6.283+(r()-.5)*.25,rr=R*k*(1-jit+r()*jit*2);o.push([cx+Math.cos(a)*rr,cy+Math.sin(a)*rr]);}return o;};
+ let s=poly(ring(1,9,.14),'fill="#5a4332" stroke="#765a46" stroke-width="3" stroke-linejoin="round"')+poly(ring(.74,8,.12),'fill="#6b5040" stroke="#8a6a55" stroke-width="3" stroke-linejoin="round"')+poly(ring(.5,8,.1),'fill="#7a5c4a" stroke="#98786a" stroke-width="2.5" stroke-linejoin="round"');
+ s+=poly(ring(.34,8,.08),'fill="#3a2a22" stroke="#20160f" stroke-width="4" stroke-linejoin="round"')+poly(ring(.24,7,.1),'fill="#2a1d16"')+poly(ring(.13,6,.15),'fill="#8a2d1f"')+dot(cx+R*.03,cy-R*.02,R*.05,'#e0583a');
+ for(let i=0;i<5;i++){const a=r()*6.283,r0=R*.36,r1=R*(.6+r()*.3);s+=`<path d="M${f1(cx+Math.cos(a)*r0)} ${f1(cy+Math.sin(a)*r0)}L${f1(cx+Math.cos(a+.1)*r1)} ${f1(cy+Math.sin(a+.1)*r1)}" stroke="#3a2a22" stroke-width="5" stroke-linecap="round"/>`;}
+ return s;};
+const tropicExtras=({D,o})=>{const r=mkRng(21);let s='';for(const l of D.extras?.lagoon||[])s+=lagoonSvg((l.pts||l).map(([x,y])=>[x+o[0],y+o[1]]));for(const v of D.extras?.volcano||[])s+=volcanoSvg(r,v[0]+o[0],v[1]+o[1],v[2]);return s;};
+
 export const THEMES={
  meadow:{
   land:['#2f5b3b','#4f8a5a'],
@@ -103,14 +132,16 @@ export const THEMES={
   land:['#3a6a35','#6fa352'],
   layer:{a:['#4d8a3a','#8ac85a'],b:['#5f9a3e','#a4d862'],c:['#73ac47','#bde86e'],lagoon:['#1d5a5c','#3f9aa0']},
   sand:['#d8c08a','#ecdcaa'],wet:'#b9a070',dune:['#e2cc98','#f0e2b8'],duneTop:['#ecd9ab','#f6ecd0'],
-  rock:[['#4b535b','#646d76'],['#58616a','#717b84'],['#666f78','#808a93'],['#757e87','#909aa2'],['#868f97','#a3acb3']],
-  sea:{far:'#0c1a22',mid:'#0e2a30',near:'#124042',tones:{far:'#2f4452',mid:'#355a62',near:'#427478'}},color:'#4fe0cf',zones:{grass:'#bfe85a',sand:'#f0d8a0',rock:'#93a9be'},
+  // volcanic rock: basalt browns
+  rock:[['#4a3a30','#6a5648'],['#5a4638','#7c6656'],['#6b5343','#8f7563'],['#7c6150','#a1866f'],['#8d6f5c','#b3977e']],
+  sea:{far:'#0c1a22',mid:'#0e2a30',near:'#124042',tones:{far:'#2f4452',mid:'#355a62',near:'#427478'}},color:'#4fe0cf',zones:{grass:'#bfe85a',sand:'#f0d8a0',rock:'#b39a7c'},
+  extras:tropicExtras,
+  // fewer, bigger things: flowers two thirds of a card, plants at three sizes, loungers on the beaches
   decor:[
-   ['palms',14,110,'grass',palms,21],['bigleaf',10,62,'grass',bigleaf,22],['bush',8,70,'grass',(r,x,y)=>bushes(r,x,y,['#2d7a45','#45a05a']),23],
-   ['tuft',22,26,'grass',(r,x,y)=>leafFan(r,x,y,24+r()*16,6+Math.floor(r()*3),['#a6d85a','#8fc24e'],null),24],
-   ['flowers',10,44,'grass',(r,x,y)=>flowers(r,x,y,['#ff7b9c','#ffd166'],'#fff1c1'),25],
-   ['beachpalm',6,90,'sand',(r,x,y)=>palm(r,x,y,80),30],['beachgrass',12,30,'sand',(r,x,y)=>leafFan(r,x,y,24+r()*16,7,['#c3c67a','#a9b463'],null),31],['driftwood',5,50,'sand',driftwood,32],['shells',10,26,'sand',shells,33],
-   ['moss',10,40,'rock',(r,x,y)=>moss(r,x,y),41]]},
+   ['flowers',9,78,'grass',flowerBed,25],['palms',7,120,'grass',(r,x,y)=>palmBig(r,x,y),21],['palmsmall',6,80,'grass',(r,x,y)=>palmSmall(r,x,y)+(r()<.5?palmSmall(r,x+(r()-.5)*90,y+(r()-.5)*70):''),26],
+   ['giantleaf',5,100,'grass',giantLeaf,22],['midleaf',7,66,'grass',midLeaf,27],['smallleaf',8,40,'grass',smallLeaf,28],['bush',5,70,'grass',(r,x,y)=>bushes(r,x,y,['#2d7a45','#45a05a']),23],
+   ['beachset',5,76,'sand',beachSet,34],['beachflower',3,70,'sand',(r,x,y)=>bigFlower(r,x,y,.9),35],['beachpalm',4,100,'sand',(r,x,y)=>palm(r,x,y,90),30],['driftwood',3,50,'sand',driftwood,32],['shells',3,26,'sand',shells,33],
+   ['rockflower',3,70,'rock',(r,x,y)=>bigFlower(r,x,y,.85),42],['moss',6,40,'rock',(r,x,y)=>moss(r,x,y),41]]},
  maple:{
   land:['#2f5a52','#4f8a7a'],
   layer:{a:['#3d6d5f','#62a08c'],b:['#4b7f68','#7fb996'],c:['#5f9470','#9fcf9a']},
