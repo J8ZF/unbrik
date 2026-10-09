@@ -117,5 +117,8 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
   mossSvg.innerHTML=owned.filter(n=>owned.length>=rank.get(n.id)+4).map(moss).join('');}
 
  size();queue2();
+ // The map area changes size when the panel or header folds, or the phone's
+ // browser bars move. The FX bitmap must follow, or it stretches off the coast.
+ if(typeof ResizeObserver==='function')new ResizeObserver(()=>{const r=viewport.getBoundingClientRect();if(Math.round(r.width*dpr)!==canvas.width||Math.round(r.height*dpr)!==canvas.height||Math.min(2,window.devicePixelRatio||1)!==dpr)resize();}).observe(viewport);
  return {setCamera,resize,setMotion,setVisible,render};
 }
