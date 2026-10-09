@@ -157,7 +157,7 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
   if(changed){buildCoast();scheduleTiles();}}
  // the island fades in over REVEAL_MS; `done` runs when it is fully there
  function reveal(island,done){const p=pics.find(q=>q.island===island);if(!p||p.shown){done?.();return;}
-  revealing={island,t0:0,done};p.fading=1;syncOpen();p.el.style.transition=`opacity ${REVEAL_MS}ms ease-in-out`;
+  revealing={island,t0:0,done};p.fading=1;syncOpen();void p.el.offsetWidth;p.el.style.transition=`opacity ${REVEAL_MS}ms ease-in-out`;
   requestAnimationFrame(()=>{p.el.style.opacity='1';});queue2();draw(performance.now());}
  function stepReveal(t){if(!revealing)return;const p=pics.find(q=>q.island===revealing.island);if(!revealing.t0)revealing.t0=t;const u=Math.min(1,(t-revealing.t0)/REVEAL_MS);p.alpha=ease(u);
   if(u>=1){p.alpha=1;p.fading=0;p.el.style.transition='';const done=revealing.done;revealing=null;buildCoast();done?.();}}
