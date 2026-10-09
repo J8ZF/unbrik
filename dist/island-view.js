@@ -72,29 +72,40 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
  const hit=(b,v)=>b[2]>=v[0]&&b[0]<=v[2]&&b[3]>=v[1]&&b[1]<=v[3];
  const ease=u=>u*u*(3-2*u);
  const waveAlpha=(t,i)=>{const u=(((t/1000-i*1.1)%6.6)+6.6)%6.6/6.6;if(u<.22)return .62*ease(u/.22);if(u<.55)return .62+(.1-.62)*ease((u-.22)/.33);return .1*(1-ease((u-.55)/.45));};
- const TAN=Math.tan(28*Math.PI/180),BAND=560,SCAN_T=11000,[SX0,SX1]=ART.fx.scan;
  // ---- sea grid ----
- // Dots cover the whole view at any zoom. They sit on a world lattice (so they
- // move with the map) whose step doubles or halves with the zoom: the screen
- // gap stays between GRID_MIN and twice that, and the next finer set fades in
- // as you zoom, so dots never pile up or thin out. Their tone follows the
- // depth bands round the island; the scan band brightens them as it sweeps.
- const GRID_MIN=18,DOT_R=1.5,DEEP='#212e3a',DQ=1/20;
+ // Small crosses cover the whole view at any zoom. They sit on a world lattice
+ // (so they move with the map) whose step doubles or halves with the zoom: the
+ // screen gap stays between GRID_MIN and twice that, and the next finer set
+ // fades in as you zoom. Their tone follows the depth bands round the island;
+ // waves of light run out from the coast across them.
+ const GRID_MIN=48,ARM=3.5,LW=1.3,DEEP='#2a3844',DQ=1/20;
  const depth=document.createElement('canvas');depth.width=Math.ceil(WW*DQ);depth.height=Math.ceil(WH*DQ);
  {const d=depth.getContext('2d');d.setTransform(DQ,0,0,DQ,-WX0*DQ,-WY0*DQ);if('filter' in d)d.filter='blur(1.5px)';for(const b of ART.fx.depth){d.fillStyle=b.c;d.fill(mkPath(b.pts,true));}}
  const tiles2=new Map();
- function dotPattern(P,r){const key=P+':'+r;let pat=tiles2.get(key);if(!pat){const c=document.createElement('canvas');c.width=c.height=P;const g=c.getContext('2d');g.fillStyle='#fff';g.beginPath();g.arc(P/2,P/2,r,0,6.2832);g.fill();pat=ctx.createPattern(c,'repeat');if(tiles2.size>80)tiles2.clear();tiles2.set(key,pat);}return pat;}
+ function crossPattern(P,arm,lw){const key=P+':'+arm+':'+lw;let pat=tiles2.get(key);if(!pat){const c=document.createElement('canvas');c.width=c.height=P;const g=c.getContext('2d');g.fillStyle='#fff';
+  g.fillRect(P/2-arm,P/2-lw/2,arm*2,lw);g.fillRect(P/2-lw/2,P/2-arm,lw,arm*2);pat=ctx.createPattern(c,'repeat');if(tiles2.size>80)tiles2.clear();tiles2.set(key,pat);}return pat;}
+ // ---- waves: distance to the coast on a coarse grid, soft bands moving outward ----
+ const WQ=24,DW=Math.ceil(WW/WQ),DH=Math.ceil(WH/WQ),coastDist=new Float32Array(DW*DH),waveCv=document.createElement('canvas');waveCv.width=DW;waveCv.height=DH;
+ const waveCtx=waveCv.getContext('2d'),waveImg=waveCtx.createImageData(DW,DH);
+ {const d=waveCtx;d.setTransform(1/WQ,0,0,1/WQ,-WX0/WQ,-WY0/WQ);d.fillStyle='#000';for(const p of ART.fx.coast)d.fill(mkPath(p,true));d.setTransform(1,0,0,1,0,0);
+  const px=d.getImageData(0,0,DW,DH).data,D=coastDist,R2=Math.SQRT2;for(let i=0;i<DW*DH;i++)D[i]=px[i*4+3]>127?0:1e9;
+  for(let y=0;y<DH;y++)for(let x=0;x<DW;x++){const i=y*DW+x;let v=D[i];if(!v)continue;if(x>0)v=Math.min(v,D[i-1]+1);if(y>0){v=Math.min(v,D[i-DW]+1);if(x>0)v=Math.min(v,D[i-DW-1]+R2);if(x<DW-1)v=Math.min(v,D[i-DW+1]+R2);}D[i]=v;}
+  for(let y=DH-1;y>=0;y--)for(let x=DW-1;x>=0;x--){const i=y*DW+x;let v=D[i];if(!v)continue;if(x<DW-1)v=Math.min(v,D[i+1]+1);if(y<DH-1){v=Math.min(v,D[i+DW]+1);if(x<DW-1)v=Math.min(v,D[i+DW+1]+R2);if(x>0)v=Math.min(v,D[i+DW-1]+R2);}D[i]=v;}
+  for(let i=0;i<DW*DH;i++){waveImg.data[i*4]=169;waveImg.data[i*4+1]=191;waveImg.data[i*4+2]=207;}}
+ const WAVE_P=7.5,WAVE_V=55,WAVE_D=620,WAVE_W=95,LUT=new Float32Array(Math.ceil((WAVE_D+WAVE_W)/WQ*4)+2);
+ function waves(t){const ph=(t/1000)%WAVE_P;for(let j=0;j<LUT.length;j++){const d=j/4*WQ;let b=0;for(let k=0;;k++){const p=(ph+k*WAVE_P)*WAVE_V;if(p>WAVE_D+WAVE_W*2)break;const u=(d-p)/WAVE_W;b+=Math.exp(-u*u);}
+   const f=d<WAVE_D?(1-d/WAVE_D)**1.6:0,inn=Math.min(1,d/50);LUT[j]=Math.min(1,b)*f*inn*inn*(3-2*inn);}
+  const a=waveImg.data,n=LUT.length;for(let i=0;i<DW*DH;i++){const j=Math.round(coastDist[i]*4);a[i*4+3]=j<n?LUT[j]*255:0;}waveCtx.putImageData(waveImg,0,0);}
  function drawGrid(t,v){
-  const s=cam.scale*dpr,G=40*2**Math.ceil(Math.log2(GRID_MIN/cam.scale/40)),fade=Math.min(1,Math.max(0,G*cam.scale/GRID_MIN-1)),r=Math.round(DOT_R*dpr*4)/4;
+  const s=cam.scale*dpr,G=40*2**Math.ceil(Math.log2(GRID_MIN/cam.scale/40)),fade=Math.min(1,Math.max(0,G*cam.scale/GRID_MIN-1)),arm=Math.round(ARM*dpr*2)/2,lw=Math.round(LW*dpr*2)/2;
   ctx.setTransform(1,0,0,1,0,0);
-  for(const [g,a] of [[G,1],[G/2,fade]]){if(a<.02)continue;const step=g*s,P=Math.max(4,Math.round(step)),pat=dotPattern(P,Math.min(r,P/2-.5));
+  for(const [g,a] of [[G,1],[G/2,fade]]){if(a<.02)continue;const step=g*s,P=Math.max(8,Math.round(step)),pat=crossPattern(P,Math.min(arm,P/2-1),lw);
    pat.setTransform(new DOMMatrix([step/P,0,0,step/P,cam.x*dpr+(20-g/2)*s,cam.y*dpr+(20-g/2)*s]));ctx.globalAlpha=a;ctx.fillStyle=pat;ctx.fillRect(0,0,canvas.width,canvas.height);}
   ctx.globalAlpha=1;ctx.globalCompositeOperation='source-atop';ctx.fillStyle=DEEP;ctx.fillRect(0,0,canvas.width,canvas.height);
   ctx.setTransform(s,0,0,s,cam.x*dpr,cam.y*dpr);ctx.drawImage(depth,WX0,WY0,depth.width/DQ,depth.height/DQ);
-  if(motion){
-   // brighter dots inside a slanted band that sweeps across the water
-   const bx=SX0-900+(SX1+1300-(SX0-900))*((t%SCAN_T)/SCAN_T),k=BAND/(1+TAN*TAN),gr=ctx.createLinearGradient(bx,0,bx+k,k*TAN);
-   gr.addColorStop(0,'rgba(125,152,173,0)');gr.addColorStop(.5,'rgba(125,152,173,.92)');gr.addColorStop(1,'rgba(125,152,173,0)');ctx.fillStyle=gr;ctx.fillRect(v[0],v[1],v[2]-v[0],v[3]-v[1]);}
+  if(motion){waves(t);ctx.globalAlpha=.6;ctx.drawImage(waveCv,WX0,WY0,DW*WQ,DH*WQ);
+   // the band also lifts the water a little, so it reads between sparse crosses
+   ctx.globalCompositeOperation='destination-over';ctx.globalAlpha=.045;ctx.drawImage(waveCv,WX0,WY0,DW*WQ,DH*WQ);ctx.globalAlpha=1;}
   ctx.globalCompositeOperation='destination-out';ctx.fillStyle=ctx.strokeStyle='#000';ctx.lineWidth=6;for(const m of MASK)if(hit(m.b,v)){ctx.fill(m.p);ctx.stroke(m.p);}
   ctx.globalCompositeOperation='source-over';}
  function size(){const r=viewport.getBoundingClientRect();dpr=Math.min(2,window.devicePixelRatio||1);W=r.width;H=r.height;canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);}

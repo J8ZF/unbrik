@@ -23,11 +23,12 @@ let sea=SEA.bands;for(const p of GM.near)sea+=poly(p,'fill="#112530"');
 const tri=SEA.tri.split('<g class="drift"').slice(1).map(g=>{const style=g.match(/style="([^"]*)"/)[1],pts=[...g.matchAll(/points="([^"]*)"/g)].flatMap(m=>m[1].split(' ').map(s=>s.split(',').map(Number)));
  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]),x0=Math.floor(Math.min(...xs))-30,y0=Math.floor(Math.min(...ys))-30,x1=Math.ceil(Math.max(...xs))+30,y1=Math.ceil(Math.max(...ys))+30;
  return {x0,y0,w:x1-x0,h:y1-y0,style,body:g.slice(g.indexOf('>')+1).replace(/<\/g>$/,'')};});
-// sea grid: the game draws the dots over the whole view; their tone follows the depth bands
-const DOT_TONE={'#0c1620':'#283845','#0e1c26':'#2d3f4d','#112530':'#334858'};
+// sea grid: the game draws the crosses over the whole view; their tone follows the depth bands,
+// waves run out from the coast (distance to coast = fx.coast)
+const DOT_TONE={'#0c1620':'#304250','#0e1c26':'#374b5b','#112530':'#3f5466'};
 const depth=[...SEA.bands.matchAll(/points="([^"]+)" fill="([^"]+)"/g)].map(m=>({c:DOT_TONE[m[2]],pts:m[1].split(' ').map(q=>q.split(',').map(Number))})).concat(GM.near.map(p=>({c:DOT_TONE['#112530'],pts:p})));
 if(depth.some(d=>!d.c))throw Error('unknown sea band colour');
-const fx={surfIn:GM.surf[16],surfOut:GM.surf[38],waves:GM.waveRuns,mask:[...GM.land,...SEA.reefs.flatMap(r=>r.parts)],scan:[B.x0,B.x1],depth};
+const fx={surfIn:GM.surf[16],surfOut:GM.surf[38],waves:GM.waveRuns,mask:[...GM.land,...SEA.reefs.flatMap(r=>r.parts)],coast:GM.land,depth};
 
 // ---- land: v1 reefs, grass, sand, rocks ----
 let land='';
