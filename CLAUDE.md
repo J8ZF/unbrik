@@ -7,7 +7,7 @@
 | 무엇 | 링크 | 쓰임 |
 |---|---|---|
 | UNBRIK 4.0 기획서 (Docs) | https://claude.ai/artifact/5ozeH5NWTB9BTQ9nq5yhnY | 모든 결정의 기준. 특히 "섬 비주얼"(표·실루엣·**피할 것**), "디자인 방향"(관측소), "바다와 해안", "디자인 메모: 가라앉은 지형", "확정" 목록 |
-| 4.0 개발 빌드 | https://claude.ai/artifact/LovxWagJxq8hr8qAmcDmKE | 새 빌드는 여기에 올림 (현재 v26) |
+| 4.0 개발 빌드 | https://claude.ai/artifact/LovxWagJxq8hr8qAmcDmKE | 새 빌드는 여기에 올림 (현재 v27) |
 | 3.1 게임 | https://claude.ai/artifact/TuZxhvLHqJ9a3mRM1ypCJg | **건드리지 않음** |
 | 프로젝트 관측소 시안 | https://claude.ai/artifact/PBtEijVXvp1rnQsVn781py | 관측소 레퍼런스 |
 | AXIOM 섬 1 시안 | https://claude.ai/artifact/YNUECihdQqg9SYhExtM9gQ | 섬 표현 레퍼런스 |
@@ -76,5 +76,6 @@ node -e "import('./dist/data.js').then(d=>{const s=d.defaultState();s.settings.p
 - 파이프라인: `scripts/islands/islandN.mjs`(DESIGN: outline·cracks·scale·origin·rotate·rockZones·sandBands·beach·terrain·tree·landmarks·extras) → `design.mjs loadDesign`(배율, split.py로 조각 자르기, 조각 회전) → `treegen.mjs`(노드 배치, islandN.tree.json 캐시) → `geom.py`(래스터로 모래·바위·해안선·물결·수심·가라앉은 바위, islandN.geom.json) → `themes.mjs`(섬별 팔레트·장식; 장식 항목 7번째 값 `'core'|'edge'`로 조각 중심/가장자리 지정) → `buildings.mjs`(랜드마크 KINDS·FOOTPRINT, 카드 위에 그리는 부분은 OVER) → `build-art.mjs`.
 - rockZones 옵션: `sunken:n`이면 가장 큰 블록들이 섬 바깥쪽으로 n단계 가라앉음(테마 `sunken` 색·불투명도). 테마 `rockRim:true`면 바위 덩어리에 검정 테두리.
 - 게임: `dist/app.js`(UI), `dist/data.js`(상태·경제·저장), `dist/island-view.js`(섬 그림 타일·바다 캔버스·컷신 공개), `dist/observatory-view.js`, `dist/style.css`, `dist/index.html`. 섬은 이전 섬 마지막 노드를 사면 컷신과 함께 열림.
+- 관측소 중앙(v27, 사용자 덧칠 그림 기준): 눈은 팔각형 세 단(검정 테 → 남색 단 → 검정 우물)이고 단 경계를 끊긴 링 둘이 반대로 돎(`index.html`의 `hubRingA/B`, `animateHub`가 dash offset을 옮김). 산책로 사이 여덟 칸에는 검은 통풍구 + 밝은 블록(그림은 `observatory.mjs`의 `deck()`), 그 위의 불은 캔버스(`observatory-view.js deckLights`)가 그림 — 평소 하늘색, 환생 가능이면 분홍(`islandView.setReady`). 분홍 사각형 배지는 없앰. 상단바 워드마크는 UNBRIK만(설정의 UPGRADE TREE는 그대로).
 - 확대 3단: 60% 이상이면 카드 위 이끼가 옅어짐, 9% 아래면 노드·링크를 숨기고 섬 제목을 섬 위/아래에 고정 크기로(설정 "축소 시 섬만 표시"). 자세히 보기(눈 버튼)는 인터페이스를 모두 숨김.
 - 커밋 메시지는 한국어, 끝에 세션이 알려 주는 attribution 줄.

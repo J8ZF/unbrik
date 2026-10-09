@@ -97,6 +97,22 @@ function cityRim(){let d='';
   for(let i=0;i<3;i++){const a=28+i*17+q*90,[x,y]=p(724,a);d+=dRect(-46,-82,92,164,mul(M(0,x,y),M(a+90)));d+=dCircle(38,M(0,...p(747,a)));}}
  return `<path d="${d}" fill="none" stroke="${RIM}" stroke-opacity=".5" stroke-width="${RIM_W}" stroke-linejoin="round"/>`;}
 
+// The machine deck between the eight promenades: in each gap a black vent with
+// its outer corners cut, a raised block set against it (blocks keep their
+// corners), and lights the game draws over them (cyan; pink while a rebirth is
+// ready). Neighbouring gaps mirror each other, so the blocks flank the cross.
+// Angles are local to the gap: 0 = its middle, the plate cut c degrees along the arc.
+const plate=(r0,r1,a0,a1,[co0=0,co1=0,ci0=0,ci1=0],fill,stroke='none',sw=0)=>
+ `<path d="M${xy(p(r0+r0*R(ci0),a0))}L${xy(p(r0,a0+ci0))}A${r0},${r0} 0 0 1 ${xy(p(r0,a1-ci1))}L${xy(p(r0+r0*R(ci1),a1))}L${xy(p(r1-r1*R(co1),a1))}L${xy(p(r1,a1-co1))}A${r1},${r1} 0 0 0 ${xy(p(r1,a0+co0))}L${xy(p(r1-r1*R(co0),a0))}Z" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"/>`;
+const DECK={vent:[298,341,-13.5,13.5],block:[263,289,-17,2.5],lights:[[320,10,-10,10],[276,6,-14,-.5]]};
+function deck(){let s='';
+ for(let k=0;k<8;k++){const [v0,v1,va,vb]=DECK.vent,[b0,b1,ba,bb]=DECK.block;
+  let g=plate(v0,v1,va,vb,[2.6,2.6],'#0d1e2a')+plate(v0+8,v1-8,va+2,vb-2,[1.5,1.5],'#03080c');
+  g+=plate(b0,b1,ba,bb,[],'#2c4557',C.steel,2.5)+plate(b0+7,b1-7,ba+1.6,bb-1.6,[],'#0d1e2a');
+  s+=group(g,`rotate(${k*45+22.5})${k%2?' scale(1 -1)':''}`);}
+ return s;}
+export const deckLights=()=>Array.from({length:8},(_,k)=>DECK.lights.map(([r,w,a,b])=>{const g=k*45+22.5,s=k%2?-1:1;return {r,w,a0:g+Math.min(s*a,s*b),a1:g+Math.max(s*a,s*b)};})).flat();
+
 // ---------- the still architecture ----------
 function architecture(){
  let arms=cityRim();
@@ -135,7 +151,7 @@ function architecture(){
   city+=group(d,`rotate(${q*90})`);}
  // Inner sanctuary: eight promenades and eight different towers round the eye.
  const INNER=['spire','watch','garden','open','astro','watch','spire','garden'];
- let inner=circle(397,'none',C.dark,38)+circle(397,'none',C.steel,2)+circle(347,C.machine,C.edge,3);
+ let inner=circle(397,'none',C.dark,38)+circle(397,'none',C.steel,2)+circle(347,C.machine,C.edge,3)+deck();
  inner+=circle(252,C.stone,C.edge,3)+circle(229,'#344e57')+circle(205,C.light)+fins(32,231,35,12,C.light,5.625);
  for(let i=0;i<8;i++){inner+=group(rect(-20,-408,40,192,C.stone,C.edge,2)+rect(-8,-405,16,144,C.mid),`rotate(${i*45})`);
   inner+=group(building(INNER[i],i%2===0?48:33,i+60),`translate(${xy(p(374,i*45))}) rotate(${i*45-90})`);}
@@ -346,5 +362,5 @@ export function buildObservatory(cx=OBS_CENTER[0],cy=OBS_CENTER[1]){
   art:{center:[cx,cy],radius:OBS_RADIUS,core:1020,halo:{r:920,c:'#1c7eb7'},
    under:[...sunken(),...machinery()],upper:upperRing(),iris:iris(),
    tracks:[433,594,804].map((r,i)=>({r,spin:[6,-3.6,2.4][i],w:.9+i*.2,gap:i*17,alpha:.56})),
-   neon:{r:1120,w:3,orbit:1095,speed:8},
+   neon:{r:1120,w:3,orbit:1095,speed:8},deck:deckLights(),
    islands:islands.map(i=>({svg:i.svg,size:i.size,lamp:i.lamp,color:i.color,orbit:i.orbit,spin:i.spin}))}};}

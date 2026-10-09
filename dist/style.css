@@ -461,8 +461,6 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 @media(max-width:360px){#prestigeButton{width:92px;min-width:92px}}
 /* Center node badge: prestige is available */
 /* Prestige available: a small square on the center node, like a notification mark. */
-.hub-badge{position:absolute;right:24px;top:24px;width:20px;height:20px;background:#f3a1c8;box-shadow:0 0 0 3px #0b1017;z-index:2}
-#world.overview .hub-badge{transform:scale(2.2);transform-origin:top right}
 /* Navigator: map jump */
 #petalMenu{display:grid;gap:10px;padding-bottom:2px}
 .nav-maps{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;min-height:52px;margin-top:12px;padding:12px 14px;border:1px dashed #4a515c;border-radius:9px;background:transparent;color:#d6d9df;font-size:14px;text-align:left}
@@ -616,6 +614,12 @@ body:not(.theme-bloom) .node.locked{border-color:#46505a}
 #centerNode .hub-inset{display:none;fill:none;stroke:#f2f4f7;stroke-width:3}
 #centerNode.selected .hub-inset{display:block}
 #centerNode .hub-wire{transform:translate(0,69px) scale(1.5)}
+/* the eye steps down in three octagons; two broken rings run round the steps, opposite ways */
+#centerNode .hub-well{fill:#12293a;stroke:none}
+#centerNode .hub-pit{fill:#03080c;stroke:none}
+#centerNode .hub-ring{fill:none;stroke-linecap:butt;stroke-linejoin:miter}
+#centerNode .hub-ring-a{stroke:#f2f4f7;stroke-width:3.8;stroke-dasharray:290 50 120 40 210 60 150 80}
+#centerNode .hub-ring-b{stroke:#a9bcc7;stroke-width:2.8;stroke-dasharray:90 60 240 50 130 70 300 60}
 
 /* 4.0: three zoom stages — under 9% the studies and links go; each island keeps its heading (name, progress) at a fixed size, under islands below the observatory and over islands above it. */
 #world.far #nodes,#world.far #edges,#world.far #edgeCasings,#world.far #spokes{display:none}

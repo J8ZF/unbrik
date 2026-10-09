@@ -44,7 +44,7 @@ const createUI=new Function('deps','$','document',`
 `);
 const documentAdapter={...element(),createElement:element,createElementNS:element,body:element()};
 // The island picture is drawn by island-view.js in the browser; here a stub records what the app asks of it.
-const islandCalls=[];let islandsDone=()=>[],islandOpenHook=()=>true;const createIslandView=o=>({...(islandsDone=o.islandsDone||islandsDone,islandOpenHook=o.islandOpen||islandOpenHook,{}),setCamera(c){islandCalls.push(['camera',{...c}]);},resize(){},setMotion(v){islandCalls.push(['motion',v]);},setObsMotion(v){islandCalls.push(['obsMotion',v]);},setVisible(v){islandCalls.push(['visible',v]);},render(){islandCalls.push(['render']);},reveal(id,done){islandCalls.push(['reveal',id]);done&&done();},revealTarget:()=>null,isRevealing:()=>false});
+const islandCalls=[];let islandsDone=()=>[],islandOpenHook=()=>true;const createIslandView=o=>({...(islandsDone=o.islandsDone||islandsDone,islandOpenHook=o.islandOpen||islandOpenHook,{}),setCamera(c){islandCalls.push(['camera',{...c}]);},resize(){},setMotion(v){islandCalls.push(['motion',v]);},setObsMotion(v){islandCalls.push(['obsMotion',v]);},setReady(v){islandCalls.push(['ready',v]);},setVisible(v){islandCalls.push(['visible',v]);},render(){islandCalls.push(['render']);},reveal(id,done){islandCalls.push(['reveal',id]);done&&done();},revealTarget:()=>null,isRevealing:()=>false});
 const ui=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,...units,iconSvg,setIcon,createIslandView},$,documentAdapter);
 // 4.0 stage 1: one island. LONG is an upgradeable study deep in it, LAST its final study, CACHE the cache study.
 const LONG=data.byId.get(23),LAST=data.byId.get(data.ISLANDS[0].last),CACHE=data.NODES.find(n=>n.effects.some(e=>e.type==='cache'));assert(LONG.max>1&&LAST.gate&&LAST.id===30);
@@ -302,22 +302,22 @@ console.log(JSON.stringify({coinHeaderUnlock:'passed',actualDualPayout:'passed',
  ui3.reduced(true);ui3.applyMapTheme();ui3.render();
  assert(get('tokenCard').hidden&&get('compactTokenCard').hidden,'No token card before the first prestige');
  ui3.selectNode(1);assert(get('prestigeButton').hidden,'The prestige button belongs to the center panel');
- ui3.selectCenter();assert(get('prestigeButton').hidden,'No prestige button before the tree is complete');assert(get('hubBadge').hidden);assert(!ui3.state.prestige.noticed);
+ ui3.selectCenter();assert(get('prestigeButton').hidden,'No prestige button before the tree is complete');assert(!get('centerNode').classList.contains('ready'));assert(!ui3.state.prestige.noticed);
  assert.equal(get('tokenNote').textContent,'환생 0회');
  // Map dialog: the flower is locked until the first prestige.
  ui3.openMaps();assert.equal(get('mapMenu').children.length,2);assert.equal(data.MAPS[1].ko,'환생');assert(get('mapMenu').children[1].disabled);assert(!get('mapMenu').children[0].disabled);
  assert.equal(ui3.switchMap('prestige'),false,'Locked map cannot be entered');
  // Finish the tree and clear the threshold: the button appears, the note changes.
  maxAll(ui3.state);ui3.state.currencies.money=data.PRESTIGE_THRESHOLD/2;
- ui3.selectCenter();assert(!get('prestigeButton').hidden&&get('prestigeButton').disabled,'Tree complete but short: the button waits');assert(get('prestigeDetail').innerHTML.includes('더'));assert(get('hubBadge').hidden);
+ ui3.selectCenter();assert(!get('prestigeButton').hidden&&get('prestigeButton').disabled,'Tree complete but short: the button waits');assert(get('prestigeDetail').innerHTML.includes('더'));assert(!get('centerNode').classList.contains('ready'));
  ui3.state.currencies.money=data.PRESTIGE_THRESHOLD*4;ui3.state.currencies.coin=50;
  ui3.selectCenter();assert(!get('prestigeButton').hidden&&!get('prestigeButton').disabled);assert.equal(get('tokenNote').textContent,'환생 가능');assert(get('prestigeDetail').innerHTML.includes('20'),'Four times the threshold doubles the tokens');
- assert(!get('hubBadge').hidden,'Center badge while prestige is available');assert(ui3.state.prestige.noticed,'One availability notice per run');
+ assert(get('centerNode').classList.contains('ready'),'Deck lights turn pink while prestige is available');assert(islandCalls.some(c=>c[0]==='ready'&&c[1]===true),'The island view is told a rebirth is ready');assert(ui3.state.prestige.noticed,'One availability notice per run');
  get('prestigeButton').onclick();assert(get('prestigeDialog').open);assert(get('prestigeSummary').innerHTML.includes('1번째'));
  get('confirmPrestige').onclick();assert(!get('prestigeDialog').open);assert(!get('prestigeOverlay').hidden);
  assert.equal(ui3.state.map,'prestige','Reduced motion commits at once');assert.equal(N(ui3.state.currencies.token),20);assert.deepEqual(ui3.state.levels,{});assert.equal(N(ui3.state.currencies.money),0);assert.equal(N(ui3.state.currencies.coin),0);
  assert(doc.body.classList.contains('theme-bloom'));assert(!get('prestigeLayer').hidden);assert(get('nodes').attributes.hidden!==undefined&&get('centerNode').attributes.hidden!==undefined);
- for(const id of ['sectorRegions','spokes','edges'])assert(get(id).attributes.hidden!==undefined,'Mainland SVG layers are hidden by attribute on the flower');assert.equal(ui3.selected,-1);assert(get('pCenter').classList.contains('selected'));assert(get('prestigeButton').hidden,'No prestige button on the flower');assert(get('hubBadge').hidden);assert(!ui3.state.prestige.noticed,'The notice flag resets with the run');
+ for(const id of ['sectorRegions','spokes','edges'])assert(get(id).attributes.hidden!==undefined,'Mainland SVG layers are hidden by attribute on the flower');assert.equal(ui3.selected,-1);assert(get('pCenter').classList.contains('selected'));assert(get('prestigeButton').hidden,'No prestige button on the flower');assert(!get('centerNode').classList.contains('ready'));assert(!ui3.state.prestige.noticed,'The notice flag resets with the run');
  ui3.advance(1000);assert(get('prestigeOverlay').hidden,'Overlay lifts after the hold');
  assert(!get('tokenCard').hidden);assert.equal(get('token').textContent,'20');assert.equal(get('tokenNote').textContent,'환생 1회');
  assert(get('moneyCard').hidden,'The flower page shows only tokens');

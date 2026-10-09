@@ -395,9 +395,9 @@ function renderPrestigeButton(center){
  setHtml($('prestigeDetail'),symbolMarkup(ready?`✿${tokenFormat(tokensFor(state))}`:`$${compactFormat(left)} 더`));
  button.setAttribute('aria-label',ready?`환생. 지금 환생하면 토큰 ${tokenFormat(tokensFor(state))}`:`환생까지 $${format(left)} 더 필요`);
 }
-// Prestige availability: a badge on the center node and one notice per run.
+// Prestige availability: the observatory's deck lights turn pink, and one notice per run.
 function syncPrestigeReady(){
- const ready=!onPrestige()&&prestigeReady(state);$('hubBadge').hidden=!ready;
+ const ready=!onPrestige()&&prestigeReady(state);$('centerNode').classList.toggle('ready',ready);islandView?.setReady(ready);
  if(ready&&!state.prestige.noticed){state.prestige.noticed=true;toast('환생 가능 · UNBRIK 센터에서 환생',0,'important');}
 }
 function render(){
@@ -580,7 +580,8 @@ new ResizeObserver(reframeViewport).observe(viewport);
 function syncPageHeight(){const pages=$('hudPages'),page=pages.children[hudPage];if(page)pages.style.height=page.offsetHeight+'px';}
 {const ro=new ResizeObserver(syncPageHeight);for(const page of $('hudPages').children)ro.observe(page);}
 $('sectorDialog').querySelector('.navigator-content').addEventListener('scroll',updateNavigatorScroll,{passive:true});
-function animateHub(now){if(now-lastHubFrame<33||cameraMoving||document.hidden||suspended||document.body.classList.contains('reduced-motion')||camera.scale<.32)return;const r=205*camera.scale,hx=onPrestige()?0:CENTER.x,hy=onPrestige()?0:CENTER.y,sx=camera.x+hx*camera.scale,sy=camera.y+hy*camera.scale;if(sx+r<0||sx-r>viewport.clientWidth||sy+r<0||sy-r>viewport.clientHeight)return;lastHubFrame=now;const p=wireframePaths(now/1000),prefix=onPrestige()?'pWire':'hubWire';$(prefix+'Back').setAttribute('d',p.back);$(prefix+'Front').setAttribute('d',p.front);$(prefix+'Outline').setAttribute('d',p.outline);}
+function animateHub(now){if(now-lastHubFrame<33||cameraMoving||document.hidden||suspended||document.body.classList.contains('reduced-motion')||camera.scale<.32)return;const r=205*camera.scale,hx=onPrestige()?0:CENTER.x,hy=onPrestige()?0:CENTER.y,sx=camera.x+hx*camera.scale,sy=camera.y+hy*camera.scale;if(sx+r<0||sx-r>viewport.clientWidth||sy+r<0||sy-r>viewport.clientHeight)return;lastHubFrame=now;const p=wireframePaths(now/1000),prefix=onPrestige()?'pWire':'hubWire';$(prefix+'Back').setAttribute('d',p.back);$(prefix+'Front').setAttribute('d',p.front);$(prefix+'Outline').setAttribute('d',p.outline);
+ if(!onPrestige()){$('hubRingA').style.strokeDashoffset=String(-(now/60)%1000);$('hubRingB').style.strokeDashoffset=String((now/44)%1000);}}
 let autoClock=0;
 function runAutomation(){
  if(!state.prestige.count||!prestigeBonuses(state).auto.size)return;

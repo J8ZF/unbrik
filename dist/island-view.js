@@ -171,6 +171,8 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
  function setMotion(on){motion=on;viewport.classList.toggle('sea-still',!on);draw(performance.now());queue2();}
  // the observatory's machinery follows the animation setting, not the sea's
  function setObsMotion(on){obsMotion=on;draw(performance.now());queue2();}
+ // the deck lights round the eye turn pink while a rebirth is ready
+ let obsReady=false;function setReady(on){on=!!on;if(on===obsReady)return;obsReady=on;obs.setReady(on);draw(performance.now());queue2();}
  function setVisible(on){visible=on;back.hidden=!on;canvas.hidden=obsUnder.hidden=!on;for(const el of [decorSvg,beamSvg,buildSvg,mossSvg,overSvg])if(el)el.style.visibility=on?'':'hidden';draw(performance.now());if(on){scheduleTiles();queue2();}}
 
  // ---- growth: decoration by island progress, buildings at MAX, grass and moss ----
@@ -194,5 +196,5 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
  // The map area changes size when the panel or header folds, or the phone's
  // browser bars move. The FX bitmap must follow, or it stretches off the coast.
  if(typeof ResizeObserver==='function')new ResizeObserver(()=>{const r=viewport.getBoundingClientRect();if(Math.round(r.width*dpr)!==canvas.width||Math.round(r.height*dpr)!==canvas.height||Math.min(2,window.devicePixelRatio||1)!==dpr)resize();}).observe(viewport);
- return {setCamera,resize,setMotion,setObsMotion,setVisible,render,reveal,revealTarget,isRevealing:()=>!!revealing};
+ return {setCamera,resize,setMotion,setObsMotion,setReady,setVisible,render,reveal,revealTarget,isRevealing:()=>!!revealing};
 }
