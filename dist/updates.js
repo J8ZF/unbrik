@@ -27,4 +27,8 @@ export const UPDATES=[
  {version:'1.2',title:'아이콘과 성장 속도',items:['80개 연구의 내장 SVG 아이콘','일반 반복 연구는 다음 지역에서 마무리, 일부 연구는 후반까지 성장','오프라인 생산은 처음 30분 100%, 이후 지수 감쇠']},
 ];
 export const UPDATE_PAGE_SIZE=2;
-export function updatePage(page,entries=UPDATES){const pages=Math.max(1,Math.ceil(entries.length/UPDATE_PAGE_SIZE)),current=Math.max(1,Math.min(pages,Math.floor(Number(page)||1)));return {current,pages,entries:entries.slice((current-1)*UPDATE_PAGE_SIZE,current*UPDATE_PAGE_SIZE)};}
+// Page numbers show five at a time (1–5, 6–10, …); previous/next step to the neighbouring set.
+export const UPDATE_PAGE_GROUP=5;
+export function updatePage(page,entries=UPDATES){const pages=Math.max(1,Math.ceil(entries.length/UPDATE_PAGE_SIZE)),current=Math.max(1,Math.min(pages,Math.floor(Number(page)||1)));
+ const first=Math.floor((current-1)/UPDATE_PAGE_GROUP)*UPDATE_PAGE_GROUP+1,last=Math.min(pages,first+UPDATE_PAGE_GROUP-1);
+ return {current,pages,entries:entries.slice((current-1)*UPDATE_PAGE_SIZE,current*UPDATE_PAGE_SIZE),first,last,prev:first>1?first-1:null,next:last<pages?last+1:null};}

@@ -132,7 +132,15 @@ for(const n of data.MAP_LAYOUT.sectors[0].members)ui.state.levels[n.id]=n.max;ui
 assert.equal(ui.chapterEls[0].querySelector('.island-progress').textContent,'30 / 30');
 for(const n of data.NODES)ui.state.levels[n.id]=n.max;ui.state.levels[LONG.id]--;ui.render();assert.equal(ui.sectorEls[0].style.display,'none');ui.openCenter();ui.buySelected();ui.jumpToSector(0);assert(ui.pending);finishNavigation();assert.equal(ui.selected,LONG.id);assert(!$('sectorDialog').open);
 assert(!$('hubSector0').classList.contains('complete'));
-assert.equal($('updateEntries').children.length,2);assert.equal($('updatePages').children.length,updates.updatePage(1).pages);assert($('updatesPrev').disabled);for(let i=1;i<updates.updatePage(1).pages;i++)$('updatesNext').onclick();assert(!$('updatesPrev').disabled);assert($('updatesNext').disabled);assert.equal($('updateEntries').children.length,updates.updatePage(99).entries.length);
+// Update log: two entries per page, page numbers five at a time; previous/next step to the neighbouring set.
+{const P=updates.updatePage(1).pages,nums=()=>$('updatePages').children.map(b=>b.textContent),cur=()=>$('updatePages').children.find(b=>b.attributes['aria-current']==='page').textContent;assert(P>10);
+ assert.equal($('updateEntries').children.length,2);assert.deepEqual(nums(),['1','2','3','4','5']);assert($('updatesPrev').disabled);assert(!$('updatesNext').disabled);
+ $('updatePages').children[2].onclick();assert.equal(cur(),'3');assert.deepEqual(nums(),['1','2','3','4','5']);assert.equal($('updateEntries').children.length,2);
+ $('updatesNext').onclick();assert.deepEqual(nums(),['6','7','8','9','10']);assert.equal(cur(),'6');assert(!$('updatesPrev').disabled);
+ $('updatesPrev').onclick();assert.deepEqual(nums(),['1','2','3','4','5']);assert.equal(cur(),'5');
+ for(let i=0;i<10&&!$('updatesNext').disabled;i++)$('updatesNext').onclick();
+ assert($('updatesNext').disabled);assert(!$('updatesPrev').disabled);assert.equal(nums().at(-1),String(P));assert(nums().length<=5&&Number(nums()[0])%5===1);
+ $('updatePages').children.at(-1).onclick();assert.equal(cur(),String(P));assert.equal($('updateEntries').children.length,updates.updatePage(99).entries.length);}
 $('updateContents').hidden=true;$('toggleUpdates').onclick();assert(!$('updateContents').hidden);$('toggleUpdates').onclick();assert($('updateContents').hidden);
 // One final state after navigation, even with money changes, interruption or a newer request.
 ui.state.currencies.money=0;ui.state.settings.purchaseCheat=false;ui.jumpToSector(0);ui.advance(now+=16);
@@ -236,7 +244,7 @@ for(const restoredCollapsed of [true,false]){
   assert.equal(doc.body.classList.contains('reduced-motion'),!motion||os);
  }
 }
-console.log(JSON.stringify({uiControls:'passed',cacheHud:'passed',dualCurrencyRewardDisplay:'no duplicate economy mutations',cacheSettingsCases:4,nativeClickReopens:'passed',lowerTapClickThrough:'blocked',targetBeforeRepaint:'passed',initialPanelLayoutCases:8,freshSessionCases:2,lostCaptureRecovery:'passed',dragPinchCancellation:'passed',inputSettingsCombinations:24,saveCompatibility:'passed',originalNodeMarkup:'restored',islandDiscoveryCases:8,lockedSectorMenuAndStats:'hidden',crossPrerequisiteLeaks:'blocked',invalidNavigation:'blocked',atomicFinalButton:'passed',motionToggleDuringNavigation:'passed'}));
+console.log(JSON.stringify({uiControls:'passed',updatePager:'5 per set',cacheHud:'passed',dualCurrencyRewardDisplay:'no duplicate economy mutations',cacheSettingsCases:4,nativeClickReopens:'passed',lowerTapClickThrough:'blocked',targetBeforeRepaint:'passed',initialPanelLayoutCases:8,freshSessionCases:2,lostCaptureRecovery:'passed',dragPinchCancellation:'passed',inputSettingsCombinations:24,saveCompatibility:'passed',originalNodeMarkup:'restored',islandDiscoveryCases:8,lockedSectorMenuAndStats:'hidden',crossPrerequisiteLeaks:'blocked',invalidNavigation:'blocked',atomicFinalButton:'passed',motionToggleDuringNavigation:'passed'}));
 
 // Coin visibility, data wiring, and real dual-currency cache awards in both HUD states.
 ui.interruptMapMotion();ui.state.levels={};ui.state.currencies={money:0,coin:0,token:0};ui.render();
