@@ -615,22 +615,17 @@ body:not(.theme-bloom) .node.locked{border-color:#46505a}
 #centerNode.selected .hub-inset{display:block}
 #centerNode .hub-wire{transform:translate(0,69px) scale(1.5)}
 
-/* 4.0: three zoom stages — under 9% the studies and links go, one badge per island stays (its first study's icon, name, progress). The badge keeps its screen size (--inv = 1/scale). */
-#islandBadges{position:absolute;left:0;top:0;z-index:7;display:none}
-#world.far #islandBadges{display:block}
-#world.far #nodes,#world.far #edges,#world.far #edgeCasings,#world.far #spokes,#world.far #chapterMarks{display:none}
-.island-badge{position:absolute;width:132px;transform:translate(-50%,-50%) scale(var(--inv,1));transform-origin:center;display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 10px 10px;border:2px solid var(--sector-color);border-radius:11px;background:#0f1820;color:var(--text);box-shadow:0 0 0 3px #0b101799;pointer-events:auto;cursor:pointer}
-.island-badge .badge-icon{width:44px;height:44px;border-radius:11px;background:var(--sector-color);color:#0b1017;display:grid;place-items:center}
-.island-badge .badge-icon .glyph{width:28px;height:28px;stroke-width:2}
-.island-badge .badge-name{font:700 14px/1 Arial,'Apple SD Gothic Neo',sans-serif;letter-spacing:1px;color:var(--sector-color)}
-.island-badge .bar{display:block;width:100%;height:7px;border-radius:4px;background:#263541;overflow:hidden}
-.island-badge .bar i{display:block;height:100%;background:var(--sector-color)}
-.island-badge .badge-progress{font:11px/1 var(--mono);letter-spacing:.02em;color:var(--muted)}
-.island-badge.complete .badge-progress{color:var(--sector-color)}
+/* 4.0: three zoom stages — under 9% the studies and links go; each island keeps its heading (name, progress) at a fixed size, under islands below the observatory and over islands above it. */
+#world.far #nodes,#world.far #edges,#world.far #edgeCasings,#world.far #spokes{display:none}
+#world.far .island-mark{left:var(--far-x)!important;top:var(--far-y)!important;transform:var(--far-tf)!important;transform-origin:var(--far-origin);text-align:center;transition:none}
+#world.far .island-mark .auto-toggle{display:none}
 /* view mode: the map alone; the exit arrow sits where the top bar was */
 body.viewing #hud,body.viewing #nodePanel,body.viewing footer,body.viewing #mapTools,body.viewing #hint,body.viewing .coordinates,body.viewing #toasts{display:none!important}
 .exit-view{position:absolute;right:12px;top:12px;z-index:31;width:38px;height:38px;background:#111b24;border:1px solid #2a3540;border-radius:7px}
 .map-tools #fit{grid-column:auto;width:auto}
+/* the header buttons keep their icons centred at any width (the default button padding pushed the 24px settings icon right in the 32px collapsed button) */
+.hud .hud-actions .icon-button,.hud #toggleHud{padding:0}
+#settings svg{width:21px;height:21px;display:block}
 /* collapsed top bar: smaller currency cells with the width to themselves, less vertical room */
 .hud.is-collapsed .topbar{min-height:50px;padding:5px 10px;gap:8px}
 .hud.is-collapsed .hud-actions{gap:4px}

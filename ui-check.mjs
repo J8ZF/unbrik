@@ -32,7 +32,7 @@ const createUI=new Function('deps','$','document',`
  let clock=0,seed=0;const frames=new Map(),timers=new Map(),performance={now:()=>clock};
  const requestAnimationFrame=fn=>{frames.set(++seed,fn);return seed},cancelAnimationFrame=id=>frames.delete(id);
  const setTimeout=(fn,ms)=>{timers.set(++seed,{fn,at:clock+ms});return seed},clearTimeout=id=>timers.delete(id);
- const nodeEls=new Map(),edgeEls=[],chapterEls=[],badgeEls=[],sectorEls=[],spokeEls=[],visibility=new Map(),viewport=$('viewport'),world=$('world');
+ const nodeEls=new Map(),edgeEls=[],chapterEls=[],sectorEls=[],spokeEls=[],visibility=new Map(),viewport=$('viewport'),world=$('world');
  viewport.clientWidth=390;viewport.clientHeight=440;const originalQuery=viewport.querySelector;viewport.querySelector=k=>k==='.map-tools'?$('mapTools'):originalQuery(k);Object.defineProperties($('mapTools'),{offsetLeft:{get:()=>viewport.clientWidth-($('mapTools').classList.contains('is-compact')?50:94)},offsetTop:{get:()=>viewport.clientHeight-($('mapTools').classList.contains('is-compact')?110:170)}});
  const format=String,time=String,toast=()=>{},ripple=()=>{};let gestureUsed=false;
  function save(){saved=validateSave(JSON.parse(JSON.stringify(state)));}
