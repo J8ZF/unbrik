@@ -87,9 +87,19 @@ const dRing=(r0,r1,m=I)=>dCircle(r1,m,true)+dCircle(r0,m,false);
 const dArc=(r,w,a,b,m=I)=>{const o=ang(m),c=ap(m,[0,0]),P=(rr,aa)=>{const q=p(rr,aa+o);return [q[0]+c[0],q[1]+c[1]];},large=b-a>180?1:0;
  return `M${xy(P(r+w/2,a))}A${r+w/2},${r+w/2} 0 ${large} 1 ${xy(P(r+w/2,b))}L${xy(P(r-w/2,b))}A${r-w/2},${r-w/2} 0 ${large} 0 ${xy(P(r-w/2,a))}Z`;};
 
+// The game's shadow: a thick translucent dark band hugging a silhouette. One path,
+// one stroke, so overlaps do not darken twice.
+const RIM='#04080c',RIM_W=44;
+const ARM_PTS=[[-126,-340],[-126,-472],[-164,-510],[-164,-652],[-124,-692],[-124,-810],[-82,-859],[-82,-969],[-47,-1004],[47,-1004],[82,-969],[82,-859],[124,-810],[124,-692],[164,-652],[164,-510],[126,-472],[126,-340]];
+function cityRim(){let d='';
+ for(let i=0;i<4;i++)d+=dPoly(ARM_PTS,M(i*90));
+ for(let q=0;q<4;q++){d+=dArc(644,99,14+q*90,76+q*90);
+  for(let i=0;i<3;i++){const a=28+i*17+q*90,[x,y]=p(724,a);d+=dRect(-46,-82,92,164,mul(M(0,x,y),M(a+90)));d+=dCircle(38,M(0,...p(747,a)));}}
+ return `<path d="${d}" fill="none" stroke="${RIM}" stroke-opacity=".5" stroke-width="${RIM_W}" stroke-linejoin="round"/>`;}
+
 // ---------- the still architecture ----------
 function architecture(){
- let arms='';
+ let arms=cityRim();
  const ARM_BIG=['astro','spire','watch','garden'],ARM_SMALL=['open','garden','spire','watch'];
  for(let i=0;i<4;i++){
   let arm=`<path d="M-126 -340 L-126 -472 -164 -510 -164 -652 -124 -692 -124 -810 -82 -859 -82 -969 -47 -1004 47 -1004 82 -969 82 -859 124 -810 124 -692 164 -652 164 -510 126 -472 126 -340Z" fill="${C.stone}" stroke="${C.edge}" stroke-width="3"/>`;
@@ -191,14 +201,48 @@ function sunken(){
 
 // The iris blades round the eye, turning.
 function iris(){const P=painter();for(let i=0;i<8;i++)P.add(dPoly([[-27,-159],[17,-159],[44,-132],[31,-110],[-8,-114],[-26,-137]],M(i*45)),C.steel,C.edge,1.5);return [{spin:5,groups:P.groups}];}
-// Above the sea at the rim: two half rings of dark machinery, turning.
-function rimRings(){
- const P=painter();
- for(const h of [0,180])P.add(dArc(1434,72,h+9,h+171),C.machine,C.steel,2.5);for(const h of [0,180])P.add(dArc(1434,40,h+12,h+168),'#243d4e');for(const h of [0,180])P.add(dArc(1414,8,h+12,h+168),'#4b6677');
- for(const h of [0,180])for(let k=0;k<12;k++)P.add(dArc(1440,9,h+16+k*13,h+16+k*13+6),C.cyan);
- const ms=[0,180].flatMap(h=>Array.from({length:5},(_,k)=>M(h+28+k*31)));
- for(const m of ms)P.add(dRect(-30,-1486,60,46,m),C.steel,C.edge,1.5);for(const m of ms)P.add(dRect(-14,-1480,28,30,m),'#0a1b27');for(const m of ms)P.add(dRect(-4,-1476,8,20,m),C.cyan);
- return [{spin:2.4,groups:P.groups}];}
+// Canvas versions of the towers, for the upper ring (fewer shapes than the painted ones).
+const MOSS_PTS=[[-42,-8],[-24,-18],[-14,-11],[-3,-20],[17,-14],[26,4],[10,8],[3,2],[-15,12],[-26,6],[-39,9]];
+function towerShapes(kind,r,m){const o=[],a=(d,f,s='none',w=0)=>o.push([d,f,s,w]);
+ if(kind==='spire'){a(dNgon(8,r,22.5,m),C.stone,C.edge,2);a(dNgon(8,r*.8,22.5,m),C.light);a(dCircle(r*.56,m),C.blue);a(dCircle(r*.42,m),C.roof);a(dCircle(r*.13,m),C.light);}
+ else if(kind==='watch'){let g='';for(let i=0;i<4;i++)g+=dRect(-r*.24,-r*1.3,r*.48,r*.36,mul(m,M(i*90)));a(g,C.stone,C.edge,1.5);a(dPoly(chamfer(r,r*.32),m),C.stone,C.edge,2);a(dPoly(chamfer(r*.8,r*.26),m),C.light);a(dPoly(chamfer(r*.56,r*.18),m),'#263e4b');a(dPoly(chamfer(r*.3,r*.1),m),C.mid);}
+ else if(kind==='open'){a(dCircle(r,m),C.stone,C.edge,2);a(dCircle(r*.8,m),C.light);a(dCircle(r*.66,m),'#1f3340');a(dCircle(r*.52,m),'#2a4150');a(dCircle(r*.26,m),'#344b54');let g='';for(let i=0;i<4;i++)g+=dRect(-r*.11,-r*1.1,r*.22,r*.42,mul(m,M(i*90+45)));a(g,C.stone,C.edge,1.4);}
+ else{a(dPoly(chamfer(r,r*.25),m),C.stone,C.edge,2);a(dPoly(chamfer(r*.9,r*.22),m),C.light);a(dPoly(chamfer(r*.76,r*.18),m),'#3d6d48','#6cae76',2);a(dRect(-r*.08,-r*.76,r*.16,r*1.52,m)+dRect(-r*.76,-r*.08,r*1.52,r*.16,m),C.light);
+  a(dCircle(r*.24,mul(m,M(0,-r*.42,-r*.4))),'#235a36');a(dCircle(r*.16,mul(m,M(0,-r*.38,-r*.44))),'#2f7345');a(dCircle(r*.14,mul(m,M(0,r*.42,r*.44))),'#2a6b3f');a(dCircle(r*.08,mul(m,M(0,r*.46,r*.4))),'#3f8a4f');
+  let g='';for(const [u,v] of [[.44,-.44],[.52,-.36],[.4,-.32]])g+=dCircle(r*.045,mul(m,M(0,r*u,r*v)));a(g,'#f4f1e6');}
+ return o;}
+// towers stand apart, so drawing the k-th shape of every tower, k by k, keeps each tower's own order
+function towersD(P,list){const all=list.map(([kind,r,m])=>towerShapes(kind,r,m)),n=Math.max(...all.map(t=>t.length));for(let k=0;k<n;k++)for(const t of all)if(t[k])P.add(...t[k]);}
+// The upper ring over the sunken one: a dark inner ring turning one way, and three
+// curved blocks of white architecture turning the other, each bulging out in a
+// cross at its middle, with a black stripe carrying a broken ring of light.
+export const UPPER={inner:[1150,1215],band:[1225,1435],chunks:[90,210,330],half:52.5};
+function upperRing(){
+ const layers=[];
+ {const P=painter();P.add(dRing(1150,1215),C.machine,C.steel,2.5);P.add(dRing(1168,1197),'#243d4e');for(let i=0;i<36;i++)P.add(dRect(-6,-1212,12,56,M(i*10)),'#0a1b27');layers.push({spin:-1.5,groups:P.groups});}
+ const cs=UPPER.chunks,h=UPPER.half;
+ // the rim first, then the band, the stripe and its lights (chasing along the stripe), then what stands on it
+ const base=painter();let rim='';
+ for(const c of cs){rim+=dArc(1330,210,c-h,c+h)+dArc(1330,150,c-h-4,c-h)+dArc(1330,150,c+h,c+h+4)+dRect(1190,-60,288,120,M(c))+dRect(1272,-170,116,340,M(c));}
+ base.add(rim,'none',RIM,RIM_W);base.groups[0].alpha=.5;
+ for(const c of cs){base.add(dArc(1330,210,c-h,c+h),C.stone,C.edge,3);base.add(dArc(1330,150,c-h-4,c-h),C.stone,C.edge,3);base.add(dArc(1330,150,c+h,c+h+4),C.stone,C.edge,3);}
+ for(const c of cs)base.add(dArc(1330,160,c-h+1.5,c+h-1.5),'#9fb4b2');for(const c of cs)base.add(dArc(1330,130,c-h+2,c+h-2),C.light);
+ for(const c of cs)base.add(dArc(1262,22,c-46,c+46),C.blue);for(const c of cs)base.add(dArc(1262,9,c-46,c+46),C.roof);
+ for(const c of cs)base.add(dArc(1395,26,c-48,c+48),'#0a1b27',C.steel,1.5);for(const c of cs)base.add(dArc(1395,12,c-47,c+47),'#141f29');
+ let clip='';for(const c of cs)clip+=dArc(1395,16,c-47,c+47);
+ const lights=painter();for(let i=0;i<24;i++)lights.add(dArc(1395,9,i*15,i*15+7),C.cyan);
+ layers.push({spin:1.5,groups:base.groups,sub:{clip,spin:4,groups:lights.groups}});
+ const top=painter();
+ for(const c of cs){const m=M(c);top.add(dRect(1190,-60,288,120,m),C.stone,C.edge,3);top.add(dRect(1272,-170,116,340,m),C.stone,C.edge,3);}
+ for(const c of cs){const m=M(c);top.add(dRect(1206,-44,256,88,m),C.light);top.add(dRect(1288,-154,100,308,m),C.light);}
+ for(const c of cs){const m=M(c);top.add(dRect(1212,-26,50,52,m),C.blue);top.add(dRect(1398,-26,54,52,m),C.blue);top.add(dRect(1300,-162,60,42,m),C.blue);top.add(dRect(1300,120,60,42,m),C.blue);}
+ const BLK=[[-12,1292,14,0],[12,1292,-14,1],[-26,1372,-10,1],[26,1372,10,0],[-44,1300,18,0],[44,1300,-18,1]],bm=(c,[da,r,tilt])=>mul(M(c+da),M(tilt,r,0));
+ for(const c of cs)for(const b of BLK)top.add(dRect(-34,-56,68,112,bm(c,b)),C.stone,C.edge,2);
+ for(const c of cs)for(const b of BLK)if(!b[3])top.add(dRect(-22,-40,44,72,bm(c,b)),C.light);for(const c of cs)for(const b of BLK)if(b[3])top.add(dRect(-22,-40,44,72,bm(c,b)),C.blue);
+ for(const c of cs)for(const [da,r] of [[-30,1395],[38,1270]])top.add(dPoly(MOSS_PTS,mul(M(c+da),M(c+da+40,r,0))),C.moss);
+ towersD(top,cs.flatMap(c=>[['spire',56,mul(M(c),M(c-90,1330,0))],['watch',48,mul(M(c-35),M(c-35-90,1330,0))],['garden',52,mul(M(c+35),M(c+35-90,1330,0))],['open',32,mul(M(c-19),M(c-19-90,1345,0))],['spire',28,mul(M(c+19),M(c+19-90,1310,0))]]));
+ layers.push({spin:1.5,groups:top.groups});
+ return layers;}
 
 // ---------- the relic islands ----------
 const S=100;
@@ -291,7 +335,7 @@ export function buildObservatory(cx=OBS_CENTER[0],cy=OBS_CENTER[1]){
   svg,tri:[],
   fx:{mask:[ring(1020)],coast:[ring(1020)],depth:[{c:'#304250',pts:ring(2000)},{c:'#374b5b',pts:ring(1600)},{c:'#3f5466',pts:ring(1250)}]},
   art:{center:[cx,cy],radius:OBS_RADIUS,core:1020,halo:{r:920,c:'#1c7eb7'},
-   under:[...sunken(),...machinery()],rims:rimRings(),iris:iris(),
+   under:[...sunken(),...machinery()],upper:upperRing(),iris:iris(),
    tracks:[433,594,804].map((r,i)=>({r,spin:[6,-3.6,2.4][i],w:.9+i*.2,gap:i*17,alpha:.56})),
    neon:{r:1120,w:3,orbit:1095,speed:8},
    islands:islands.map(i=>({svg:i.svg,size:i.size,lamp:i.lamp,color:i.color,orbit:i.orbit,spin:i.spin}))}};}

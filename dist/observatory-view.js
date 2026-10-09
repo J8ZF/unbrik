@@ -12,16 +12,21 @@
 import {OBS_ART as A} from './observatory-art.js?v=4.0.0-dev.1';
 
 const [CX,CY]=A.center,RAD=A.radius,ISLAND_LEVELS=[.5,1];// bitmaps stay small: they live in GPU memory
-const layers=l=>l.map(x=>({spin:x.spin,groups:x.groups.map(g=>({path:new Path2D(g.d),f:g.f,s:g.s,w:g.w}))}));
+const toGroups=gs=>gs.map(g=>({path:new Path2D(g.d),f:g.f,s:g.s,w:g.w,alpha:g.alpha||1}));
+const layers=l=>l.map(x=>({spin:x.spin,groups:toGroups(x.groups),sub:x.sub?{clip:new Path2D(x.sub.clip),spin:x.sub.spin,groups:toGroups(x.sub.groups)}:null}));
 export function createObservatory(){
- const under=layers(A.under),rims=layers(A.rims),irisL=layers(A.iris);
+ const under=layers(A.under),upper=layers(A.upper),irisL=layers(A.iris);
  const islands=A.islands.map(i=>{const img=new Image();img.decoding='async';img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(i.svg);const o={...i,img,ready:false,bitmaps:new Map()};
   img.onload=()=>{o.ready=true;};return o;});
  const lamp=new Path2D(Array.from({length:8},(_,k)=>{const a=(k*45+22.5)*Math.PI/180;return (k?'L':'M')+(Math.cos(a)*16).toFixed(1)+','+(Math.sin(a)*16).toFixed(1);}).join('')+'Z');
- let lit=[],time=0,lastT=0,halo=null;
- function paint(ctx,ls,t){for(const l of ls){ctx.save();if(l.spin)ctx.rotate(l.spin*t*Math.PI/180);for(const g of l.groups){ctx.fillStyle=g.f;ctx.fill(g.path);if(g.s!=='none'){ctx.strokeStyle=g.s;ctx.lineWidth=g.w;ctx.stroke(g.path);}}ctx.restore();}}
+ let lit=[],time=0,lastT=0,halo=null,built=false;
+ function fillGroups(ctx,groups){for(const g of groups){ctx.globalAlpha=g.alpha;if(g.f!=='none'){ctx.fillStyle=g.f;ctx.fill(g.path);}if(g.s!=='none'){ctx.strokeStyle=g.s;ctx.lineWidth=g.w;ctx.lineJoin='round';ctx.stroke(g.path);}}ctx.globalAlpha=1;}
+ // a layer turns as one; a sub-layer turns inside a clip cut from the layer (lights chasing along a stripe)
+ function paint(ctx,ls,t){for(const l of ls){ctx.save();if(l.spin)ctx.rotate(l.spin*t*Math.PI/180);
+  if(l.sub){fillGroups(ctx,l.groups);ctx.save();ctx.clip(l.sub.clip);ctx.rotate(l.sub.spin*t*Math.PI/180);fillGroups(ctx,l.sub.groups);ctx.restore();}
+  else fillGroups(ctx,l.groups);ctx.restore();}}
  // a bitmap of an island at a zoom level, built when first needed
- function bitmap(o,L){let cv=o.bitmaps.get(L);if(cv||!o.ready)return cv||null;cv=document.createElement('canvas');const px=Math.round(o.size*L);cv.width=cv.height=px;cv.getContext('2d').drawImage(o.img,0,0,px,px);
+ function bitmap(o,L){let cv=o.bitmaps.get(L);if(cv||!o.ready||built)return cv||null;built=true;cv=document.createElement('canvas');const px=Math.round(o.size*L);cv.width=cv.height=px;cv.getContext('2d').drawImage(o.img,0,0,px,px);
   for(const [k,old] of o.bitmaps)if(k!==L){old.width=old.height=1;o.bitmaps.delete(k);}o.bitmaps.set(L,cv);return cv;}
  function levelFor(scale){for(const L of ISLAND_LEVELS)if(L>=scale*.9)return L;return ISLAND_LEVELS.at(-1);}
  // ctx is already in world space (scaled, camera applied); v is the visible world rect
@@ -46,9 +51,9 @@ export function createObservatory(){
   {const a=N.speed*t*Math.PI/180;ctx.lineCap='round';for(const [len,al,w] of [[.5,.18,10],[.22,.45,6],[.06,1,3]]){ctx.globalAlpha=al;ctx.lineWidth=Math.max(w,w*.35/scale);ctx.beginPath();ctx.arc(0,0,N.orbit,a-len,a);ctx.stroke();}
    ctx.globalAlpha=1;ctx.fillStyle='#e8fbff';ctx.beginPath();ctx.arc(Math.cos(a)*N.orbit,Math.sin(a)*N.orbit,Math.max(7,2.5/scale),0,7);ctx.fill();}
   ctx.globalAlpha=1;ctx.lineCap='butt';
-  paint(ctx,rims,t);
+  paint(ctx,upper,t);
   // relic islands in orbit, each turning on its own
-  const L=levelFor(scale*dpr);
+  const L=levelFor(scale*dpr);built=false;
   islands.forEach((o,i)=>{const a=(o.orbit.a0+o.orbit.speed*t)*Math.PI/180,x=Math.cos(a)*o.orbit.r,y=Math.sin(a)*o.orbit.r;
    const bm=bitmap(o,L)||[...o.bitmaps.values()].at(-1);if(!bm)return;
    ctx.save();ctx.translate(x,y);ctx.rotate(o.spin*t*Math.PI/180);ctx.drawImage(bm,-o.size/2,-o.size/2,o.size,o.size);
