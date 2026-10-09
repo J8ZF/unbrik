@@ -7,7 +7,7 @@
 | 무엇 | 링크 | 쓰임 |
 |---|---|---|
 | UNBRIK 4.0 기획서 (Docs) | https://claude.ai/artifact/5ozeH5NWTB9BTQ9nq5yhnY | 모든 결정의 기준. 특히 "섬 비주얼"(표·실루엣·**피할 것**), "디자인 방향"(관측소), "바다와 해안", "디자인 메모: 가라앉은 지형", "확정" 목록 |
-| 4.0 개발 빌드 | https://claude.ai/artifact/LovxWagJxq8hr8qAmcDmKE | 새 빌드는 여기에 올림 (현재 v28) |
+| 4.0 개발 빌드 | https://claude.ai/artifact/LovxWagJxq8hr8qAmcDmKE | 새 빌드는 여기에 올림 (현재 v29) |
 | 3.1 게임 | https://claude.ai/artifact/TuZxhvLHqJ9a3mRM1ypCJg | **건드리지 않음** |
 | 프로젝트 관측소 시안 | https://claude.ai/artifact/PBtEijVXvp1rnQsVn781py | 관측소 레퍼런스 |
 | AXIOM 섬 1 시안 | https://claude.ai/artifact/YNUECihdQqg9SYhExtM9gQ | 섬 표현 레퍼런스 |
@@ -34,6 +34,8 @@
 - 섬 둘레를 같은 두께로 두르는 모래·바위·흰 선 금지. **큰 바위는 해안 일부 구간을 이루며 섬 윤곽 자체를 바꿉니다**(밝기가 분명히 다른 사각형을 크기·각도 제각각으로 겹침).
 - 도는 부품은 이웃끼리 반대 방향으로.
 - 섬마다 다른 섬과 구분되는 표현을 씁니다(섬 2 하와이, 섬 3 판타지 가을 숲 등).
+- **생성기로 뿌리지 않습니다.** 사용자 지시: "알고리즘 생성기 만들어서 쉽게 할 생각 마세요, SVG 깎는 장인이라 생각하고 직접 하세요." 해저 등고선·암초·부속 섬·파편은 좌표를 하나하나 손으로 놓습니다(`seabed.mjs`, `satellites.mjs`). 작업 도면은 `node scripts/islands/sheet.mjs`로 뽑아 격자 좌표를 보며 그립니다. 사용자가 준 그림은 눈대중으로 옮기지 말고 픽셀을 재서 맞춥니다.
+- **바다** (사용자가 여섯 번 넘게 요청한 것): 위에서 본 지도라 물속 높낮이가 비쳐야 함. 섬들을 이은 경계 A 안쪽은 아주 살짝 어두운 푸른색, 바깥은 검정. 섬 모양을 따르는 해저 등고선은 굉장히 반투명하게. 암초는 섬 1 근처 옅은 도형보다 살짝 진하고 섬 3 바깥 바위보다 연하게(화면에서 잰 값: 옅은 도형 Δ≈6–15, 암초 중·상단 Δ≈16–25, 섬 3 바위 Δ≈15–60). 색으로 꽉 채우거나 도형으로 도배하면 안 됨. 각 섬 둘레에는 작은 부속 섬·암초 파편이 세트로 있어야 하고, 나중에 환생 뒤 열리는 업그레이드를 그 부속 섬에서 연구함(카드 하나가 들어갈 크기).
 
 ## 3. 섬 상태
 
@@ -46,6 +48,8 @@
 | 5 | 이끼 낀 포스트 아포칼립스 도시 | 초안. 기획서 기준으로 다시 볼 것 |
 
 ## 4. 남은 일
+
+- **바다·부속 섬**: 섬 1만 됨(v29, 사용자 검토 대기) — 등고선 3단 + 부속 섬 3개(북서·동·남서) + 암초. 검토가 끝나면 섬 2–5도 같은 방식으로 손으로 그림. 그 전까지 섬 2–5는 해안의 얕은 물 띠만 있음.
 
 - 섬 3 v26 사용자 검토 반영. 이어서 섬 2·4·5를 기획서·하늘섬 기준으로 점검.
 - 선택형(A/B) 노드 UI(쌍을 함께 표시, 고르지 않은 쪽 흐리게), 섬 2 선택형 쌍.
@@ -74,6 +78,8 @@ node -e "import('./dist/data.js').then(d=>{const s=d.defaultState();s.settings.p
 ```
 
 - 파이프라인: `scripts/islands/islandN.mjs`(DESIGN: outline·cracks·scale·origin·rotate·rockZones·sandBands·beach·terrain·tree·landmarks·extras) → `design.mjs loadDesign`(배율, split.py로 조각 자르기, 조각 회전) → `treegen.mjs`(노드 배치, islandN.tree.json 캐시) → `geom.py`(래스터로 모래·바위·해안선·물결·수심·가라앉은 바위, islandN.geom.json) → `themes.mjs`(섬별 팔레트·장식; 장식 항목 7번째 값 `'core'|'edge'`로 조각 중심/가장자리 지정) → `buildings.mjs`(랜드마크 KINDS·FOOTPRINT, 카드 위에 그리는 부분은 OVER) → `build-art.mjs`.
+- 바다 바닥: `scripts/islands/seabed.mjs`(손으로 그린 BASIN·섬별 shelf/reefs/shallow, TONE) → `ISLAND_ART.seabed` → `island-view.js drawBed`(그림 층 아래의 화면 크기 캔버스, 카메라나 열린 섬이 바뀔 때만 다시 그림). 바닥이 그려진 섬은 그림에서 얕은 물 띠를 빼고 그 띠를 바닥 층의 옅은 막으로 그림. 예전 far/mid 띠는 모든 섬 그림에서 뺌(그리드 톤용 depth 데이터는 유지). 떠다니는 삼각형은 불투명 검정 대신 옅은 밝은 막.
+- 부속 섬: `scripts/islands/satellites.mjs`(섬별 land·terrain·rockZones core·sandBands·fragments, 월드 좌표) → geom.py로 따로 추적(`islandN.sat.geom.json`, 입력이 바뀌면 자동으로 다시) → 섬마다 작은 그림 하나씩(`pictures[].sat`), 본섬과 함께 열림. 본섬 그림은 건드리지 않음.
 - rockZones 옵션: `sunken:n`이면 가장 큰 블록들이 섬 바깥쪽으로 n단계 가라앉음(테마 `sunken` 색·불투명도). 테마 `rockRim:true`면 바위 덩어리에 검정 테두리.
 - 게임: `dist/app.js`(UI), `dist/data.js`(상태·경제·저장), `dist/island-view.js`(섬 그림 타일·바다 캔버스·컷신 공개), `dist/observatory-view.js`, `dist/style.css`, `dist/index.html`. 섬은 이전 섬 마지막 노드를 사면 컷신과 함께 열림.
 - 관측소 중앙(v28, 사용자 덧칠 그림을 픽셀로 재서 맞춤 — 눈대중으로 옮기지 말고 그림을 받으면 재서 확인할 것): 눈은 팔각형 세 단(검정 테 → 남색 단 → 검정 우물)이고 단 경계를 끊긴 링 둘이 반대로 돎(`index.html`의 `hubRingA/B`, `animateHub`가 dash offset을 옮김). 산책로 사이 여덟 칸 한가운데(반지름 300)에 검은 판 하나와 불 하나(그림은 `observatory.mjs`의 `deck()`), 불은 캔버스(`observatory-view.js deckLights`)가 그림 — 평소 하늘색, 환생 가능이면 분홍(`islandView.setReady`), 4.2초 주기로 천천히 깜빡임(애니메이션을 끄면 켜진 채 고정). 분홍 사각형 배지는 없앰. 칸마다 작은 블록·짧은 불을 더 넣었다가 요청에 없던 것이라 뺐음 — 그림에 없는 요소를 덧붙이지 말 것. 상단바 워드마크는 UNBRIK만, 글자 높이를 로고에 맞춤(`1cap` 단위; 설정의 UPGRADE TREE는 그대로).

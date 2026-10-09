@@ -15,6 +15,8 @@ import {loadDesign} from './design.mjs';
 import {genTree} from './treegen.mjs';
 import {buildSea,bandsSvg,triFragments} from './sea.mjs';
 import {THEMES} from './themes.mjs';
+import {BASIN,SEABED,TONE} from './seabed.mjs';
+import {SATELLITES} from './satellites.mjs';
 import {RESEARCH} from '../../dist/research.js';
 const MAX_OF=new Map(RESEARCH.map(r=>[r.id,r.max]));
 const here=f=>new URL(f,import.meta.url),dist=f=>new URL('../../dist/'+f,import.meta.url);
@@ -26,7 +28,27 @@ const OBS=buildObservatory(),[OCX,OCY]=OBS.center,OR=OBS.radius+120;
 // take #31–65 and #66–105 in order; islands 4–5 cycle through the catalogue
 // (no second coin unlock), island 5 ending on AXIOM.
 const BORROW={2:Array.from({length:35},(_,i)=>31+i),3:Array.from({length:40},(_,i)=>66+i),4:Array.from({length:60},(_,i)=>31+i),5:[...Array.from({length:21},(_,i)=>1+i),...Array.from({length:66},(_,i)=>23+i),105]};
-const pictures=[],islands=[],allNodes=[];let firstId=1,prevGate=null;
+// The ground of a piece of land from its traced geometry, in the island's theme: sunken rock, land, terrain layers, sand, rock.
+function groundSvg(GM,T,pieces){
+ let ground='';
+ // sunken rock: the big coast blocks go on under the water in steps, each step deeper and fainter (the deepest first)
+ if(GM.sunken?.length&&T.sunken)for(const b of [...GM.sunken].sort((a,c)=>c.level-a.level)){const [f,op]=T.sunken[Math.min(T.sunken.length,b.level)-1];ground+=poly(b.pts,`fill="${f}" fill-opacity="${op}"`);}
+ for(const p of pieces)ground+=poly(p,`fill="${T.land[0]}" stroke="${T.land[1]}" stroke-width="3" stroke-linejoin="round"`);
+ if(T.plateau)for(const p of GM.rockBase)ground+=T.plateau(p);
+ const layersSvg=()=>{let g='';for(const l of GM.layers)for(const p of l.polys){const c=T.layer[l.c];if(!c)throw Error('unknown layer '+l.c);g+=poly(p,`fill="${c[0]}" stroke="${c[1]}" stroke-width="3" stroke-linejoin="round"`);}return g;};
+ if(!T.layersOverSand)ground+=layersSvg();
+ for(const p of GM.sand)ground+=poly(p,`fill="${T.sand[0]}" stroke="${T.sand[1]}" stroke-width="3" stroke-linejoin="round"`);
+ for(const p of GM.wet)ground+=poly(p,`fill="${T.wet}"`);
+ for(const d of GM.dunes){for(const p of d.polys)ground+=poly(p,`fill="${T.dune[0]}" stroke="${T.dune[1]}" stroke-width="2.5" stroke-linejoin="round"`);for(const p of d.top)ground+=poly(p,`fill="${T.duneTop[0]}" stroke="${T.duneTop[1]}" stroke-width="2" stroke-linejoin="round"`);}
+ if(T.layersOverSand)ground+=layersSvg();
+ const ROCK=T.rock;
+ // the rock masses part from the land with the game's dark rim where the theme asks (the sky islands' band)
+ if(T.rockRim)for(const p of GM.rockBase)ground+=poly(p,'fill="none" stroke="#04080c" stroke-opacity=".5" stroke-width="44" stroke-linejoin="round"');
+ if(!T.plateau)for(const p of GM.rockBase)ground+=poly(p,`fill="${ROCK[0][0]}" stroke="${ROCK[0][1]}" stroke-width="3" stroke-linejoin="round"`);
+ for(const r of GM.rocks){const [f,s]=ROCK[r.tone];ground+=poly(r.pts,`fill="${f}" stroke="${s}" stroke-width="2.6" stroke-linejoin="miter"`);
+  if(r.cap){const [f2,s2]=ROCK[Math.min(4,r.tone+1)];ground+=poly(r.cap,`fill="${f2}" stroke="${s2}" stroke-width="2.2" stroke-linejoin="miter"`);}}
+ return ground;}
+const pictures=[],islands=[],allNodes=[],shallowsOf={};let firstId=1,prevGate=null;
 const W2=(pts,o)=>pts.map(([x,y])=>[x+o[0],y+o[1]]);
 for(const name of DESIGNS){
  const D=await loadDesign(name),T=THEMES[D.theme],o=D.origin;
@@ -74,28 +96,21 @@ for(const name of DESIGNS){
  if(GM.offLand.length)console.warn(name,'cards too close to the water:',GM.offLand.join(','));
  // ---- sea picture: depth bands, shallows round the final outline, reefs ----
  const bands=D.seaFile?{bands:SEA.bands,depth:[...SEA.bands.matchAll(/points="([^"]+)" fill="([^"]+)"/g)].map(m=>({c:{'#0c1620':'#304250','#0e1c26':'#374b5b','#112530':'#3f5466'}[m[2]],pts:m[1].split(' ').map(q=>q.split(',').map(Number))}))}:bandsSvg(GM,T.sea,D.id*3);
- let sea=bands.bands;for(const p of GM.near)sea+=poly(p,`fill="${T.sea.near}"`);
- const tri=triFragments(SEA.tri);
+ // the far and middle bands are no longer painted here: the sea floor is drawn under the pictures (seabed.mjs);
+ // only the shallows hugging the shore stay in the picture. The bands still tone the sea grid (depth, below).
+ let sea=bands.bands;for(const c of new Set([T.sea.far,T.sea.mid,'#0c1620','#0e1c26'])){const n=sea.length;sea=sea.split(`fill="${c}"/>`).map((s,i,a)=>i<a.length-1?s.slice(0,s.lastIndexOf('<polygon ')):s).join('');}
+ for(const p of GM.near)sea+=poly(p,`fill="${T.sea.near}"`);
+ // an island whose sea floor is drawn (seabed.mjs) gives its shallows to that layer too: the ring round the shore is then a
+ // veil over the shelf instead of an opaque band that would hide it; the picture keeps only what stands in the water
+ const shallows=[];
+ if(SEABED[D.id]){for(const m of sea.matchAll(/<polygon points="([^"]+)"/g))shallows.push(m[1].split(' ').map(q=>q.split(',').map(Number)));sea='';}
+ // the drifting shapes were opaque near-black; over the tinted sea they are the same shapes as faint light veils
+ const VEIL={'#0c141c':.03,'#0d1620':.045,'#0f1a24':.065,'#111e29':.09};
+ const tri=triFragments(SEA.tri).map(f=>({...f,body:f.body.replace(/ fill="(#[0-9a-f]{6})" stroke="\1" stroke-width="1"/g,(m,c)=>{if(!(c in VEIL))throw Error('unknown drift colour '+c);return ` fill="#8fb0cc" fill-opacity="${VEIL[c]}"`;})}));
  const depth=bands.depth;depth.push(...GM.near.map(p=>({c:T.sea.tones.near,pts:p})));
  if(depth.some(d=>!d.c))throw Error('unknown sea band colour');
  // ---- land: reefs, ground, grass layers, sand, rocks ----
- let ground='';
- // sunken rock: the big coast blocks go on under the water in steps, each step deeper and fainter (the deepest first)
- if(GM.sunken?.length&&T.sunken)for(const b of [...GM.sunken].sort((a,c)=>c.level-a.level)){const [f,op]=T.sunken[Math.min(T.sunken.length,b.level)-1];ground+=poly(b.pts,`fill="${f}" fill-opacity="${op}"`);}
- for(const p of pieces)ground+=poly(p,`fill="${T.land[0]}" stroke="${T.land[1]}" stroke-width="3" stroke-linejoin="round"`);
- if(T.plateau)for(const p of GM.rockBase)ground+=T.plateau(p);
- const layersSvg=()=>{let g='';for(const l of GM.layers)for(const p of l.polys){const c=T.layer[l.c];if(!c)throw Error('unknown layer '+l.c);g+=poly(p,`fill="${c[0]}" stroke="${c[1]}" stroke-width="3" stroke-linejoin="round"`);}return g;};
- if(!T.layersOverSand)ground+=layersSvg();
- for(const p of GM.sand)ground+=poly(p,`fill="${T.sand[0]}" stroke="${T.sand[1]}" stroke-width="3" stroke-linejoin="round"`);
- for(const p of GM.wet)ground+=poly(p,`fill="${T.wet}"`);
- for(const d of GM.dunes){for(const p of d.polys)ground+=poly(p,`fill="${T.dune[0]}" stroke="${T.dune[1]}" stroke-width="2.5" stroke-linejoin="round"`);for(const p of d.top)ground+=poly(p,`fill="${T.duneTop[0]}" stroke="${T.duneTop[1]}" stroke-width="2" stroke-linejoin="round"`);}
- if(T.layersOverSand)ground+=layersSvg();
- const ROCK=T.rock;
- // the rock masses part from the land with the game's dark rim where the theme asks (the sky islands' band)
- if(T.rockRim)for(const p of GM.rockBase)ground+=poly(p,'fill="none" stroke="#04080c" stroke-opacity=".5" stroke-width="44" stroke-linejoin="round"');
- if(!T.plateau)for(const p of GM.rockBase)ground+=poly(p,`fill="${ROCK[0][0]}" stroke="${ROCK[0][1]}" stroke-width="3" stroke-linejoin="round"`);
- for(const r of GM.rocks){const [f,s]=ROCK[r.tone];ground+=poly(r.pts,`fill="${f}" stroke="${s}" stroke-width="2.6" stroke-linejoin="miter"`);
-  if(r.cap){const [f2,s2]=ROCK[Math.min(4,r.tone+1)];ground+=poly(r.cap,`fill="${f2}" stroke="${s2}" stroke-width="2.2" stroke-linejoin="miter"`);}}
+ const ground=groundSvg(GM,T,pieces);
  let extras='';if(T.extras)extras=T.extras({D,o,nodes,GM,land:pieces,rng});
  const picture=SEA.reefsSvg+ground+extras;
  const PW=B.x1-B.x0,PH=B.y1-B.y0;
@@ -148,6 +163,28 @@ for(const name of DESIGNS){
  allNodes.push(...islandNodes);
  pictures.push({island:D.id,bounds:[B.x0,B.y0,PW,PH],back,tri,fx,decor:cleared.map(d=>({t:d.t,svg:d.svg})),landmarks:built.map(b=>({node:idOf(b.node),kind:b.kind,svg:b.svg,over:b.over||'',beam:b.beam})),label});
  firstId=last+1;prevGate=last;
+ // ---- the island's satellites: small islands and rock fragments of its own, each a small picture shown with the island ----
+ const SAT=SATELLITES[D.id];
+ if(SAT){
+  const ST=THEMES[SAT.theme||D.theme],sfile=here(name+'.sat.geom.json'),stamp=here(name+'.sat.in.json'),sin=here(name+'.sat.geom-in.json');
+  const input=JSON.stringify({land:SAT.land,nodes:[],sandBands:SAT.sandBands||[],sandPieces:SAT.sandPieces||[],beach:SAT.beach||[],
+   rockZones:(SAT.rockZones||[]).map(z=>({count:0,size:[100,200],area:[[0,0],[1,0],[1,1]],...z})),rockPolys:[],sandHoles:[],terrain:SAT.terrain||[],reefs:[],duneCount:0,seeds:{rocks:31+D.id,dunes:5}});
+  if(REGEOM||!fs.existsSync(sfile)||!fs.existsSync(stamp)||fs.readFileSync(stamp,'utf8')!==input){fs.writeFileSync(sin,input);execFileSync('python3',[here('geom.py').pathname,sin.pathname,sfile.pathname],{stdio:'inherit'});fs.unlinkSync(sin);fs.writeFileSync(stamp,input);}
+  const SG=JSON.parse(fs.readFileSync(sfile)),cen=pts=>[pts.reduce((a,q)=>a+q[0],0)/pts.length,pts.reduce((a,q)=>a+q[1],0)/pts.length];
+  const keys=Object.keys(SAT.land),centre=Object.fromEntries(keys.map(k=>[k,cen(SAT.land[k])]));
+  const owner=pts=>{const c=cen(pts);return keys.reduce((b,k)=>Math.hypot(c[0]-centre[k][0],c[1]-centre[k][1])<Math.hypot(c[0]-centre[b][0],c[1]-centre[b][1])?k:b,keys[0]);};
+  for(const key of keys){const mine=pts=>owner(pts)===key,frags=(SAT.fragments||[]).filter(f=>mine(f[0][0])),shards=frags.flatMap(f=>f.map(s=>s[0]));
+   const G2={land:SG.land.filter(mine),rockBase:SG.rockBase.filter(mine),rocks:SG.rocks.filter(r=>mine(r.pts)),sand:SG.sand.filter(mine),wet:SG.wet.filter(mine),dunes:[],layers:SG.layers.map(l=>({c:l.c,polys:l.polys.filter(mine)})),near:SG.near.filter(mine),sunken:(SG.sunken||[]).filter(b=>mine(b.pts))};
+   const all=[...G2.near,...shards].flat(),bx0=Math.floor(Math.min(...all.map(q=>q[0])))-40,by0=Math.floor(Math.min(...all.map(q=>q[1])))-40,bx1=Math.ceil(Math.max(...all.map(q=>q[0])))+40,by1=Math.ceil(Math.max(...all.map(q=>q[1])))+40;
+   let sea2='';if(SEABED[D.id])shallows.push(...G2.near);else for(const q of G2.land)sea2+=poly(q,`fill="${ST.sea.near}" stroke="${ST.sea.near}" stroke-width="92" stroke-linejoin="miter" stroke-miterlimit="2"`);if(!SEABED[D.id])for(const q of G2.near)sea2+=poly(q,`fill="${ST.sea.near}"`);
+   // a fragment: shards of bare rock breaking the surface, foam round them
+   let fr='';for(const f of frags){for(const [q] of f)fr+=poly(q,'fill="none" stroke="#e8f0f2" stroke-opacity=".42" stroke-width="5" stroke-linejoin="miter"');for(const [q,tone] of f)fr+=poly(q,`fill="${ST.rock[tone][0]}" stroke="${ST.rock[tone][1]}" stroke-width="2" stroke-linejoin="miter"`);}
+   const sback=`<svg xmlns="http://www.w3.org/2000/svg" width="${bx1-bx0}" height="${by1-by0}" viewBox="${bx0} ${by0} ${bx1-bx0} ${by1-by0}">`+sea2+fr+groundSvg(G2,ST,[SAT.land[key]])+`</svg>`;
+   const sdepth=[...SG.bands.far.filter(mine).map(q=>({c:ST.sea.tones.far,pts:q})),...SG.bands.mid.filter(mine).map(q=>({c:ST.sea.tones.mid,pts:q})),...G2.land.map(q=>({c:ST.sea.tones.near,pts:q})),...G2.near.map(q=>({c:ST.sea.tones.near,pts:q}))];
+   pictures.push({island:D.id,sat:key,bounds:[bx0,by0,bx1-bx0,by1-by0],back:sback,tri:[],fx:{surfIn:SG.surf['16'].filter(mine),surfOut:SG.surf['38'].filter(mine),waves:SG.waveRuns.filter(w=>mine(w.pts)),mask:[...G2.land,...shards],coast:G2.land,depth:sdepth},decor:[],landmarks:[],label:null});}
+  console.log(name,'satellites',keys.join('/'),'fragments',(SAT.fragments||[]).length);
+ }
+ if(SEABED[D.id])shallowsOf[D.id]=shallows.map(q=>q.map(([x,y])=>[Math.round(x),Math.round(y)]));
  console.log(name,'nodes',nodes.length,'decor',cleared.length,'picture',PW+'×'+PH,'landmarks',landmarks.map(l=>l.kind).join('/'));
 }
 // ---- the observatory picture ----
@@ -156,6 +193,8 @@ const WX0=Math.min(...pictures.map(p=>p.bounds[0]))-800,WY0=Math.min(...pictures
 // ---- modules ----
 const head='// Generated by scripts/islands/build-art.mjs from the island designs. Do not edit.\n';
 fs.writeFileSync(dist('islands.js'),head+`export const ISLANDS=${JSON.stringify(islands)};\nexport const ISLAND_NODES=${JSON.stringify(allNodes)};\n`);
-fs.writeFileSync(dist('island-art.js'),head+`export const ISLAND_ART=${JSON.stringify({world:[WX0,WY0,WX1-WX0,WY1-WY0],pictures})};\n`);
+// the hand-drawn sea floor: the basin, and each island's shelf contours and reefs
+const seabed={tone:TONE,basin:BASIN,islands:Object.fromEntries(Object.entries(SEABED).map(([id,f])=>[id,{...f,shallows:shallowsOf[id]||[]}]))};
+fs.writeFileSync(dist('island-art.js'),head+`export const ISLAND_ART=${JSON.stringify({world:[WX0,WY0,WX1-WX0,WY1-WY0],pictures,seabed})};\n`);
 fs.writeFileSync(dist('observatory-art.js'),head+`export const OBS_ART=${JSON.stringify(OBS.art)};\n`);
 console.log('islands.js',(fs.statSync(dist('islands.js')).size/1024).toFixed(1)+'KB','island-art.js',(fs.statSync(dist('island-art.js')).size/1024).toFixed(0)+'KB','observatory-art.js',(fs.statSync(dist('observatory-art.js')).size/1024).toFixed(0)+'KB','world',[WX0,WY0,WX1-WX0,WY1-WY0].join(','));

@@ -33,11 +33,17 @@ assert(NODES.every(n=>Math.hypot(n.x-CENTER.x,n.y-CENTER.y)>CENTER.reach+300),'C
 // Zones: the card color follows the ground under it (grass, sand, rock) as built into the art.
 for(const p of ISLAND_NODES)assert.equal(p.zone,geoms[ISLANDS.findIndex(i=>i.id===p.island)].zones[p.id-ISLANDS.find(i=>i.id===p.island).first+1],`Zone of ${p.id}`);
 assert.deepEqual([...new Set(NODES.map(n=>n.zone))].sort(),['grass','rock','sand']);
-// Art: one picture per island plus the observatory; landmarks frame existing studies (3–4 per island); the world covers everything.
-const [WX,WY,WW,WH]=ISLAND_ART.world;
-assert.equal(ISLAND_ART.pictures.length,ISLANDS.length+1);
+// Art: one picture per island plus the observatory, and a small picture for each satellite islet of an island; landmarks frame existing studies (3–4 per island); the world covers everything.
+const [WX,WY,WW,WH]=ISLAND_ART.world,SATS=ISLAND_ART.pictures.filter(p=>p.sat);
+assert.equal(ISLAND_ART.pictures.length-SATS.length,ISLANDS.length+1);
+// A satellite belongs to an island, stands clear of that island's own picture land and of every study, and has shore data of its own.
+for(const s of SATS){assert(ISLANDS.some(i=>i.id===s.island)&&s.back.startsWith('<svg')&&!/NaN|Infinity|undefined/.test(s.back));assert(s.fx.coast.length>=1&&s.fx.surfIn.length>=1&&!s.decor.length&&!s.landmarks.length);
+ const [x,y,w,h]=s.bounds;assert(x>WX&&y>WY&&x+w<WX+WW&&y+h<WY+WH);for(const n of NODES)assert(!(n.x>x&&n.x<x+w&&n.y>y&&n.y<y+h),`study ${n.id} under satellite ${s.island}/${s.sat}`);}
+// The sea floor: the basin steps inward, and an island's shelf contours and reefs come with shallows traced round its land.
+const SBD=ISLAND_ART.seabed;assert(SBD.basin.length===SBD.tone.basin[1].length&&SBD.basin.every(b=>b.length>=8));
+for(const [id,f] of Object.entries(SBD.islands)){assert(ISLANDS.some(i=>i.id===+id));assert(f.shelf.length>=3&&f.reefs.length>=3&&f.shallows.length>=1&&f.shallow.length===2);for(const r of f.reefs)assert([1,2,3].includes(r.t)&&r.pts.length>=4);}
 for(const n of NODES)assert(n.x>WX&&n.x<WX+WW&&n.y>WY&&n.y<WY+WH);assert(CENTER.x>WX&&CENTER.y>WY);
-for(const isl of ISLANDS){const pic=ISLAND_ART.pictures.find(p=>p.island===isl.id);assert(pic&&pic.back.startsWith('<svg')&&!/NaN|Infinity|undefined/.test(pic.back));
+for(const isl of ISLANDS){const pic=ISLAND_ART.pictures.find(p=>p.island===isl.id&&!p.sat);assert(pic&&pic.back.startsWith('<svg')&&!/NaN|Infinity|undefined/.test(pic.back));
  assert.deepEqual(pic.landmarks.map(l=>l.node).sort((a,b)=>a-b),isl.landmarks.map(l=>l.node).sort((a,b)=>a-b));assert(isl.landmarks.length>=3&&isl.landmarks.length<=5);
  for(const l of pic.landmarks){const n=byId.get(l.node);assert(n&&n.chapter===ISLANDS.indexOf(isl)&&(n.chapter===0||n.max>1),`landmark ${l.kind} frames an upgradeable study`);}
  assert(pic.decor.length>50,`island ${isl.id} has decoration`);}
