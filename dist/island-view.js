@@ -34,7 +34,7 @@ function moss(n){if(n.zone==='sand')return '';const r=rng(n.id*13);let s='';cons
  for(let i=0;i<4;i++)s+=`<circle cx="${f1(cx+(r()-.5)*36)}" cy="${f1(cy+(r()-.5)*26)}" r="${f1(1.5+r()*2)}" fill="#b6d886"/>`;return s;}
 const REVEAL_MS=2600;
 
-export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,buildSvg,mossSvg,nodes,level,islandsDone=()=>[],islandOpen=()=>true}){
+export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,buildSvg,mossSvg,overSvg=null,nodes,level,islandsDone=()=>[],islandOpen=()=>true}){
  const obs=createObservatory(),obsUnder=document.createElement('canvas');
  obsUnder.className='obs-canvas';obsUnder.setAttribute('aria-hidden','true');viewport.insertBefore(obsUnder,back);
  const ctxU=obsUnder.getContext('2d');let underLive=false,obsMotion=true;
@@ -44,7 +44,7 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
  // ---- world-space sheets ----
  // sizes go in style: the game's base CSS gives every svg 24×24 px
  const sheet=el=>{el.setAttribute('viewBox',`${WX0} ${WY0} ${WW} ${WH}`);Object.assign(el.style,{left:WX0+'px',top:WY0+'px',width:WW+'px',height:WH+'px'});};
- for(const el of [decorSvg,buildSvg,mossSvg])sheet(el);
+ for(const el of [decorSvg,buildSvg,mossSvg,overSvg])if(el)sheet(el);
  const bbox=pts=>{let a=1e9,b=1e9,c=-1e9,d=-1e9;for(const [x,y] of pts){if(x<a)a=x;if(y<b)b=y;if(x>c)c=x;if(y>d)d=y;}return [a,b,c,d];};
  const mkPath=(pts,close)=>{const p=new Path2D();p.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)p.lineTo(pts[i][0],pts[i][1]);if(close)p.closePath();return p;};
  // ---- pictures: one element per island holding its triangles, coarse copy and tiles ----
@@ -171,7 +171,7 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
  function setMotion(on){motion=on;viewport.classList.toggle('sea-still',!on);draw(performance.now());queue2();}
  // the observatory's machinery follows the animation setting, not the sea's
  function setObsMotion(on){obsMotion=on;draw(performance.now());queue2();}
- function setVisible(on){visible=on;back.hidden=!on;canvas.hidden=obsUnder.hidden=!on;for(const el of [decorSvg,beamSvg,buildSvg,mossSvg])el.style.visibility=on?'':'hidden';draw(performance.now());if(on){scheduleTiles();queue2();}}
+ function setVisible(on){visible=on;back.hidden=!on;canvas.hidden=obsUnder.hidden=!on;for(const el of [decorSvg,beamSvg,buildSvg,mossSvg,overSvg])if(el)el.style.visibility=on?'':'hidden';draw(performance.now());if(on){scheduleTiles();queue2();}}
 
  // ---- growth: decoration by island progress, buildings at MAX, grass and moss ----
  let growthKey='';
@@ -185,7 +185,7 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
    for(const d of p.decor)if(q>=d.t)dec+=d.svg;
    for(const n of ownedHere)if(!framed.has(n.id)&&ownedHere.length>=rank.get(n.id)+1)dec+=grassBehind(n);}
   decorSvg.innerHTML=dec;
-  buildSvg.innerHTML=built.map(l=>l.svg).join('');
+  buildSvg.innerHTML=built.map(l=>l.svg).join('');if(overSvg)overSvg.innerHTML=built.map(l=>l.over||'').join('');
   beamSvg.style.display=built.some(l=>l.beam)?'':'none';
   let mo='';for(const p of pics){if(!shown.has(p.island))continue;const mine=nodes.filter(n=>n.island===p.island),ownedHere=mine.filter(n=>level(n)>0),rank=new Map(mine.map((n,i)=>[n.id,i]));mo+=ownedHere.filter(n=>ownedHere.length>=rank.get(n.id)+4).map(moss).join('');}
   mossSvg.innerHTML=mo;}

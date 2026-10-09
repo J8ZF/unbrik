@@ -97,7 +97,7 @@ for(const name of DESIGNS){
  const PW=B.x1-B.x0,PH=B.y1-B.y0;
  const back=`<svg xmlns="http://www.w3.org/2000/svg" width="${PW}" height="${PH}" viewBox="${B.x0} ${B.y0} ${PW} ${PH}">`+sea+picture+`</svg>`;
  // ---- landmark buildings (built when their study reaches MAX) ----
- const built=landmarks.map(l=>{const n=nodeOf(l.node),f=BLD.KINDS[l.kind];if(!f)throw Error('unknown landmark '+l.kind);return {node:l.node,kind:l.kind,svg:f(n,CW,CH,l,{coast:pieces}),beam:l.kind==='lighthouse'?[n.x,n.y]:null,box:BLD.FOOTPRINT[l.kind](n,l)};});
+ const built=landmarks.map(l=>{const n=nodeOf(l.node),f=BLD.KINDS[l.kind];if(!f)throw Error('unknown landmark '+l.kind);return {node:l.node,kind:l.kind,svg:f(n,CW,CH,l,{coast:pieces,rock:T.rock}),over:BLD.OVER[l.kind]?BLD.OVER[l.kind](n,CW,CH):'',beam:l.kind==='lighthouse'?[n.x,n.y]:null,box:BLD.FOOTPRINT[l.kind](n,l)};});
  // decoration keeps clear of the cards and frames, then the final footprints clear what they cover
  const frames=landmarks.map(l=>{const n=nodeOf(l.node);if(l.oct)return [n.x-l.oct,n.y-l.oct,n.x+l.oct,n.y+l.oct];const [px,py]=l.pad||[90,70];let b=[n.x-CW/2-px,n.y-CH/2-py,n.x+CW/2+px,n.y+CH/2+py];
   if(l.kind==='harbor')b=[b[0]-110,b[1],b[2],1420];if(l.kind==='hall')b[3]+=40;if(l.kind==='radio'){const [dx,dy,dr]=l.dish;b=[b[0]-90,b[1],Math.max(b[2],n.x+dx+dr),b[3]];}return b;});
@@ -139,7 +139,7 @@ for(const name of DESIGNS){
  const last=idOf(gateLocal);
  islands.push({id:D.id,name:D.name,last,first:firstId,label,landmarks:landmarks.map(l=>({node:idOf(l.node),kind:l.kind})),bounds:{minX:B.x0,minY:B.y0,maxX:B.x1,maxY:B.y1},color:T.color,zones:T.zones});
  allNodes.push(...islandNodes);
- pictures.push({island:D.id,bounds:[B.x0,B.y0,PW,PH],back,tri,fx,decor:cleared.map(d=>({t:d.t,svg:d.svg})),landmarks:built.map(b=>({node:idOf(b.node),kind:b.kind,svg:b.svg,beam:b.beam})),label});
+ pictures.push({island:D.id,bounds:[B.x0,B.y0,PW,PH],back,tri,fx,decor:cleared.map(d=>({t:d.t,svg:d.svg})),landmarks:built.map(b=>({node:idOf(b.node),kind:b.kind,svg:b.svg,over:b.over||'',beam:b.beam})),label});
  firstId=last+1;prevGate=last;
  console.log(name,'nodes',nodes.length,'decor',cleared.length,'picture',PW+'×'+PH,'landmarks',landmarks.map(l=>l.kind).join('/'));
 }

@@ -1,6 +1,6 @@
 // Landmark buildings for island 1 v4: top-down, flat, white/grey. Footprints
 // are chamfered (cut corners), with L/T shapes and annexes; glass is dark grey.
-import {f1,P,poly} from './art.mjs';
+import {f1,P,poly,rectPts} from './art.mjs';
 
 export const K={ground:'#c3cace',groundLine:'#9ea8ae',seam:'#b3bcc1',wall:'#d2d8db',wallLine:'#828d95',roof:'#edf0f2',roofSeam:'#dce1e4',
  raised:'#e2e6e9',raisedLine:'#a1abb2',glass:'#3e4449',glassLine:'#596066',glassFrame:'#7f8990',solar:'#454b51',solarLine:'#5f666c',
@@ -243,11 +243,53 @@ export function stadium(n,CW,CH){const x=n.x,y=n.y;let s='';
  s+=line(x+110,y,cx-132,cy,K.rail,8)+line(x+110,y,cx-132,cy,K.ground,4);
  s+=circ(cx-60,cy-82,7,'#4f7d3a')+circ(cx+70,cy+84,9,'#4f7d3a');
  return s+well(n,CW,CH);}
+// ---- 섬 2 (하와이): not buildings — a thatched village, a pool the card sinks into, basalt blocks holding the card ----
+// a thatched hut from above: a round straw roof with a frayed edge, two eave rings, loose straw strokes, the smoke hole, a doorway awning
+const frayed=(cx,cy,R,n,rot)=>Array.from({length:n},(_,i)=>{const a=i/n*6.2832+rot,r=R*(i%2?.93:1);return [cx+Math.cos(a)*r,cy+Math.sin(a)*r];});
+const hut=(hx,hy,R,rot)=>{let g=poly(frayed(hx,hy,R+5,26,rot),'fill="rgba(4,8,12,.22)"');
+ g+=shape(frayed(hx,hy,R,26,rot),'#c9a65a','#8a6a32',2.2)+shape(frayed(hx,hy,R*.7,22,rot+.2),'#d6b66c','#8a6a32',1.5)+shape(frayed(hx,hy,R*.42,18,rot+.5),'#c9a65a','#8a6a32',1.3);
+ for(let i=0;i<9;i++){const a=i/9*6.2832+rot+.17+(i%2)*.12,r0=R*(.72+(i%3)*.05);g+=line(hx+Math.cos(a)*r0,hy+Math.sin(a)*r0,hx+Math.cos(a+.05)*R*.96,hy+Math.sin(a+.05)*R*.96,'#8a6a32',1.3);}
+ g+=circ(hx,hy,R*.13,'#5a3e26');
+ const a=rot+.55;g+=shape([[hx+Math.cos(a-.32)*R*.86,hy+Math.sin(a-.32)*R*.86],[hx+Math.cos(a-.2)*R*1.22,hy+Math.sin(a-.2)*R*1.22],[hx+Math.cos(a+.2)*R*1.22,hy+Math.sin(a+.2)*R*1.22],[hx+Math.cos(a+.32)*R*.86,hy+Math.sin(a+.32)*R*.86]],'#dcc07a','#8a6a32',1.5);return g;};
+export function village(n,CW,CH){const x=n.x,y=n.y;let s='';
+ const yard=cbox(x-156,y-124,x+156,y+124,24);s+=shape(yard,'#d8c08a','#c4ad7c',2.5);
+ // a trodden path across the yard
+ s+=poly([[x-156,y+26],[x-60,y+14],[x+40,y+30],[x+156,y+8],[x+156,y+36],[x+40,y+56],[x-60,y+40],[x-156,y+52]],'fill="#c4ad7c"');
+ s+=hut(x-122,y-82,40,.2)+hut(x+118,y-74,34,.6)+hut(x-116,y+86,30,0)+hut(x+112,y+88,42,.35)+hut(x+10,y-112,24,.1);
+ // tiki torches and a fire ring
+ for(const [tx,ty] of [[x-56,y-112],[x+62,y+116],[x-146,y+6]])s+=circ(tx,ty,7,'#5b3a2a')+circ(tx,ty,4,'#ff9a3c')+circ(tx,ty,1.8,'#ffe08a');
+ s+=circ(x+146,y+2,15,'#6b4a2a','#4a3220',2)+circ(x+146,y+2,9,'#e0583a')+circ(x+146,y+2,4,'#ffd38a');
+ return s;}
+// the pool: a tiled deck, the basin exactly round the card (its water goes OVER the card: poolOver), a ladder and loungers
+const basinOf=(n,CW,CH)=>cbox(n.x-CW/2-16,n.y-CH/2-16,n.x+CW/2+16,n.y+CH/2+16,12);
+export function pool(n,CW,CH){const x=n.x,y=n.y;let s='';
+ const deck=cbox(x-CW/2-80,y-CH/2-62,x+CW/2+80,y+CH/2+62,16);{const [dx0,dy0,dx1,dy1]=[x-CW/2-80,y-CH/2-62,x+CW/2+80,y+CH/2+62];let g='';for(let gx=dx0+26;gx<dx1;gx+=26)g+=line(gx,dy0,gx,dy1,'#d4c3a0',1.1);for(let gy=dy0+26;gy<dy1;gy+=26)g+=line(dx0,gy,dx1,gy,'#d4c3a0',1.1);s+=shape(deck,'#e8dcc2','#c9b78f',2.2)+clip(deck,g);}
+ s+=shape(basinOf(n,CW,CH),'#1d8a90','#eef3f5',4);
+ s+=line(x+CW/2+6,y-22,x+CW/2+26,y-22,'#dfe5e8',3)+line(x+CW/2+6,y-8,x+CW/2+26,y-8,'#dfe5e8',3)+line(x+CW/2+8,y-30,x+CW/2+8,y,'#dfe5e8',2)+line(x+CW/2+24,y-30,x+CW/2+24,y,'#dfe5e8',2);
+ const chair=(cx,cy)=>{let g=`<rect x="${f1(cx-11)}" y="${f1(cy-22)}" width="22" height="44" fill="#f2f4f7" stroke="#8c99a2" stroke-width="1.6"/>`;for(const v of [-6,4,14])g+=line(cx-11,cy+v,cx+11,cy+v,'#8c99a2',1.6);return g+`<rect x="${f1(cx-8)}" y="${f1(cy-19)}" width="16" height="9" fill="#4fe0cf"/>`;};
+ s+=chair(x-CW/2-56,y-26)+chair(x-CW/2-56,y+30);
+ for(let i=0;i<8;i++){const a=i/8*6.2832,R=22,a1=(i+1)/8*6.2832,px=x+CW/2+54,py=y+CH/2+30;s+=`<path d="M${f1(px)} ${f1(py)}L${f1(px+Math.cos(a)*R)} ${f1(py+Math.sin(a)*R)}A${R} ${R} 0 0 1 ${f1(px+Math.cos(a1)*R)} ${f1(py+Math.sin(a1)*R)}Z" fill="${i%2?'#f2f4f7':'#e8475f'}" stroke="#c9d2d8" stroke-width="1"/>`;}
+ return s;}
+// over the card: translucent water, so its text reads as sunk, and three ripples
+export function poolOver(n,CW,CH){const x=n.x,y=n.y;let s=poly(basinOf(n,CW,CH),'fill="#2ab0b6" fill-opacity=".46"');
+ const ripple=(ry,len)=>`<path d="M${f1(x-len)} ${f1(ry)}q12 -7 24 0t24 0t24 0t24 0t24 0" stroke="#eef9fa" stroke-opacity=".55" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+ s+=ripple(y-28,54)+ripple(y+6,66)+ripple(y+38,48);
+ s+=poly([[x-CW/2-2,y-CH/2-2],[x-CW/2+40,y-CH/2-2],[x-CW/2+10,y+CH/2+2],[x-CW/2-2,y+CH/2+2]],'fill="#ffffff" fill-opacity=".12"');return s;}
+// basalt blocks holding the card: big blocks of several tones behind it, one or two beside, in the island's rock tones
+export function boulders(n,CW,CH,l,{rock}){const x=n.x,y=n.y,T=rock;let s='';
+ const blk=(cx,cy,w,h,a,t)=>{const [f,st]=T[t];let g=poly(rectPts(cx,cy,w,h,a),`fill="${f}" stroke="${st}" stroke-width="2.6" stroke-linejoin="miter"`);if(w>120){const [f2,s2]=T[Math.min(4,t+1)];g+=poly(rectPts(cx+w*.06,cy-h*.08,w*.5,h*.5,a+6),`fill="${f2}" stroke="${s2}" stroke-width="2.2" stroke-linejoin="miter"`);}return g;};
+ const stack=[[x-30,y+10,250,200,-9,0],[x+40,y-24,230,170,14,1],[x-10,y+40,200,150,4,2],[x+20,y-10,190,140,-18,3]],loose=[[x-172,y+54,96,70,22,1],[x+168,y-60,80,64,-14,2],[x+150,y+86,60,44,30,3]];
+ for(const [cx,cy,w,h,a] of [...stack,...loose])s+=poly(rectPts(cx,cy,w,h,a),'fill="rgba(4,8,12,.4)" stroke="rgba(4,8,12,.4)" stroke-width="18" stroke-linejoin="miter"');
+ for(const b of [...stack,...loose])s+=blk(...b);
+ return s;}
 export const KINDS={harbor:(n,CW,CH)=>harbor(n,CW,CH),hall:(n,CW,CH)=>hall(n,CW,CH),radio:(n,CW,CH)=>radio(n,CW,CH),lighthouse:(n,CW,CH,l)=>lighthouse(n,CW,CH,l.oct),
- station,greenhouse,pier,library,mill,pavilion,dig,ziggurat,cistern,tower,plant,stadium};
+ station,greenhouse,pier,library,mill,pavilion,dig,ziggurat,cistern,tower,plant,stadium,village,pool,boulders};
+// landmarks drawn over the cards too (water over a sunk card)
+export const OVER={pool:poolOver};
 // footprints: what the still decoration clears under a building (world box)
 export const FOOTPRINT={harbor:n=>[n.x-296,n.y-122,n.x+156,1278],hall:n=>[n.x-225,n.y-133,n.x+169,n.y+180],radio:n=>[n.x-224,n.y-104,n.x+254,n.y+104],lighthouse:(n,l)=>[n.x-l.oct-4,n.y-l.oct-4,n.x+l.oct+4,n.y+l.oct+66],
  station:n=>[n.x-164,n.y-112,n.x+166,n.y+184],greenhouse:n=>[n.x-122,n.y-124,n.x+304,n.y+128],pier:n=>[n.x-104,n.y-100,n.x+74,n.y+100],
  library:n=>[n.x-204,n.y-124,n.x+204,n.y+160],mill:n=>[n.x-124,n.y-104,n.x+124,n.y+104],pavilion:n=>[n.x-154,n.y-124,n.x+304,n.y+124],
  dig:n=>[n.x-134,n.y-154,n.x+334,n.y+144],ziggurat:n=>[n.x-204,n.y-164,n.x+204,n.y+164],cistern:n=>[n.x-116,n.y-100,n.x+308,n.y+108],
- tower:n=>[n.x-174,n.y-134,n.x+174,n.y+134],plant:n=>[n.x-180,n.y-108,n.x+272,n.y+112],stadium:n=>[n.x-114,n.y-100,n.x+392,n.y+100]};
+ tower:n=>[n.x-174,n.y-134,n.x+174,n.y+134],plant:n=>[n.x-180,n.y-108,n.x+272,n.y+112],stadium:n=>[n.x-114,n.y-100,n.x+392,n.y+100],
+ village:n=>[n.x-160,n.y-140,n.x+160,n.y+128],pool:n=>[n.x-157,n.y-125,n.x+157,n.y+125],boulders:n=>[n.x-224,n.y-140,n.x+214,n.y+140]};

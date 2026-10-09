@@ -13,7 +13,7 @@ export const DESIGN={
  holes:[[[460,1080],[600,1020],[740,1060],[800,1180],[720,1300],[560,1330],[440,1240]],[[1700,220],[1900,200],[2040,330],[2000,480],[1800,520],[1680,400]]],
  extras:{lagoon:[[[500,1110],[600,1060],[720,1090],[760,1180],[700,1270],[570,1290],[470,1220]]],volcano:[[1860,360,210]]},
  tree:{root:[300,560],gate:[2140,1320],marks:[{at:[620,1500],free:'side'},{at:[1440,480],free:'side'},{at:[180,950],free:'none'}],count:35,seed:11},
- landmarks:[{kind:'station',max:10},{kind:'greenhouse',max:10},{kind:'pier',max:5,dir:'w'}],
+ landmarks:[{kind:'village',max:10},{kind:'boulders',max:10},{kind:'pool',max:5}],
  sandBands:[{piece:'a',from:[1060,640],to:[1000,1400],depths:[0,130,190,170,120,0],seed:7},{piece:'c',from:[1180,900],to:[1200,1600],depths:[0,120,170,140,0],seed:8},{piece:'b',from:[1200,520],to:[2000,720],depths:[0,90,150,90,0],seed:9},{piece:'d',from:[620,1700],to:[1200,1700],depths:[40,120,140,60],seed:10}],
  beach:[[1000,600,1300,1500,34],[1100,850,1400,1600,26]],
  rockZones:[

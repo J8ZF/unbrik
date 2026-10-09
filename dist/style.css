@@ -584,7 +584,9 @@ body:not(.theme-bloom) #viewport{background-image:none}
 .sea-still #islandBack .tri,.sea-still #islandBeam{animation-play-state:paused}
 #edgeCasings{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none;z-index:2}
 #islandBuild{z-index:2}
-#islandMoss{z-index:4}
+#islandMoss{z-index:4;transition:opacity .25s ease}#islandOver{z-index:5}
+/* close up, the moss over the cards thins out so their text reads */
+#world.close #islandMoss{opacity:.3}
 /* links: white over a dark casing; brighter once researched */
 body:not(.theme-bloom) #edges{--edge-color:#f2f4f7}
 body:not(.theme-bloom) .edge{stroke:#f2f4f7;stroke-width:3;stroke-opacity:.5}
