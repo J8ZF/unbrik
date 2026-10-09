@@ -206,6 +206,7 @@ const MOSS_PTS=[[-42,-8],[-24,-18],[-14,-11],[-3,-20],[17,-14],[26,4],[10,8],[3,
 function towerShapes(kind,r,m){const o=[],a=(d,f,s='none',w=0)=>o.push([d,f,s,w]);
  if(kind==='spire'){a(dNgon(8,r,22.5,m),C.stone,C.edge,2);a(dNgon(8,r*.8,22.5,m),C.light);a(dCircle(r*.56,m),C.blue);a(dCircle(r*.42,m),C.roof);a(dCircle(r*.13,m),C.light);}
  else if(kind==='watch'){let g='';for(let i=0;i<4;i++)g+=dRect(-r*.24,-r*1.3,r*.48,r*.36,mul(m,M(i*90)));a(g,C.stone,C.edge,1.5);a(dPoly(chamfer(r,r*.32),m),C.stone,C.edge,2);a(dPoly(chamfer(r*.8,r*.26),m),C.light);a(dPoly(chamfer(r*.56,r*.18),m),'#263e4b');a(dPoly(chamfer(r*.3,r*.1),m),C.mid);}
+ else if(kind==='astro'){a(dCircle(r,m),C.stone,C.edge,2);a(dCircle(r*.86,m),C.light);let g='';for(let i=0;i<8;i++)g+=dRect(-r*.06,-r*.98,r*.12,r*.16,mul(m,M(i*45)));a(g,C.mid);a(dCircle(r*.66,m),C.blue);a(dCircle(r*.56,m),C.roof);a(dRect(-r*.09,-r*.64,r*.18,r*.66,m),'#17262f');a(dRect(-r*.045,-r*.5,r*.09,r*.42,m),C.light);a(dCircle(r*.1,m),C.light);}
  else if(kind==='open'){a(dCircle(r,m),C.stone,C.edge,2);a(dCircle(r*.8,m),C.light);a(dCircle(r*.66,m),'#1f3340');a(dCircle(r*.52,m),'#2a4150');a(dCircle(r*.26,m),'#344b54');let g='';for(let i=0;i<4;i++)g+=dRect(-r*.11,-r*1.1,r*.22,r*.42,mul(m,M(i*90+45)));a(g,C.stone,C.edge,1.4);}
  else{a(dPoly(chamfer(r,r*.25),m),C.stone,C.edge,2);a(dPoly(chamfer(r*.9,r*.22),m),C.light);a(dPoly(chamfer(r*.76,r*.18),m),'#3d6d48','#6cae76',2);a(dRect(-r*.08,-r*.76,r*.16,r*1.52,m)+dRect(-r*.76,-r*.08,r*1.52,r*.16,m),C.light);
   a(dCircle(r*.24,mul(m,M(0,-r*.42,-r*.4))),'#235a36');a(dCircle(r*.16,mul(m,M(0,-r*.38,-r*.44))),'#2f7345');a(dCircle(r*.14,mul(m,M(0,r*.42,r*.44))),'#2a6b3f');a(dCircle(r*.08,mul(m,M(0,r*.46,r*.4))),'#3f8a4f');
@@ -216,31 +217,38 @@ function towersD(P,list){const all=list.map(([kind,r,m])=>towerShapes(kind,r,m))
 // The upper ring over the sunken one: a dark inner ring turning one way, and three
 // curved blocks of white architecture turning the other, each bulging out in a
 // cross at its middle, with a black stripe carrying a broken ring of light.
-export const UPPER={inner:[1150,1215],band:[1225,1435],chunks:[90,210,330],half:52.5};
+// The upper ring, out where the relic islands fly: they pass half over it. A dark
+// inner ring turning one way; outside it three short, thick curved blocks of white
+// architecture turning the other, each with a big cross-shaped platform bulging
+// out of its middle, inward over the dark ring and outward under the islands.
+export const UPPER={inner:[1470,1545],band:[1560,1860],chunks:[60,180,300],half:34};
 function upperRing(){
- const layers=[];
- {const P=painter();P.add(dRing(1150,1215),C.machine,C.steel,2.5);P.add(dRing(1168,1197),'#243d4e');for(let i=0;i<36;i++)P.add(dRect(-6,-1212,12,56,M(i*10)),'#0a1b27');layers.push({spin:-1.5,groups:P.groups});}
- const cs=UPPER.chunks,h=UPPER.half;
+ const layers=[],[R0,R1]=UPPER.band,RM=(R0+R1)/2,W=R1-R0,cs=UPPER.chunks,h=UPPER.half;
+ {const P=painter();P.add(dRing(1470,1545),C.machine,C.steel,3);P.add(dRing(1490,1525),'#243d4e');for(let i=0;i<48;i++)P.add(dRect(-7,-1542,14,66,M(i*7.5)),'#0a1b27');for(let i=0;i<24;i++)P.add(dRect(-3,-1512,6,12,M(i*15+7.5)),C.cyan);
+  layers.push({spin:-1.5,groups:P.groups});}
+ // the cross at each block's middle: a radial bar from over the dark ring out past the band, a tangential bar across it
+ const CROSS=[[1470,2000,-100,100],[1620,1800,-300,300]],cx=(c,[u0,u1,v0,v1])=>dRect(u0,v0,u1-u0,v1-v0,M(c));
  // the rim first, then the band, the stripe and its lights (chasing along the stripe), then what stands on it
  const base=painter();let rim='';
- for(const c of cs){rim+=dArc(1330,210,c-h,c+h)+dArc(1330,150,c-h-4,c-h)+dArc(1330,150,c+h,c+h+4)+dRect(1190,-60,288,120,M(c))+dRect(1272,-170,116,340,M(c));}
+ for(const c of cs)rim+=dArc(RM,W,c-h,c+h)+dArc(RM,W*.56,c-h-3,c-h)+dArc(RM,W*.56,c+h,c+h+3)+CROSS.map(b=>cx(c,b)).join('');
  base.add(rim,'none',RIM,RIM_W);base.groups[0].alpha=.5;
- for(const c of cs){base.add(dArc(1330,210,c-h,c+h),C.stone,C.edge,3);base.add(dArc(1330,150,c-h-4,c-h),C.stone,C.edge,3);base.add(dArc(1330,150,c+h,c+h+4),C.stone,C.edge,3);}
- for(const c of cs)base.add(dArc(1330,160,c-h+1.5,c+h-1.5),'#9fb4b2');for(const c of cs)base.add(dArc(1330,130,c-h+2,c+h-2),C.light);
- for(const c of cs)base.add(dArc(1262,22,c-46,c+46),C.blue);for(const c of cs)base.add(dArc(1262,9,c-46,c+46),C.roof);
- for(const c of cs)base.add(dArc(1395,26,c-48,c+48),'#0a1b27',C.steel,1.5);for(const c of cs)base.add(dArc(1395,12,c-47,c+47),'#141f29');
- let clip='';for(const c of cs)clip+=dArc(1395,16,c-47,c+47);
- const lights=painter();for(let i=0;i<24;i++)lights.add(dArc(1395,9,i*15,i*15+7),C.cyan);
+ for(const c of cs){base.add(dArc(RM,W,c-h,c+h),C.stone,C.edge,3);base.add(dArc(RM,W*.56,c-h-3,c-h),C.stone,C.edge,3);base.add(dArc(RM,W*.56,c+h,c+h+3),C.stone,C.edge,3);}
+ for(const c of cs)base.add(dArc(RM,W-44,c-h+1,c+h-1),'#9fb4b2');for(const c of cs)base.add(dArc(RM,W-76,c-h+1.5,c+h-1.5),C.light);
+ for(const c of cs)base.add(dArc(R0+42,30,c-h+4,c+h-4),C.blue);for(const c of cs)base.add(dArc(R0+42,12,c-h+4,c+h-4),C.roof);
+ const RS=R1-78;for(const c of cs)base.add(dArc(RS,36,c-h+3,c+h-3),'#0a1b27',C.steel,2);for(const c of cs)base.add(dArc(RS,16,c-h+3.5,c+h-3.5),'#141f29');
+ let clip='';for(const c of cs)clip+=dArc(RS,22,c-h+3.5,c+h-3.5);
+ const lights=painter();for(let i=0;i<30;i++)lights.add(dArc(RS,12,i*12,i*12+5.5),C.cyan);
  layers.push({spin:1.5,groups:base.groups,sub:{clip,spin:4,groups:lights.groups}});
  const top=painter();
- for(const c of cs){const m=M(c);top.add(dRect(1190,-60,288,120,m),C.stone,C.edge,3);top.add(dRect(1272,-170,116,340,m),C.stone,C.edge,3);}
- for(const c of cs){const m=M(c);top.add(dRect(1206,-44,256,88,m),C.light);top.add(dRect(1288,-154,100,308,m),C.light);}
- for(const c of cs){const m=M(c);top.add(dRect(1212,-26,50,52,m),C.blue);top.add(dRect(1398,-26,54,52,m),C.blue);top.add(dRect(1300,-162,60,42,m),C.blue);top.add(dRect(1300,120,60,42,m),C.blue);}
- const BLK=[[-12,1292,14,0],[12,1292,-14,1],[-26,1372,-10,1],[26,1372,10,0],[-44,1300,18,0],[44,1300,-18,1]],bm=(c,[da,r,tilt])=>mul(M(c+da),M(tilt,r,0));
- for(const c of cs)for(const b of BLK)top.add(dRect(-34,-56,68,112,bm(c,b)),C.stone,C.edge,2);
- for(const c of cs)for(const b of BLK)if(!b[3])top.add(dRect(-22,-40,44,72,bm(c,b)),C.light);for(const c of cs)for(const b of BLK)if(b[3])top.add(dRect(-22,-40,44,72,bm(c,b)),C.blue);
- for(const c of cs)for(const [da,r] of [[-30,1395],[38,1270]])top.add(dPoly(MOSS_PTS,mul(M(c+da),M(c+da+40,r,0))),C.moss);
- towersD(top,cs.flatMap(c=>[['spire',56,mul(M(c),M(c-90,1330,0))],['watch',48,mul(M(c-35),M(c-35-90,1330,0))],['garden',52,mul(M(c+35),M(c+35-90,1330,0))],['open',32,mul(M(c-19),M(c-19-90,1345,0))],['spire',28,mul(M(c+19),M(c+19-90,1310,0))]]));
+ for(const c of cs)for(const b of CROSS)top.add(cx(c,b),C.stone,C.edge,3);
+ for(const c of cs){top.add(cx(c,[1492,1978,-78,78]),C.light);top.add(cx(c,[1642,1778,-278,278]),C.light);}
+ for(const c of cs){top.add(cx(c,[1500,1580,-40,40]),C.blue);top.add(cx(c,[1890,1970,-40,40]),C.blue);top.add(cx(c,[1660,1760,-270,-200]),C.blue);top.add(cx(c,[1660,1760,200,270]),C.blue);top.add(cx(c,[1600,1820,-14,14]),C.blue);top.add(cx(c,[1600,1820,-6,6]),C.roof);}
+ const BLK=[[-16,1650,12,0],[16,1650,-12,1],[-27,1770,-9,1],[27,1770,9,0],[-31,1630,16,1],[31,1630,-16,0],[-20,1800,20,0],[20,1800,-20,1]],bm=(c,[da,r,tilt])=>mul(M(c+da),M(tilt,r,0));
+ for(const c of cs)for(const b of BLK)top.add(dRect(-45,-75,90,150,bm(c,b)),C.stone,C.edge,2.5);
+ for(const c of cs)for(const b of BLK)if(!b[3])top.add(dRect(-31,-56,62,100,bm(c,b)),C.light);for(const c of cs)for(const b of BLK)if(b[3])top.add(dRect(-31,-56,62,100,bm(c,b)),C.blue);
+ for(const c of cs)for(const [da,r,k] of [[-28,1830,1.6],[30,1590,1.4],[-8,1840,1.2]])top.add(dPoly(MOSS_PTS.map(([x,y])=>[x*k,y*k]),mul(M(c+da),M(c+da+40,r,0))),C.moss);
+ const at=(c,da,r)=>mul(M(c+da),M(c+da-90,r,0));
+ towersD(top,cs.flatMap(c=>[['astro',110,at(c,0,RM)],['spire',60,at(c,0,1950)],['open',54,at(c,0,1500)],['watch',70,at(c,-24,1700)],['garden',72,at(c,24,1700)],['open',50,at(c,-12,1815)],['spire',46,at(c,12,1600)]]));
  layers.push({spin:1.5,groups:top.groups});
  return layers;}
 
