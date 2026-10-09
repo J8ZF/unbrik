@@ -8,7 +8,7 @@
 //  short: K … Dc, then the exponent.
 //  scientific: 1.23e45.  engineering: 12.3e45 with exponents in steps of 3.
 // UNIT_SUFFIXES[k] names 1000^k.
-import {Big} from './big.js?v=3.1.0';
+import {Big} from './big.js?v=4.0.0-dev.1';
 const FIRST=['M','B','T','Qa','Qi','Sx','Sp','Oc','No'];
 const ONES=['','U','D','T','Qa','Qi','Sx','Sp','Oc','No'];
 const TENS=['','Dc','Vg','Tg','Qag','Qig','Sxg','Spg','Ocg','Nog'];

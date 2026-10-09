@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {defaultState,validateSave,economy,Big} from './dist/data.js';
+import {defaultState,validateSave,economy,Big,NODES} from './dist/data.js';
 globalThis.BIG_STRICT=true;
 const N=v=>Big.from(v).toNumber();
 import {offlineEfficiency,effectiveOfflineSeconds,checkpointOffline,settleOffline,productionSnapshot} from './dist/offline.js';
@@ -13,7 +13,7 @@ const s=defaultState();s.currencies.money=0;checkpointOffline(s,start);const a=s
 const chunked=defaultState();checkpointOffline(chunked,start);for(let t=10;t<=3600;t+=10)settleOffline(chunked,start+t*1000);near(chunked.currencies.money,s.currencies.money);near(chunked.stats.offlineEffectiveSeconds,s.stats.offlineEffectiveSeconds);
 const recovered=validateSave(JSON.parse(JSON.stringify(chunked)),start+3600000);assert.equal(N(settleOffline(recovered,start+3600000).amount),0);near(settleOffline(recovered,start+7200000).amount,effectiveOfflineSeconds(7200)-effectiveOfflineSeconds(3600));
 const preBoundary=defaultState();checkpointOffline(preBoundary,start);settleOffline(preBoundary,start+1799000);near(settleOffline(preBoundary,start+1801000).effectiveSeconds,1+600*(1-Math.exp(-1/600)));
-const cache=defaultState();cache.levels=Object.fromEntries(Array.from({length:22},(_,i)=>[i+1,1]));checkpointOffline(cache,start);const rate=productionSnapshot(cache);assert(rate.gt(economy(cache).rate));near(settleOffline(cache,start+1800000).amount,N(rate)*1800);assert.equal(cache.timers.cache,0);
+const CACHE=NODES.find(n=>n.effects.some(e=>e.type==='cache'));const cache=defaultState();cache.levels=Object.fromEntries([...Array.from({length:22},(_,i)=>i+1),CACHE.id].map(id=>[id,1]));checkpointOffline(cache,start);const rate=productionSnapshot(cache);assert(rate.gt(economy(cache).rate));near(settleOffline(cache,start+1800000).amount,N(rate)*1800);assert.equal(cache.timers.cache,0);
 console.log(JSON.stringify({checks:'passed',minutesOfFullProduction:{30:effectiveOfflineSeconds(1800)/60,60:effectiveOfflineSeconds(3600)/60,120:effectiveOfflineSeconds(7200)/60},duplicateAndSplitSettlement:'passed',version2Saves:'passed'}));
 // Exercise the actual app's save/suspend/resume functions with a controlled
 // clock and in-memory storage; no browser or alternate game implementation.

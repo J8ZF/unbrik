@@ -1,20 +1,16 @@
-import {createRadialLayout} from './layout.js?v=3.1.0';
-import {RESEARCH} from './research.js?v=3.1.0';
-import {PRICES} from './prices.js?v=3.1.0';
-import {Big,ZERO,ONE} from './big.js?v=3.1.0';
-import {PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,prestigeLevel} from './prestige.js?v=3.1.0';
+import {CENTER} from './layout.js?v=4.0.0-dev.1';
+import {RESEARCH} from './research.js?v=4.0.0-dev.1';
+import {ISLANDS,ISLAND_NODES} from './islands.js?v=4.0.0-dev.1';
+import {PRICES} from './prices.js?v=4.0.0-dev.1';
+import {Big,ZERO,ONE} from './big.js?v=4.0.0-dev.1';
+import {PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,prestigeLevel} from './prestige.js?v=4.0.0-dev.1';
 export {PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,Big};
-export const CHAPTERS = [
- {name:'INITIALIZATION',ko:'초기화',color:'#b9f36d'},
- {name:'ARITHMETIC',ko:'산술',color:'#65e2cc'},
- {name:'ALGEBRA',ko:'대수',color:'#77baff'},
- {name:'LOGIC',ko:'논리',color:'#bba1ff'},
- {name:'MEMORY',ko:'메모리',color:'#f5be72'},
- {name:'ALGORITHMS',ko:'알고리즘',color:'#fa93bd'},
- {name:'ARCHITECTURE',ko:'아키텍처',color:'#F2DA5B'},
- {name:'COMPUTATION',ko:'연산',color:'#F2F4F7'},
-];
-export const ECONOMY_EPOCH='unbrik-2.0-rework';
+// 4.0: AXIOM is a sea of islands. The engine's "sectors" are the islands, in
+// order; only the islands that have studies yet are listed.
+export const CHAPTERS=ISLANDS.map(i=>({name:i.name,ko:i.name,color:'#b9f36d',island:i.id}));
+// A bought card takes the colour of the ground it stands on.
+export const ZONE_COLORS={grass:'#b9f36d',sand:'#ecd29a',rock:'#93a9be'};
+export const ECONOMY_EPOCH='unbrik-4.0';
 export const CURRENCIES=['money','coin'];
 // Amounts (balances, rates, costs, earnings) are Big values with no upper
 // limit; see big.js. A plain number found in state is read as a Big.
@@ -34,9 +30,11 @@ export const MAPS=[
  {id:'prestige',name:'환생',ko:'환생',currencies:['token'],theme:'bloom',locked:s=>(s.prestige?.count||0)===0},
 ];
 export const defaultPrestige=()=>({count:0,tokensEarned:ZERO,tokensSpent:ZERO,purchases:0,levels:{},auto:{},last:null,noticed:false});
-// Ready when every study is at its cap and the balance clears the threshold.
 export const treeComplete=s=>NODES.every(n=>level(s,n)>=n.max);
-export const prestigeReady=s=>treeComplete(s)&&amount(s.currencies.money).gte(PRESTIGE_THRESHOLD);
+// 4.0: ready once study #105 (the last study of island 3) is bought and the
+// balance clears the threshold. Until island 3 exists, the last placed study stands in.
+export const PRESTIGE_GATE=Math.min(105,ISLANDS.at(-1).last);
+export const prestigeReady=s=>byId.has(PRESTIGE_GATE)&&level(s,PRESTIGE_GATE)>0&&amount(s.currencies.money).gte(PRESTIGE_THRESHOLD);
 // Start over: studies, dollars and coins reset, tokens are granted, automation
 // checks are cleared, lifetime statistics and settings stay. The world clock
 // keeps running. Returns the tokens granted, or 0 when not ready.
@@ -82,53 +80,32 @@ export function worldState(s){
  const weather=WEATHERS[s.world?.weather]?s.world.weather:'clear';
  return {seconds,hour,minute,clock:`${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`,phase:phase.id,phaseKo:phase.ko,weather,weatherKo:WEATHERS[weather].ko,day:Math.floor((START_HOUR*60+seconds)/DAY_SECONDS)+1};
 }
-export const NODES=RESEARCH.map(n=>({...n,effects:n.effects.map(e=>({...e})),costs:PRICES[n.id]||Array.from({length:n.max},()=>Object.fromEntries(n.payment.map(k=>[k,10])))}));
-// Each sector is a flow: one root fans out into rows of two or three parallel
-// studies, then narrows back into a single gate that opens the next sector.
-// A study requires the parents directly "upstream" of it (the ones whose span
-// in the previous row overlaps its own), so links never cross. Sector 3 keeps
-// BASIS alone in row 2 because every coin study must descend from it.
-// Row widths per sector; sums equal the sector sizes 8/12/14/13/14/14/15/15.
-export const SECTOR_ROWS=[
- [1,2,2,2,1],
- [1,2,3,3,2,1],
- [1,1,2,3,3,3,1],
- [1,2,3,3,3,1],
- [1,2,3,3,2,2,1],
- [1,2,2,3,3,2,1],
- [1,2,3,3,3,2,1],
- [1,2,3,3,3,2,1],
-];
-export const ROW_PITCH=190,COLUMN_PITCH=252;
-const upstream=(j,width,previousWidth)=>{
- const lo=j/width,hi=(j+1)/width,parents=[];
- for(let i=0;i<previousWidth;i++){const a=i/previousWidth,b=(i+1)/previousWidth;if(Math.min(hi,b)-Math.max(lo,a)>1e-9)parents.push(i);}
- return parents;
-};
-for(let chapter=0;chapter<8;chapter++){
- const members=NODES.filter(n=>n.chapter===chapter),previous=NODES.filter(n=>n.chapter===chapter-1).at(-1),rows=SECTOR_ROWS[chapter];
- if(rows.reduce((a,b)=>a+b,0)!==members.length)throw Error(`Sector ${chapter+1} row plan does not match ${members.length} studies.`);
- let index=0,lastRow=[];
- rows.forEach((width,row)=>{
-  const current=[];
-  for(let j=0;j<width;j++){
-   const n=members[index++];
-   n.localX=Math.round((j-(width-1)/2)*COLUMN_PITCH);n.localY=row*ROW_PITCH;n.row=row;n.column=j;
-   const parents=row?upstream(j,width,lastRow.length).map(i=>lastRow[i].id):previous?[previous.id]:[];
-   n.req=parents.map(id=>({id,level:1}));n.any=n.name==='OR GATE';n.gate=index===members.length;n.currency=n.payment.length===1?n.payment[0]:'both';n.baseCost=n.costs[0];
-   current.push(n);
-  }
-  lastRow=current;
- });
-}
+// Each island study is a position on the island; until the 4.0 content list is
+// written it borrows a 3.x study (name, icon, effects, prices) through `content`.
+// Prerequisites come from the island design; `choice` groups make A/B studies.
+const RESEARCH_BY_ID=new Map(RESEARCH.map(n=>[n.id,n]));
+export const NODES=ISLAND_NODES.map(p=>{const r=RESEARCH_BY_ID.get(p.content),island=ISLANDS.findIndex(i=>i.id===p.island);
+ const costs=PRICES[r.id]||Array.from({length:r.max},()=>Object.fromEntries(r.payment.map(k=>[k,10])));
+ return {...r,id:p.id,content:r.id,chapter:island,island:p.island,zone:p.zone,x:p.x,y:p.y,effects:r.effects.map(e=>({...e})),costs,
+  req:p.req.map(id=>typeof id==='number'?{id,level:1}:{id:id.id,level:id.level}),any:r.name==='OR GATE',choice:p.choice||null,
+  gate:ISLANDS[island].last===p.id,currency:r.payment.length===1?r.payment[0]:'both',baseCost:costs[0]};});
 export const byId=new Map(NODES.map(n=>[n.id,n]));
-export const MAP_LAYOUT=createRadialLayout(NODES);
+// Map frame: the islands plus the center node, which waits in the sea off the
+// north-west of island 1 until the observatory has its own place.
+export const MAP_LAYOUT=(()=>{const b=ISLANDS.reduce((a,i)=>({minX:Math.min(a.minX,i.bounds.minX),minY:Math.min(a.minY,i.bounds.minY),maxX:Math.max(a.maxX,i.bounds.maxX),maxY:Math.max(a.maxY,i.bounds.maxY)}),{minX:CENTER.x-260,minY:CENTER.y-260,maxX:CENTER.x+260,maxY:CENTER.y+260});
+ return {bounds:b,center:CENTER,sectors:ISLANDS.map((i,k)=>({chapter:k,island:i.id,members:NODES.filter(n=>n.chapter===k),label:{x:i.label[0],y:i.label[1],align:'left'},path:'',direction:{x:0,y:-1}}))};})();
+// The study that unlocks coin (3.x BASIS).
+export const COIN_UNLOCK=NODES.find(n=>n.effects.some(e=>e.type==='unlock'))?.id;
 export const level=(s,n)=>s.levels[typeof n==='number'?n:n.id]||0;
-export function unlocked(s,n){return n.req.length===0||(n.any?n.req.some(r=>level(s,r.id)>=r.level):n.req.every(r=>level(s,r.id)>=r.level));}
+// A study opens when its prerequisites reach their required levels (any one of
+// them for OR GATE). In an A/B choice, owning one side closes the other until
+// the next prestige resets both.
+export const choiceTaken=(s,n)=>!!n.choice&&NODES.some(o=>o.choice===n.choice&&o.id!==n.id&&level(s,o)>0);
+export function unlocked(s,n){if(choiceTaken(s,n))return false;return n.req.length===0||(n.any?n.req.some(r=>level(s,r.id)>=r.level):n.req.every(r=>level(s,r.id)>=r.level));}
 export function sectorProgress(s,chapter){const nodes=MAP_LAYOUT.sectors[chapter].members;const total=nodes.reduce((a,n)=>a+n.max,0),done=nodes.reduce((a,n)=>a+level(s,n),0);return {done,total,complete:done===total};}
-export function defaultState(){const now=Date.now();return {version:2,economyEpoch:ECONOMY_EPOCH,contentVersion:5,layoutVersion:3,currencies:{money:ZERO,coin:ZERO,token:ZERO},levels:{},prestige:defaultPrestige(),stats:{earned:ZERO,spent:ZERO,coinEarned:ZERO,coinSpent:ZERO,purchases:0,seconds:0,peak:ONE,coinPeak:ZERO,offlineSeconds:0,offlineEarned:ZERO,offlineCoinEarned:ZERO,offlineEffectiveSeconds:0},timers:{cache:0},settings:{motion:true,touch:true,haptic:true,format:'named',formatV2:true,purchaseCheat:false,mapControls:false,hudCollapsed:false,panelCollapsed:false},camera:null,map:'main',world:{seconds:0,weather:'clear',weatherUntil:WEATHER_INTERVAL},offline:{since:now,through:now,rate:ONE,coinRate:ZERO},savedAt:now};}
+export function defaultState(){const now=Date.now();return {version:2,economyEpoch:ECONOMY_EPOCH,contentVersion:5,layoutVersion:3,currencies:{money:ZERO,coin:ZERO,token:ZERO},levels:{},prestige:defaultPrestige(),stats:{earned:ZERO,spent:ZERO,coinEarned:ZERO,coinSpent:ZERO,purchases:0,seconds:0,peak:ONE,coinPeak:ZERO,offlineSeconds:0,offlineEarned:ZERO,offlineCoinEarned:ZERO,offlineEffectiveSeconds:0},timers:{cache:0},settings:{motion:true,sea:true,touch:true,haptic:true,format:'named',formatV2:true,purchaseCheat:false,mapControls:false,hudCollapsed:false,panelCollapsed:false},camera:null,map:'main',world:{seconds:0,weather:'clear',weatherUntil:WEATHER_INTERVAL},offline:{since:now,through:now,rate:ONE,coinRate:ZERO},savedAt:now};}
 export function economy(s){
- const owned=NODES.filter(n=>level(s,n)>0),count=owned.length,total=owned.reduce((a,n)=>a+level(s,n),0),coinUnlocked=level(s,22)>0;
+ const owned=NODES.filter(n=>level(s,n)>0),count=owned.length,total=owned.reduce((a,n)=>a+level(s,n),0),coinUnlocked=COIN_UNLOCK!=null&&level(s,COIN_UNLOCK)>0;
  // Products that compound (mul, baseMul) are Big; the factors stay numbers.
  const v={money:{base:1,mul:ONE,baseMul:ONE,discount:1,scaling:1,cache:0,cacheMul:1},coin:{base:0,mul:ONE,baseMul:ONE,discount:1,scaling:1,cache:0,cacheMul:1}};
  let interval=30;
@@ -189,9 +166,9 @@ export function effectText(n){return n.effects.map(e=>{
  case 'mul':return `${symbol} 생산 ×${v}${per}`;
  case 'base':return `${symbol} 기본 생산 합계 ×${v}${per}`;
  case 'count':return `${e.source?source+' 결제 ':''}연구마다 ${symbol} 생산 +${+(v*100).toFixed(2)}%${per}`;
- case 'levels':return `${e.source==='sector'?'이 섹터':'총'} 연구 레벨마다 ${symbol} 생산 +${+(v*100).toFixed(2)}%${per}`;
+ case 'levels':return `${e.source==='sector'?'이 섬':'총'} 연구 레벨마다 ${symbol} 생산 +${+(v*100).toFixed(2)}%${per}`;
  case 'balance':return `${symbol} 생산 ×(1 + ${v} × log₁₀(1 + 보유 ${source}))`;
- case 'completed':return `완료 섹터마다 ${symbol} 생산 +${v*100}%`;
+ case 'completed':return `완료 섬마다 ${symbol} 생산 +${v*100}%`;
  case 'maxed':return `MAX 반복 연구마다 ${symbol} 생산 +${v*100}%`;
  case 'discount':return `${symbol} 연구 비용 −${+((1-v)*100).toFixed(2)}%${per}`;
  case 'scaling':return `${symbol} 반복 연구 비용 ×${v}^현재 Lv.${per}`;
@@ -201,9 +178,9 @@ export function effectText(n){return n.effects.map(e=>{
  case 'recursive':return `${symbol} 생산 ×(${v}^Lv × (1 + 0.08 × Lv²))`;
  }
 }).filter(Boolean).join(' · ');}
-export function copyPreferences(input){const s=defaultState();for(const k of ['motion','touch','haptic','purchaseCheat','mapControls','hudCollapsed','panelCollapsed'])if(typeof input?.settings?.[k]==='boolean')s.settings[k]=input.settings[k];if(['named','short','scientific','engineering'].includes(input?.settings?.format))s.settings.format=input.settings.format;if(input?.settings?.format==='short'&&input?.settings?.formatV2!==true)s.settings.format='named';return s;}
+export function copyPreferences(input){const s=defaultState();for(const k of ['motion','sea','touch','haptic','purchaseCheat','mapControls','hudCollapsed','panelCollapsed'])if(typeof input?.settings?.[k]==='boolean')s.settings[k]=input.settings[k];if(['named','short','scientific','engineering'].includes(input?.settings?.format))s.settings.format=input.settings.format;if(input?.settings?.format==='short'&&input?.settings?.formatV2!==true)s.settings.format='named';return s;}
 export function validateSave(input,now=Date.now()){
- if(!input||input.version!==2||input.economyEpoch!==ECONOMY_EPOCH)throw Error('2.0 리워크 이전 저장은 호환되지 않습니다.');
+ if(!input||input.version!==2||input.economyEpoch!==ECONOMY_EPOCH)throw Error('4.0 이전 저장은 호환되지 않습니다.');
  // Amounts load from plain numbers (every save before 3.1, and 3.1 saves
  // below 1e300) or from strings such as "1.5e400".
  const s=copyPreferences(input),num=(v,max=Infinity)=>typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=max,big=v=>{const b=Big.parse(v);return b&&b.sign>=0?b:null;};
@@ -223,8 +200,8 @@ export function validateSave(input,now=Date.now()){
  }
  if(!s.prestige.count&&!s.currencies.token.isZero())throw Error('환생 전 토큰 데이터가 올바르지 않습니다.');
  for(const [key,value]of Object.entries(input.levels)){const n=byId.get(Number(key));if(!n||String(n.id)!==key||!Number.isInteger(value)||value<0||value>n.max)throw Error('연구 레벨이 올바르지 않습니다.');if(value)s.levels[key]=value;}
- for(const n of NODES)if(level(s,n)&&!unlocked(s,n))throw Error('선행 연구가 누락되었습니다.');
- if(!level(s,22)&&!s.currencies.coin.isZero())throw Error('해금 전 코인 데이터가 올바르지 않습니다.');
+ for(const n of NODES)if(level(s,n)&&(choiceTaken(s,n)||!n.req.every(r=>level(s,r.id)>=r.level)&&!(n.any&&n.req.some(r=>level(s,r.id)>=r.level))))throw Error('선행 연구가 누락되었습니다.');
+ if(!(COIN_UNLOCK!=null&&level(s,COIN_UNLOCK))&&!s.currencies.coin.isZero())throw Error('해금 전 코인 데이터가 올바르지 않습니다.');
  if(!input.stats||!Object.keys(s.stats).every(k=>BIG_STATS.includes(k)?big(input.stats[k]):num(input.stats[k])))throw Error('통계가 올바르지 않습니다.');
  for(const k of Object.keys(s.stats))s.stats[k]=BIG_STATS.includes(k)?big(input.stats[k]):input.stats[k];
  for(const k of ['prestigeRuns','lastRunSeconds','runStart'])if(num(input.stats[k]))s.stats[k]=input.stats[k];

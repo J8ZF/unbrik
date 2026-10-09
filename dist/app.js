@@ -1,16 +1,17 @@
-import {NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeReady,prestige,autoResearch} from './data.js?v=3.1.0';
-import {PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress} from './prestige.js?v=3.1.0';
-import {createWeatherFx} from './weather.js?v=3.1.0';
-import {iconSvg,setIcon} from './icons.js?v=3.1.0';
-import {formatNumber,compactNumber} from './units.js?v=3.1.0';
-import {Big} from './big.js?v=3.1.0';
-import {checkpointOffline,settleOffline} from './offline.js?v=3.1.0';
-import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=3.1.0';
-import {wireframePaths} from './hub.js?v=3.1.0';
-import {UPDATES,updatePage} from './updates.js?v=3.1.0';
-import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=3.1.0';
-import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=3.1.0';
-import {createNotifications} from './notifications.js?v=3.1.0';
+import {ZONE_COLORS,NODES,CHAPTERS,byId,defaultState,level,unlocked,economy,cost,affordable,waitTime,normalizedCost,copyPreferences,purchase,tick,effectText,validateSave,MAP_LAYOUT,sectorProgress,CURRENCY_DEFS,MAPS,currentMap,worldState,PRESTIGE_NODES,prestigeById,prestigeBonuses,tokensFor,PRESTIGE_THRESHOLD,treeComplete,prestigeReady,prestige,autoResearch} from './data.js?v=4.0.0-dev.1';
+import {PRESTIGE_BRANCHES,PRESTIGE_LAYOUT,prestigeLevel,prestigeUnlocked,prestigeCost,prestigeAffordable,prestigePurchase,petalProgress} from './prestige.js?v=4.0.0-dev.1';
+import {createWeatherFx} from './weather.js?v=4.0.0-dev.1';
+import {iconSvg,setIcon} from './icons.js?v=4.0.0-dev.1';
+import {formatNumber,compactNumber} from './units.js?v=4.0.0-dev.1';
+import {Big} from './big.js?v=4.0.0-dev.1';
+import {checkpointOffline,settleOffline} from './offline.js?v=4.0.0-dev.1';
+import {BRANCHES,CENTER,boundsOf,connectionPath,centerPath} from './layout.js?v=4.0.0-dev.1';
+import {wireframePaths} from './hub.js?v=4.0.0-dev.1';
+import {UPDATES,updatePage} from './updates.js?v=4.0.0-dev.1';
+import {interpolateCamera,overviewMode,mapFrames,fitCamera} from './camera.js?v=4.0.0-dev.1';
+import {createOpalMotion,installGameSelectionGuard} from './effects.js?v=4.0.0-dev.1';
+import {createNotifications} from './notifications.js?v=4.0.0-dev.1';
+import {createIslandView} from './island-view.js?v=4.0.0-dev.1';
 const $=id=>document.getElementById(id);
 const CENTER_SELECTION=-1;
 // Two maps share the viewport: the mainland (research ids 1-105) and the
@@ -26,19 +27,19 @@ const setText=(el,value)=>{const next=String(value);if(el.textContent!==next)el.
 const setHtml=(el,value)=>{if(el.dataset.html!==value){el.innerHTML=value;el.dataset.html=value;}};
 // The reward display reads the same atomic payout as the economy.
 let cacheReward={money:0,coin:0,until:0};
-const KEY='unbrik-save-v2',BACKUP=KEY+'-backup';
+const KEY='unbrik-save-v4',BACKUP=KEY+'-backup';
 let loadNotice='',storageOK=true;
 function load(){
- try{const raw=localStorage.getItem(KEY);if(!raw){const legacy=localStorage.getItem('axiom-save-v1');if(legacy){loadNotice='2.0 리워크 · 새로운 연구를 시작합니다.';try{return copyPreferences(JSON.parse(legacy));}catch{}}return defaultState();}try{return validateSave(JSON.parse(raw));}catch{const b=localStorage.getItem(BACKUP);if(b){loadNotice='이전 자동 저장에서 복구했습니다.';return validateSave(JSON.parse(b));}loadNotice='저장 데이터를 읽지 못했습니다. 내보낸 파일이 있다면 설정에서 복원해 주세요.';return defaultState();}}
+ try{const raw=localStorage.getItem(KEY);if(!raw){const legacy=localStorage.getItem('unbrik-save-v2')||localStorage.getItem('axiom-save-v1');if(legacy){loadNotice='4.0 · 새로운 연구를 시작합니다.';try{return copyPreferences(JSON.parse(legacy));}catch{}}return defaultState();}try{return validateSave(JSON.parse(raw));}catch{const b=localStorage.getItem(BACKUP);if(b){loadNotice='이전 자동 저장에서 복구했습니다.';return validateSave(JSON.parse(b));}loadNotice='저장 데이터를 읽지 못했습니다. 내보낸 파일이 있다면 설정에서 복원해 주세요.';return defaultState();}}
  catch{storageOK=false;loadNotice='브라우저 저장을 사용할 수 없습니다. 설정에서 저장 데이터를 내보내 주세요.';return defaultState();}
 }
 let state=load(),selected=defaultSelection(),econ=economy(state),lastRender=0,lastSave=0,lastFrame=performance.now(),sessionSeconds=0;
 const viewport=$('viewport'),world=$('world'),nodeEls=new Map(),edgeEls=[],chapterEls=[],sectorEls=[],spokeEls=[];
-function initialCamera(){const n=lookupNode(selected)||activeNodes()[0];const started=onPrestige()?state.prestige.purchases>0:econ.count>0;if(started)return {x:viewport.clientWidth/2-n.x*.78,y:viewport.clientHeight*.4-n.y*.78,scale:.78};const scale=Math.max(.22,Math.min(.55,(viewport.clientHeight-65)/600));return {x:viewport.clientWidth/2,y:viewport.clientHeight*.78,scale};}
+function initialCamera(){const n=lookupNode(selected)||activeNodes()[0];const started=onPrestige()?state.prestige.purchases>0:econ.count>0;if(started)return {x:viewport.clientWidth/2-n.x*.78,y:viewport.clientHeight*.4-n.y*.78,scale:.78};const scale=Math.max(.22,Math.min(.55,(viewport.clientHeight-65)/600));return {x:viewport.clientWidth/2-n.x*scale,y:viewport.clientHeight*.55-n.y*scale,scale};}
 let camera=state.camera||initialCamera();
 let gestureUsed=false,suspended=true,cameraMoving=false,lastHubFrame=0,updatesPage=1;
 const motionPreference=matchMedia('(prefers-reduced-motion: reduce)');
-let opalMotion=null,weatherFx=null;
+let opalMotion=null,weatherFx=null,islandView=null;
 let selectionPending=false,selectionEpoch=0,navigationFrame=0,panelAnimation=null,navigatorCloseTimer=0,cameraIntent=null;
 // Amounts are Big values (or plain numbers); from 1000 up the chosen notation
 // applies, past the named units as an exponent (1.23e293910).
@@ -73,7 +74,7 @@ const WEATHER_NOTICES={rain:'날씨 · 비가 내리기 시작합니다.',snow:'
 function syncOpalMotion(){document.body.classList.toggle('effects-paused',document.hidden||suspended);opalMotion?.refresh();weatherFx?.refresh();}
 function applySettings(){
  const reduced=!state.settings.motion||motionPreference.matches;document.body.classList.toggle('reduced-motion',reduced);
- for(const k of ['motion','touch','haptic','purchaseCheat','mapControls'])$(k).checked=state.settings[k];$('format').value=state.settings.format;
+ for(const k of ['motion','sea','touch','haptic','purchaseCheat','mapControls'])$(k).checked=state.settings[k];islandView?.setMotion(!reduced&&state.settings.sea);$('sea').disabled=reduced;$('format').value=state.settings.format;
  const controls=$('mapTools'),expanded=state.settings.mapControls,changed=controls.dataset.expanded!==String(expanded);
  controls.dataset.expanded=String(expanded);controls.classList.toggle('is-compact',!expanded);
  for(const id of ['fit','zoomOut','zoomIn'])$(id).hidden=!expanded;
@@ -149,22 +150,24 @@ function sectorUnlocked(chapter){const root=MAP_LAYOUT.sectors[chapter]?.members
 function discovery(n){if(!sectorUnlocked(n.chapter))return 0;if(level(state,n))return 3;if(n.id===1||n.req.some(r=>level(state,r.id)>0))return 2;if(n.req.some(r=>{const p=byId.get(r.id);return p.id===1||p.req.some(q=>level(state,q.id)>0);}))return 1;return 0;}
 const visibility=new Map();
 function createGraph(){
- const b=MAP_LAYOUT.bounds;for(const id of ['edges','sectorRegions','spokes']){const svg=$(id);svg.setAttribute('viewBox',`${b.minX} ${b.minY} ${b.maxX-b.minX} ${b.maxY-b.minY}`);svg.style.left=b.minX+'px';svg.style.top=b.minY+'px';svg.style.width=(b.maxX-b.minX)+'px';svg.style.height=(b.maxY-b.minY)+'px';}
+ const b=MAP_LAYOUT.bounds;for(const id of ['edges','edgeCasings','sectorRegions','spokes']){const svg=$(id);svg.setAttribute('viewBox',`${b.minX} ${b.minY} ${b.maxX-b.minX} ${b.maxY-b.minY}`);svg.style.left=b.minX+'px';svg.style.top=b.minY+'px';svg.style.width=(b.maxX-b.minX)+'px';svg.style.height=(b.maxY-b.minY)+'px';}
  for(const n of NODES){
- const el=document.createElement('button');el.className='node';el.hidden=true;el.id=`node-${n.id}`;el.dataset.id=n.id;el.style.left=n.x+'px';el.style.top=n.y+'px';el.style.setProperty('--node-color',CHAPTERS[n.chapter].color);
+ const el=document.createElement('button');el.className='node';el.hidden=true;el.id=`node-${n.id}`;el.dataset.id=n.id;el.style.left=n.x+'px';el.style.top=n.y+'px';el.style.setProperty('--node-color',ZONE_COLORS[n.zone]||CHAPTERS[n.chapter].color);
  el.innerHTML='<div class="node-top"><span class="symbol"></span><span class="node-id"></span></div><span class="node-name"></span><span class="node-price"><span></span><span class="node-status"></span></span><i class="level-dots"></i>';
  if(n.chapter===7){const border=document.createElement('span');border.className='opal-border';border.setAttribute('aria-hidden','true');el.append(border);}
  el.addEventListener('click',ev=>handleMapClick(ev,n.id));
  $('nodes').append(el);nodeEls.set(n.id,el);
- for(const r of n.req){const p=byId.get(r.id),path=document.createElementNS('http://www.w3.org/2000/svg','path');
- path.style.display='none';path.setAttribute('d',connectionPath(p,n,MAP_LAYOUT.sectors));path.style.setProperty('--edge-color',CHAPTERS[n.chapter].color);$('edges').append(path);edgeEls.push({el:path,from:p,to:n,cross:p.branch!==n.branch});}
+ // islands: straight white links over a dark casing
+ for(const r of n.req){const p=byId.get(r.id),d=`M${p.x} ${p.y}L${n.x} ${n.y}`,path=document.createElementNS('http://www.w3.org/2000/svg','path'),casing=document.createElementNS('http://www.w3.org/2000/svg','path');
+ for(const e of [casing,path]){e.style.display='none';e.setAttribute('d',d);}casing.setAttribute('class','edge-casing');$('edgeCasings').append(casing);$('edges').append(path);edgeEls.push({el:path,casing,from:p,to:n,cross:false});}
  }
  for(const sector of MAP_LAYOUT.sectors){
- const i=sector.chapter,c=CHAPTERS[i],el=document.createElement('div');el.className='chapter-mark';el.hidden=true;el.style.left=sector.label.x+'px';el.style.top=sector.label.y+'px';if(sector.label.align==='left')el.style.transform='none';else if(sector.label.align==='right')el.style.transform='translateX(-100%)';el.style.setProperty('--sector-color',c.color);el.innerHTML='<span class="mark-text"></span><button class="auto-toggle" type="button" hidden aria-pressed="false"></button>';el.querySelector('.mark-text').textContent=`0${i+1} / ${c.name}`;const toggle=el.querySelector('.auto-toggle');toggle.dataset.chapter=i;toggle.addEventListener('click',ev=>{if(ev.detail!==0&&performance.now()<suppressMapClickUntil)return;toggleAuto(i);});$('chapterMarks').append(el);chapterEls.push(el);
+ // island heading: fixed place outside the coast, number, name and progress
+ const i=sector.chapter,c=CHAPTERS[i],el=document.createElement('div');el.className='chapter-mark island-mark';el.hidden=true;el.style.left=sector.label.x+'px';el.style.top=sector.label.y+'px';el.style.setProperty('--sector-color',c.color);el.innerHTML='<span class="island-no"></span><span class="mark-text"></span><span class="island-progress"></span><button class="auto-toggle" type="button" hidden aria-pressed="false"></button>';el.querySelector('.island-no').textContent=`${String(i+1).padStart(2,'0')} /`;el.querySelector('.mark-text').textContent=c.name;const toggle=el.querySelector('.auto-toggle');toggle.dataset.chapter=i;toggle.addEventListener('click',ev=>{if(ev.detail!==0&&performance.now()<suppressMapClickUntil)return;toggleAuto(i);});$('chapterMarks').append(el);chapterEls.push(el);
  const region=document.createElementNS('http://www.w3.org/2000/svg','path');region.setAttribute('d',sector.path);region.setAttribute('class','sector-region');region.style.setProperty('--sector-color',c.color);region.style.display='none';$('sectorRegions').append(region);sectorEls.push(region);
  const jump=document.createElement('button');jump.className='sector-jump';jump.hidden=true;jump.style.setProperty('--sector-color',c.color);jump.innerHTML=`<span class="sector-jump-icon">${iconSvg(sector.members[0].icon)}</span><span class="sector-jump-copy"><span class="sector-jump-name">${c.name}</span><span class="sector-jump-progress"></span></span><span class="sector-jump-state" aria-hidden="true"></span>`;jump.onclick=()=>jumpToSector(i);$('sectorMenu').append(jump);
  }
- for(const branch of BRANCHES){const root=MAP_LAYOUT.sectors[branch.chapters[0]].members[0],path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',centerPath(root));path.setAttribute('class','center-spoke');path.style.display='none';path.style.setProperty('--sector-color',CHAPTERS[root.chapter].color);$('spokes').append(path);spokeEls.push({el:path,root});}
+ islandView=createIslandView({viewport,back:$('islandBack'),canvas:$('seaFx'),world,decorSvg:$('islandDecor'),beamSvg:$('islandBeam'),buildSvg:$('islandBuild'),mossSvg:$('islandMoss'),nodes:NODES,level:n=>level(state,n)});
  $('centerNode').addEventListener('click',ev=>handleMapClick(ev,CENTER_SELECTION));
  createHeader();createPrestigeGraph();
 }
@@ -281,7 +284,7 @@ const HEADING_LEAD=135;
 function placeHeading(i,sector,complete){placeMark(chapterEls[i],sector,complete);}
 function placeMark(el,sector,complete){
  let {x,y,align}=sector.label;
- if(!complete){
+ if(!complete&&sector.island==null){
   const visible=sector.members.filter(n=>visibility.get(n.id)>0);
   if(visible.length){
    const row=Math.max(...visible.map(n=>n.row)),front=visible.filter(n=>n.row===row);
@@ -310,17 +313,18 @@ function mainGraph(){
  el.querySelector('.level-dots').style.width=(l/n.max*100)+'%';
  el.setAttribute('aria-label',d===1?'미발견 연구':`${n.name}. ${effectText(n)}. ${l>=n.max?'완료':`레벨 ${l}/${n.max}, 비용 ${priceText(p)}, ${can?'구매 조건 충족':'선행 연구 필요'}`}`);
  }
- for(const {el,from,to,cross}of edgeEls){const visible=visibility.get(from.id)>1&&visibility.get(to.id)>1&&(!cross||selected===from.id||selected===to.id);const flash=el.classList.contains('flashing'),cls=`edge ${cross?'cross-link ':''}${level(state,to)?'researched':level(state,from)?'active':'ghost'}${flash?' flashing':''}`,key=visible+cls;if(el.dataset.viewKey===key)continue;el.dataset.viewKey=key;el.style.display=visible?'':'none';if(visible)el.setAttribute('class',cls);}
+ for(const {el,casing,from,to,cross}of edgeEls){const visible=visibility.get(from.id)>1&&visibility.get(to.id)>1&&(!cross||selected===from.id||selected===to.id);const flash=el.classList.contains('flashing'),kind=level(state,to)?'researched':level(state,from)?'active':'ghost',cls=`edge ${cross?'cross-link ':''}${kind}${flash?' flashing':''}`,key=visible+cls;if(el.dataset.viewKey===key)continue;el.dataset.viewKey=key;el.style.display=casing.style.display=visible?'':'none';if(visible){el.setAttribute('class',cls);casing.setAttribute('class','edge-casing '+kind);}}
+ islandView?.render();
  let finished=0;
  $('centerNode').classList.toggle('selected',selected===CENTER_SELECTION);$('centerNode').setAttribute('aria-pressed',String(selected===CENTER_SELECTION));
- MAP_LAYOUT.sectors.forEach((sector,i)=>{const found=sectorUnlocked(i),progress=sectorProgress(state,i);if(progress.complete)finished++;const autoAvail=autoSectors.has(i)&&!progress.complete,autoOn=!!state.prestige.auto[i],key=`${found}:${progress.done}:${byId.get(selected)?.chapter===i}:${autoAvail}:${autoOn}`;if(sectorEls[i].dataset.viewKey===key)return;sectorEls[i].dataset.viewKey=key;chapterEls[i].hidden=!found;placeHeading(i,sector,progress.complete);chapterEls[i].classList.toggle('complete',progress.complete);setText(chapterEls[i].querySelector('.mark-text'),`0${i+1} / ${CHAPTERS[i].name}${progress.complete?' · COMPLETE':''}`);
-  const toggle=chapterEls[i].querySelector('.auto-toggle');toggle.hidden=!(found&&autoAvail);toggle.classList.toggle('is-on',autoOn);toggle.setAttribute('aria-pressed',String(autoOn));toggle.setAttribute('aria-label',`${CHAPTERS[i].ko} 섹터 자동 연구 ${autoOn?'켜짐':'꺼짐'}`);setHtml(toggle,iconSvg(autoOn?'Check':'Circle')+'<span>AUTO</span>');
+ MAP_LAYOUT.sectors.forEach((sector,i)=>{const found=sectorUnlocked(i),progress=sectorProgress(state,i);if(progress.complete)finished++;const autoAvail=autoSectors.has(i)&&!progress.complete,autoOn=!!state.prestige.auto[i],key=`${found}:${progress.done}:${byId.get(selected)?.chapter===i}:${autoAvail}:${autoOn}`;if(sectorEls[i].dataset.viewKey===key)return;sectorEls[i].dataset.viewKey=key;chapterEls[i].hidden=!found;placeHeading(i,sector,progress.complete);chapterEls[i].classList.toggle('complete',progress.complete);setText(chapterEls[i].querySelector('.island-progress'),`${sector.members.filter(n=>level(state,n)>0).length} / ${sector.members.length}`);
+  const toggle=chapterEls[i].querySelector('.auto-toggle');toggle.hidden=!(found&&autoAvail);toggle.classList.toggle('is-on',autoOn);toggle.setAttribute('aria-pressed',String(autoOn));toggle.setAttribute('aria-label',`${CHAPTERS[i].ko} 자동 연구 ${autoOn?'켜짐':'꺼짐'}`);setHtml(toggle,iconSvg(autoOn?'Check':'Circle')+'<span>AUTO</span>');
   sectorEls[i].style.display=progress.complete?'':'none';$('hubSector'+i).classList.toggle('complete',progress.complete);
- const button=$('sectorMenu').children[i];button.hidden=!found;button.disabled=!found;button.classList.toggle('complete',progress.complete);button.classList.toggle('is-current',byId.get(selected)?.chapter===i);button.setAttribute('aria-current',byId.get(selected)?.chapter===i?'true':'false');setText(button.querySelector('.sector-jump-progress'),progress.complete?'완료':found?`${progress.done} / ${progress.total} 레벨`:'미발견');setIcon(button.querySelector('.sector-jump-state'),progress.complete?'Check':found?'Circle':'LockKeyhole');button.setAttribute('aria-label',`${CHAPTERS[i].ko} 섹터. ${progress.complete?'완료':found?`연구 레벨 ${progress.done}/${progress.total}. 남은 연구로 이동`:'미발견'}`);
+ const button=$('sectorMenu').children[i];button.hidden=!found;button.disabled=!found;button.classList.toggle('complete',progress.complete);button.classList.toggle('is-current',byId.get(selected)?.chapter===i);button.setAttribute('aria-current',byId.get(selected)?.chapter===i?'true':'false');setText(button.querySelector('.sector-jump-progress'),progress.complete?'완료':found?`${progress.done} / ${progress.total} 레벨`:'미발견');setIcon(button.querySelector('.sector-jump-state'),progress.complete?'Check':found?'Circle':'LockKeyhole');button.setAttribute('aria-label',`${CHAPTERS[i].ko}. ${progress.complete?'완료':found?`연구 레벨 ${progress.done}/${progress.total}. 남은 연구로 이동`:'미발견'}`);
  });
  for(const {el,root}of spokeEls){const found=visibility.get(root.id)>1;el.classList.toggle('discovered',found);el.style.display=found?'':'none';}
  if($('sectorDialog').open)updateNavigatorScroll();
- setText($('navigatorHint'),finished===8?'섹터로 이동':'남은 연구로 이동');setText($('centerProgress'),`${econ.count} / ${NODES.length} 연구`);$('centerResearchProgress').style.width=(econ.count/NODES.length*100)+'%';$('centerNode').setAttribute('aria-label',`UNBRIK 센터. ${econ.count}/${NODES.length} 연구, ${finished}개 섹터 완료.${prestigeReady(state)?' 환생 가능.':''} 선택하여 내비게이터 열기`);
+ setText($('navigatorHint'),finished===CHAPTERS.length?'섬으로 이동':'남은 연구로 이동');setText($('centerProgress'),`${econ.count} / ${NODES.length} 연구`);$('centerResearchProgress').style.width=(econ.count/NODES.length*100)+'%';$('centerNode').setAttribute('aria-label',`UNBRIK 센터. ${econ.count}/${NODES.length} 연구, ${finished}개 섬 완료.${prestigeReady(state)?' 환생 가능.':''} 선택하여 내비게이터 열기`);
 }
 function setBuyState(kind,label,detail,disabled){
  const button=$('buy');if(button.dataset.state!==kind){button.dataset.state=kind;button.className=kind;}
@@ -337,7 +341,7 @@ function renderPanel(){
  renderPrestigeButton(center);
  if(center){setIcon($('panelSymbol'),'brand');$('panelSymbol').style.color='#f2f4f7';$('panelSymbol').style.setProperty('--sector-color','#f2f4f7');setText($('panelName'),'UNBRIK');
   if(onPrestige()){const complete=PRESTIGE_BRANCHES.filter((_,i)=>petalProgress(state,i).complete).length;setText($('panelMeta'),'CENTER / 00');setText($('costLabel'),'완료한 섹터');setHtml($('panelCost'),`${complete} / 5`);}
-  else{const complete=CHAPTERS.filter((_,i)=>sectorProgress(state,i).complete).length;setText($('panelMeta'),'CENTER / 00');setText($('costLabel'),'완료한 섹터');setHtml($('panelCost'),`${complete} / 8`);}
+  else{const complete=CHAPTERS.filter((_,i)=>sectorProgress(state,i).complete).length;setText($('panelMeta'),'CENTER / 00');setText($('costLabel'),'완료한 섬');setHtml($('panelCost'),`${complete} / ${CHAPTERS.length}`);}
   setBuyState('navigator','내비게이터','열기',false);return;}
  if(n.prestige){renderPrestigeNode(n);return;}
  const l=level(state,n),p=cost(state,n,econ),can=unlocked(state,n),max=l>=n.max,afford=affordable(state,n,econ);
@@ -395,7 +399,7 @@ function cancelSelection(){selectionEpoch++;cancelAnimationFrame(navigationFrame
 function commitSelection(epoch,refresh=true){if(epoch!==selectionEpoch)return;selectionPending=false;if(refresh)render();}
 function selectNode(id,{pending=false,animate=true}={}){const n=lookupNode(id);if(!n||!!n.prestige!==onPrestige()||discoveryOf(n)<2)return false;cancelSelection();cameraIntent=null;selected=id;selectionPending=pending;state.settings.panelCollapsed=false;render();if(animate)animatePanel();return true;}
 function selectCenter(){cancelSelection();cameraIntent=null;selected=CENTER_SELECTION;state.settings.panelCollapsed=false;render();animatePanel();return true;}
-function transform(){world.style.transform=`translate(${camera.x}px,${camera.y}px) scale(${camera.scale})`;if(!cameraMoving)world.classList.toggle('overview',overviewMode(camera.scale,world.classList.contains('overview')));setText($('zoomLabel'),`${Math.round(camera.scale*100)}%`);setText($('coords'),`X ${Math.round(-camera.x/camera.scale)} · Y ${Math.round(-camera.y/camera.scale)}`);viewport.style.backgroundPosition=`${camera.x}px ${camera.y}px`;viewport.style.backgroundSize=`${24*Math.max(.5,camera.scale)}px ${24*Math.max(.5,camera.scale)}px`;}
+function transform(){world.style.transform=`translate(${camera.x}px,${camera.y}px) scale(${camera.scale})`;if(!onPrestige())islandView?.setCamera(camera);if(!cameraMoving)world.classList.toggle('overview',overviewMode(camera.scale,world.classList.contains('overview')));setText($('zoomLabel'),`${Math.round(camera.scale*100)}%`);setText($('coords'),`X ${Math.round(-camera.x/camera.scale)} · Y ${Math.round(-camera.y/camera.scale)}`);viewport.style.backgroundPosition=`${camera.x}px ${camera.y}px`;viewport.style.backgroundSize=`${24*Math.max(.5,camera.scale)}px ${24*Math.max(.5,camera.scale)}px`;}
 function constrain(){const w=viewport.clientWidth,h=viewport.clientHeight,b=activeBounds();camera.x=Math.min(w-b.minX*camera.scale,Math.max(-b.maxX*camera.scale,camera.x));camera.y=Math.min(h-b.minY*camera.scale,Math.max(-b.maxY*camera.scale,camera.y));}
 function zoomAt(scale,x,y){const next=Math.max(.035,Math.min(1.7,scale)),ratio=next/camera.scale;camera.x=x-(x-camera.x)*ratio;camera.y=y-(y-camera.y)*ratio;camera.scale=next;constrain();transform();}
 let cameraAnim=0,cameraEpoch=0,cameraComplete=null;
@@ -422,7 +426,7 @@ function focusNode(id,onComplete=null){cameraIntent={type:'node',id};moveCamera(
 function fit(){cancelSelection();render();cameraIntent={type:'fit'};moveCamera(cameraForIntent());}
 function openCenter(){selectCenter();cameraIntent={type:'center'};moveCamera(cameraForIntent());}
 function updateNavigatorScroll(){const content=$('sectorDialog').querySelector('.navigator-content');$('navigatorScrollHint').hidden=content.scrollHeight-content.clientHeight-content.scrollTop<12;}
-function openNavigator(){clearTimeout(navigatorCloseTimer);const p=onPrestige();$('sectorMenu').hidden=p;$('petalMenu').hidden=!p;const unlocked=state.prestige.count>0;setText($('navMapsHint'),unlocked?(p?'AXIOM으로':'환생으로'):'환생 · 잠김');$('sectorDialog').classList.remove('closing');if(!$('sectorDialog').open)$('sectorDialog').showModal();requestAnimationFrame(updateNavigatorScroll);}
+function openNavigator(){clearTimeout(navigatorCloseTimer);const p=onPrestige();$('sectorMenu').hidden=p;$('petalMenu').hidden=!p;setText($('navigatorSummary'),p?'섹터 선택':'섬 선택');const unlocked=state.prestige.count>0;setText($('navMapsHint'),unlocked?(p?'AXIOM으로':'환생으로'):'환생 · 잠김');$('sectorDialog').classList.remove('closing');if(!$('sectorDialog').open)$('sectorDialog').showModal();requestAnimationFrame(updateNavigatorScroll);}
 function closeNavigator(){const dialog=$('sectorDialog');if(!dialog.open)return;clearTimeout(navigatorCloseTimer);dialog.classList.add('closing');const finish=()=>{dialog.close();dialog.classList.remove('closing');};if(document.body.classList.contains('reduced-motion'))finish();else navigatorCloseTimer=setTimeout(finish,160);}
 function jumpToSector(chapter){
  if(!sectorUnlocked(chapter))return false;const members=MAP_LAYOUT.sectors[chapter].members;
@@ -483,7 +487,7 @@ $('togglePanel').onclick=()=>{state.settings.panelCollapsed=!state.settings.pane
 $('settings').onclick=()=>{applySettings();renderStats();$('settingsDialog').showModal();};$('closeSettings').onclick=()=>$('settingsDialog').close();
 $('settingsDialog').addEventListener('click',e=>{if(e.target===$('settingsDialog')){const r=e.target.getBoundingClientRect();if(e.clientY<r.top||e.clientX<r.left||e.clientX>r.right)$('settingsDialog').close();}});
 for(const button of document.querySelectorAll('[data-tab]')){button.onclick=()=>{for(const b of document.querySelectorAll('[data-tab]')){const active=b===button;b.setAttribute('aria-selected',String(active));$('pane-'+b.dataset.tab).hidden=!active;}if(button.dataset.tab==='stats')renderStats();};}
-for(const k of ['motion','touch','haptic','mapControls'])$(k).onchange=()=>{state.settings[k]=$(k).checked;applySettings();save();};$('format').onchange=()=>{state.settings.format=$('format').value;render();save();};
+for(const k of ['motion','sea','touch','haptic','mapControls'])$(k).onchange=()=>{state.settings[k]=$(k).checked;applySettings();save();};$('format').onchange=()=>{state.settings.format=$('format').value;render();save();};
 $('purchaseCheat').onchange=()=>{state.settings.purchaseCheat=$('purchaseCheat').checked;render();save();toast(state.settings.purchaseCheat?'테스트 치트 ON · 자금 소모 없이 연구합니다.':'테스트 치트 OFF · 구매 시 정상 차감됩니다.');};
 $('saveNow').onclick=()=>save(true);
 function exportText(){save();$('transfer').hidden=false;$('saveText').value=JSON.stringify(state);setText($('transferStatus'),'파일을 저장하거나 위 데이터를 복사해 보관하세요.');return $('saveText').value;}
@@ -558,7 +562,7 @@ installGameSelectionGuard();
 for(const el of document.querySelectorAll('[data-ui-icon]'))setIcon(el,el.dataset.uiIcon);
 // Map switching and the night theme. The flower keeps the grid, turns the
 // logo pink and the background blue-gray; every surface follows body.theme-bloom.
-function applyMapTheme(){const p=onPrestige();document.body.dataset.map=state.map;document.body.classList.toggle('theme-bloom',p);world.classList.toggle('map-prestige',p);$('prestigeLayer').hidden=!p;for(const id of ['sectorRegions','spokes','edges','centerNode','chapterMarks','nodes'])$(id).toggleAttribute('hidden',p);weatherFx?.refresh();}
+function applyMapTheme(){const p=onPrestige();document.body.dataset.map=state.map;document.body.classList.toggle('theme-bloom',p);world.classList.toggle('map-prestige',p);$('prestigeLayer').hidden=!p;for(const id of ['sectorRegions','spokes','edges','edgeCasings','centerNode','chapterMarks','nodes'])$(id).toggleAttribute('hidden',p);islandView?.setVisible(!p);if(!p)islandView?.setCamera(camera);weatherFx?.refresh();}
 const cameraByMap={};
 function presentMap(){selected=selectionByMap[state.map]??defaultSelection();state.settings.panelCollapsed=false;applyMapTheme();econ=economy(state);render();const kept=cameraByMap[state.map];if(kept)camera={...kept};else{cameraIntent={type:'fit'};camera=cameraForIntent();cameraIntent=null;}constrain();transform();state.camera={...camera};}
 let themeTimer=0;

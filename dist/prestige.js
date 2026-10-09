@@ -3,8 +3,8 @@
 // petals grow from a pentagon center; each petal is a small flow like the
 // mainland sectors. Node names use AI vocabulary. Nodes marked `reserved`
 // are placeholders for designs that do not exist yet: visible, not purchasable.
-import {buildLand,boundsOf,CARD} from './layout.js?v=3.1.0';
-import {Big,ZERO} from './big.js?v=3.1.0';
+import {buildLand,boundsOf,CARD} from './layout.js?v=4.0.0-dev.1';
+import {Big,ZERO} from './big.js?v=4.0.0-dev.1';
 export const PRESTIGE_THRESHOLD=5e33;     // $5.00Dc held after finishing the tree
 export const PRESTIGE_BASE_TOKENS=10;    // tokens at exactly the threshold
 export const PRESTIGE_BRANCHES=[

@@ -1,4 +1,4 @@
-import {economy,prestigeBonuses,Big} from './data.js?v=3.1.0';
+import {economy,prestigeBonuses,Big} from './data.js?v=4.0.0-dev.1';
 export const OFFLINE_FULL_SECONDS=1800;
 export const OFFLINE_DECAY_SECONDS=600;
 // Prestige DORMANT nodes extend the full-rate window, slow the decay and

@@ -568,3 +568,39 @@ body.theme-bloom{--bg:#0e111c;--panel:#141a28;--line:#2a3348;--accent:#f3a1c8;--
    ✿ pink — even where the theme changes the accent color. */
 .theme-bloom .sym-money,.theme-bloom .price-money .sym,.theme-bloom .cash-symbol,.theme-bloom .currency-card.currency-cash .currency-symbol{color:#b9f36d}
 .theme-bloom .currency-card.currency-cash,.theme-bloom .compact-currency.currency-cash{--currency-color:#b9f36d}
+/* 4.0 islands: painted islands behind the studies (island-view.js) */
+body:not(.theme-bloom) #viewport{background-image:none}
+#islandBack{position:absolute;left:0;top:0;width:0;height:0;overflow:visible;transform-origin:0 0;will-change:transform;pointer-events:none}
+#islandBack .island-tri,#islandBack .island-tiles{position:absolute;left:0;top:0}
+#islandBack canvas,#islandBack .island-sheet{position:absolute}
+#islandBack .tri{position:absolute;overflow:visible;animation:islandDrift 26s ease-in-out infinite alternate}
+@keyframes islandDrift{from{transform:translate(0,0);opacity:.55}to{transform:translate(18px,-10px);opacity:1}}
+#seaFx{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+#world.moving{will-change:transform}
+.island-sheet{position:absolute;overflow:visible;pointer-events:none}
+#islandDecor{z-index:0}
+#islandBeam{position:absolute;z-index:0;overflow:visible;pointer-events:none;animation:islandSpin 14s linear infinite}
+@keyframes islandSpin{to{transform:rotate(360deg)}}
+.sea-still #islandBack .tri,.sea-still #islandBeam{animation-play-state:paused}
+#edgeCasings{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none;z-index:2}
+#islandBuild{z-index:2}
+#islandMoss{z-index:4}
+/* links: white over a dark casing; brighter once researched */
+body:not(.theme-bloom) #edges{--edge-color:#f2f4f7}
+body:not(.theme-bloom) .edge{stroke:#f2f4f7;stroke-width:3;stroke-opacity:.5}
+body:not(.theme-bloom) .edge.researched{stroke-opacity:.95;stroke-width:4.5}
+body:not(.theme-bloom) .edge.active{opacity:1;stroke-opacity:.7}
+body:not(.theme-bloom) .edge.ghost{stroke-dasharray:10 12;opacity:1;stroke-opacity:.35}
+.edge-casing{fill:none;stroke:#0a1017;stroke-opacity:.4;stroke-width:8;stroke-linecap:round}
+.edge-casing.researched{stroke-width:10}
+#world.overview .edge-casing{stroke-width:11px}
+/* cards: locked grey, available white, bought in the colour of the ground */
+body:not(.theme-bloom) .node.locked{border-color:#46505a}
+/* island heading */
+.island-mark{margin-top:-24px;color:#8b9da9;font:26px/1 var(--mono);letter-spacing:4px}
+.island-mark:before{display:none}
+.island-mark .island-no{display:block}
+.island-mark .mark-text{display:block;margin-top:12px;color:#e6edf1;font:700 44px/1 Arial,'Apple SD Gothic Neo',sans-serif;letter-spacing:2px}
+.island-mark .island-progress{display:block;margin-top:14px;font:24px/1 var(--mono);letter-spacing:2px}
+/* island drawings use plain SVG defaults, not the icon defaults set for every svg */
+#islandBack svg,.island-sheet,#islandBeam{fill:#000;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter}

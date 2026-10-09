@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import {pathToFileURL} from 'node:url';
-import {NODES,defaultState,economy,level,unlocked,cost,purchase,tick,normalizedCost,affordable,sectorProgress,Big} from '../dist/data.js';
+import {NODES,CHAPTERS,COIN_UNLOCK,defaultState,economy,level,unlocked,cost,purchase,tick,normalizedCost,affordable,sectorProgress,Big} from '../dist/data.js';
 // Reports keep plain numbers (balances here stay far below the double limit).
 const plain=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,Big.from(v).toNumber()]));
 export function authorPrices(waitScale=1.075){
@@ -21,7 +21,7 @@ export function authorPrices(waitScale=1.075){
  return Object.fromEntries(NODES.map(n=>[n.id,n.costs]));
 }
 export function simulate({cadence=3,strategy='cost',maxSeconds=22000}={}){
- const s=defaultState(),entries=Array(8).fill(null),completed=Array(8).fill(null),entryBalances=Array(8).fill(null),gates=[],history=[];
+ const C=CHAPTERS.length,s=defaultState(),entries=Array(C).fill(null),completed=Array(C).fill(null),entryBalances=Array(C).fill(null),gates=[],history=[];
  let lastPurchase=0,maxGap=0,coinAt=null,allAt=null,lastBalances={};
  for(let t=1;t<=maxSeconds;t++){
   tick(s,1);if(t%cadence)continue;
@@ -30,11 +30,11 @@ export function simulate({cadence=3,strategy='cost',maxSeconds=22000}={}){
   const n=eligible[0];if(!n)continue;
   lastBalances=plain(s.currencies);if(entries[n.chapter]===null){entries[n.chapter]=t/60;entryBalances[n.chapter]=plain(s.currencies);}
   if(!purchase(s,n))throw Error('Candidate was not purchasable');
-  if(n.id===22)coinAt=t/60;if(n.gate&&level(s,n)===1)gates.push({id:n.id,min:t/60,money:lastBalances.money});
+  if(n.id===COIN_UNLOCK)coinAt=t/60;if(n.gate&&level(s,n)===1)gates.push({id:n.id,min:t/60,money:lastBalances.money});
   history.push({t,id:n.id,level:level(s,n),money:lastBalances.money,coin:lastBalances.coin,rate:e.rate.toNumber(),coinRate:e.coinRate.toNumber()});
   maxGap=Math.max(maxGap,t-lastPurchase);lastPurchase=t;
-  for(let i=0;i<8;i++)if(completed[i]===null&&sectorProgress(s,i).complete)completed[i]=t/60;
-  if(economy(s).count===105&&allAt===null)allAt=t/60;
+  for(let i=0;i<C;i++)if(completed[i]===null&&sectorProgress(s,i).complete)completed[i]=t/60;
+  if(economy(s).count===NODES.length&&allAt===null)allAt=t/60;
   if(completed.every(x=>x!==null))return {minutes:t/60,allAt,coinAt,entries,completed,entryBalances,gates,maxGap,finalBalance:lastBalances,finalRate:plain(economy(s).rates),purchases:s.stats.purchases,history};
  }
  return {failed:true,minutes:maxSeconds/60,entries,completed,coinAt,purchases:s.stats.purchases,last:history.at(-1)};

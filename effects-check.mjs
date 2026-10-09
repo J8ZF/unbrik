@@ -18,18 +18,21 @@ const app=readFileSync('dist/app.js','utf8');
 const actual=app.slice(app.indexOf('function syncOpalMotion(){'),app.indexOf('function renderChrome(){'));
 const setup=new Function('createOpalMotion','NODES','defaultState','$','element',`
  let state=defaultState(),opalMotion=null,weatherFx=null,suspended=false,panelAnimation=null,cameraMoving=false,cameraIntent=null;
+ const seaCalls=[],islandView={setMotion(v){seaCalls.push(v);}};
  const motionPreference={matches:false},document={hidden:false,body:element()},viewport=element();
  const nodeEls=new Map(NODES.map(n=>[n.id,element()])),sectorEls=Array.from({length:8},element);
  ${actual}
  setupOpalMotion();applySettings();
- return {state,nodeEls,sectorEls,viewport,body:document.body,controller:opalMotion,
+ return {state,nodeEls,sectorEls,viewport,body:document.body,controller:opalMotion,seaCalls,
  setting(k,v){state.settings[k]=v;applySettings();},osReduce(v){motionPreference.matches=v;applySettings();},
  hidden(v){document.hidden=v;syncOpalMotion();},suspend(v){suspended=v;syncOpalMotion();}};
 `);
-const ui=setup((groups,enabled)=>createOpalMotion(groups,enabled,Observer),NODES,defaultState,$,element);
+// Island 1 has no opal cards (3.x sector 8); a fixture keeps the controller covered.
+const OPAL=NODES.slice(-8).map(n=>n.id),FIXTURE=NODES.map(n=>OPAL.includes(n.id)?{...n,chapter:7}:n);
+const ui=setup((groups,enabled)=>createOpalMotion(groups,enabled,Observer),FIXTURE,defaultState,$,element);
 assert.equal(observers.length,1);assert.equal(observers[0].options.root,ui.viewport);
-assert.equal(observers[0].targets.length,NODES.filter(n=>n.chapter===7).length);
-const node=ui.nodeEls.get(93),offscreen=ui.nodeEls.get(94),status=el=>el.style['--opal-play-state'];
+assert.equal(observers[0].targets.length,OPAL.length);
+const node=ui.nodeEls.get(OPAL[0]),offscreen=ui.nodeEls.get(OPAL[1]),status=el=>el.style['--opal-play-state'];
 assert.equal(status(node),'paused');observers[0].emit(node,true);assert.equal(status(node),'running');assert.equal(status(offscreen),'paused');
 ui.setting('touch',false);assert.equal(status(node),'running','Touch toggle must remain independent of ambient motion');
 ui.setting('motion',false);assert.equal(status(node),'paused');assert(ui.body.classList.contains('reduced-motion'));assert(!$('motion').checked);
@@ -38,6 +41,12 @@ ui.hidden(true);assert.equal(status(node),'paused');assert(ui.body.classList.con
 ui.suspend(true);assert.equal(status(node),'paused');ui.suspend(false);assert.equal(status(node),'running');
 observers[0].emit(node,false);assert.equal(status(node),'paused');ui.setting('motion',false);ui.setting('motion',true);assert.equal(status(node),'paused','Restoring motion must not restart offscreen effects');
 ui.controller.disconnect();assert(observers.every(o=>o.disconnected));assert.equal(status(node),'paused');
+// Sea motion follows its own switch and stops whenever motion is reduced; the switch is disabled then.
+{const last=()=>ui.seaCalls.at(-1);ui.setting('motion',true);assert.equal(last(),true);assert(!$('sea').disabled);
+ ui.setting('sea',false);assert.equal(last(),false);assert(!$('sea').checked);ui.setting('sea',true);assert.equal(last(),true);assert($('sea').checked);
+ ui.setting('motion',false);assert.equal(last(),false);assert($('sea').disabled);assert($('sea').checked,'Reduced motion does not overwrite the sea preference');ui.setting('motion',true);
+ ui.osReduce(true);assert.equal(last(),false);assert($('sea').disabled);ui.osReduce(false);assert.equal(last(),true);
+ assert.equal(defaultState().settings.sea,true);}
 const staticTarget=element();createOpalMotion([{root:null,elements:[staticTarget]}],()=>true,null);assert.equal(status(staticTarget),'paused');
 
 // Lightweight nodes reproduce the selection targets from the Android report.
@@ -86,4 +95,4 @@ assert(css.includes('@keyframes opalBorderFlow{from{--opal-angle:0deg}to{--opal-
 const buy=css.match(/#buy\{([^}]+)\}/)[1];assert(buy.includes('background:var(--accent)'));assert(buy.includes('border:1px solid #b9f36d'));assert(buy.includes('color:#1c2b10'));
 assert(css.includes('.cheat-badge{color:#f5d58b;font:inherit;letter-spacing:inherit}'));
 assert(html.includes('<span class="network-meta"><span>RESEARCH NETWORK</span><span id="cheatBadge" class="cheat-badge" hidden>CHEAT</span></span>'));
-console.log(JSON.stringify({opalVisibility:'passed',borderOnly:'passed',continuousClockwiseSpectrum:'passed',originalResearchButton:'passed',cheatMetadataAlignment:'passed',motionAndOSSettings:'passed',independentTouchPreference:'passed',backgroundPause:'passed',staticFallback:'passed',selectionProtection:'passed',saveInputsAndLinks:'preserved'}));
+console.log(JSON.stringify({opalVisibility:'passed',seaMotion:'passed',borderOnly:'passed',continuousClockwiseSpectrum:'passed',originalResearchButton:'passed',cheatMetadataAlignment:'passed',motionAndOSSettings:'passed',independentTouchPreference:'passed',backgroundPause:'passed',staticFallback:'passed',selectionProtection:'passed',saveInputsAndLinks:'preserved'}));

@@ -68,7 +68,7 @@ s.settings.purchaseCheat=true;const before=s.currencies.token;assert(prestigePur
 assert.equal(N(economy(s).rate),(1+5)*3*1.15);
 // Automation: only sectors with an owned AUTOPILOT and a checked box, only unlocked studies, so a sector cannot pass its gate.
 const auto1=PRESTIGE_NODES.find(n=>n.name==='AUTOPILOT I');s.currencies.token=s.currencies.token.add(auto1.cost[0]);assert(prestigePurchase(s,auto1));
-s.currencies.money=1e12;assert.deepEqual(autoResearch(s),[],'Nothing happens until the check is on');
+s.currencies.money=1e15;s.currencies.coin=1e6;assert.deepEqual(autoResearch(s),[],'Nothing happens until the check is on');
 s.prestige.auto[0]=true;const bought=autoResearch(s,50);assert(bought.length>0&&bought.every(n=>n.chapter===0),'Only sector 1 is automated');
 for(let i=0;i<40;i++)autoResearch(s,50);
 assert(sectorProgress(s,0).complete,'Sector 1 completes by itself');assert.equal(NODES.filter(n=>n.chapter>0&&level(s,n)>0).length,0,'Sector 2 is never touched');

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {NODES,byId,defaultState,unlocked,level,economy,cost,purchase,tick,validateSave,affordable,prestige,tokensFor,PRESTIGE_THRESHOLD,Big} from './dist/data.js';
+import {NODES,byId,defaultState,unlocked,level,economy,cost,purchase,tick,validateSave,affordable,prestige,tokensFor,PRESTIGE_THRESHOLD,Big,CHAPTERS,COIN_UNLOCK,choiceTaken} from './dist/data.js';
+import {ISLANDS,ISLAND_NODES} from './dist/islands.js';
 // Amounts are Big values; any implicit numeric use of one (big > 0) throws here.
 globalThis.BIG_STRICT=true;
 const N=v=>Big.from(v).toNumber(),Ns=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,N(v)]));
@@ -8,28 +9,42 @@ const N=v=>Big.from(v).toNumber(),Ns=o=>Object.fromEntries(Object.entries(o).map
 const clone=o=>o instanceof Big?o:Array.isArray(o)?o.map(clone):o&&typeof o==='object'?Object.fromEntries(Object.entries(o).map(([k,v])=>[k,clone(v)])):o;
 import {iconSvg} from './dist/icons.js';
 import {checkpointOffline,settleOffline,effectiveOfflineSeconds} from './dist/offline.js';
-assert.equal(NODES.length,105);assert.equal(new Set(NODES.map(n=>n.id)).size,105);
-assert.deepEqual(Array.from({length:8},(_,i)=>NODES.filter(n=>n.chapter===i).length),[8,12,14,13,14,14,15,15]);
-assert.equal(NODES.reduce((a,n)=>a+n.max,0),316);assert.equal(NODES.at(-1).name,'AXIOM');
+// 4.0 stage 1: one island of 30 nodes (content borrowed from 3.x studies 1–30).
+assert.equal(NODES.length,30);assert.equal(new Set(NODES.map(n=>n.id)).size,30);assert.equal(new Set(NODES.map(n=>n.content)).size,30);
+assert.equal(CHAPTERS.length,ISLANDS.length);assert.deepEqual(CHAPTERS.map((_,i)=>NODES.filter(n=>n.chapter===i).length),[30]);
+assert.equal(NODES.reduce((a,n)=>a+n.max,0),107);assert.deepEqual(NODES.filter(n=>n.gate).map(n=>n.id),ISLANDS.map(i=>i.last));
+for(const n of NODES){assert(['grass','sand','rock'].includes(n.zone));assert(Number.isFinite(n.x)&&Number.isFinite(n.y));}
+assert.equal(byId.get(COIN_UNLOCK).name,'BASIS');assert(NODES.filter(n=>n.payment.includes('coin')).every(n=>n.id!==COIN_UNLOCK));
 let s=defaultState();assert.deepEqual(Ns(economy(s).rates),{money:1,coin:0});tick(s,5);tick(s,5);assert.equal(N(s.currencies.money),10);assert(purchase(s,NODES[0]));assert.equal(N(economy(s).rate),2);assert.equal(N(s.currencies.money),0);assert(!purchase(s,NODES[0]));
 for(const n of NODES){assert.equal(n.costs.length,n.max);assert(n.effects.length);assert(!n.effects.some(e=>e.type==='automation'||e.type==='power'));for(const p of n.costs)for(const k of n.payment)assert(Number.isFinite(p[k])&&p[k]>0);for(const r of n.req)assert(byId.has(r.id)&&r.id<n.id);}
-const cheat=defaultState();cheat.settings.purchaseCheat=true;assert(!purchase(cheat,byId.get(22)));const zero={...cheat.currencies};
-for(const n of NODES){assert(unlocked(cheat,n));assert(purchase(cheat,n));assert.deepEqual(cheat.currencies,zero);if(n.id===21)assert.equal(N(economy(cheat).coinRate),0);if(n.id===22)assert.equal(N(economy(cheat).coinRate),1);}
+const cheat=defaultState();cheat.settings.purchaseCheat=true;assert(!purchase(cheat,byId.get(COIN_UNLOCK)));const zero={...cheat.currencies};
+for(const n of NODES){assert(unlocked(cheat,n));assert(purchase(cheat,n));assert.deepEqual(cheat.currencies,zero);if(n.id<COIN_UNLOCK)assert.equal(N(economy(cheat).coinRate),0);if(n.id===COIN_UNLOCK)assert.equal(N(economy(cheat).coinRate),1);}
 for(const n of NODES){while(level(cheat,n)<n.max)assert(purchase(cheat,n));assert(!purchase(cheat,n));}
-assert.equal(N(cheat.stats.spent),0);assert.equal(N(cheat.stats.coinSpent),0);assert.equal(cheat.stats.purchases,316);assert(Number.isFinite(N(economy(cheat).rate)));
+assert.equal(N(cheat.stats.spent),0);assert.equal(N(cheat.stats.coinSpent),0);assert.equal(cheat.stats.purchases,107);assert(Number.isFinite(N(economy(cheat).rate)));
 assert.deepEqual(validateSave(JSON.parse(JSON.stringify(cheat))).levels,cheat.levels);
-const dual=defaultState();dual.settings.purchaseCheat=true;for(const n of NODES.filter(n=>n.id<30))assert(purchase(dual,n));dual.settings.purchaseCheat=false;
+const DUAL=NODES.find(n=>n.payment.length===2);const dual=defaultState();dual.settings.purchaseCheat=true;for(const n of NODES.filter(n=>n.id<DUAL.id))assert(purchase(dual,n));dual.settings.purchaseCheat=false;
 // Either shortage aborts the complete transaction, including levels and stats.
-for(const missing of ['money','coin']){dual.currencies={money:1e50,coin:1e50};dual.currencies[missing]=0;const before=JSON.stringify(dual);assert(!affordable(dual,byId.get(30)));assert(!purchase(dual,byId.get(30)));assert.equal(JSON.stringify(dual),before);}
-dual.currencies={money:1e20,coin:1e20};const prices=cost(dual,byId.get(30)),before={...dual.currencies};assert(purchase(dual,byId.get(30)));for(const k of ['money','coin'])assert.equal(N(dual.currencies[k]),before[k]-N(prices[k]));
+for(const missing of ['money','coin']){dual.currencies={money:1e50,coin:1e50};dual.currencies[missing]=0;const before=JSON.stringify(dual);assert(!affordable(dual,DUAL));assert(!purchase(dual,DUAL));assert.equal(JSON.stringify(dual),before);}
+dual.currencies={money:1e20,coin:1e20};const prices=cost(dual,DUAL),before={...dual.currencies};assert(purchase(dual,DUAL));for(const k of ['money','coin'])assert.equal(N(dual.currencies[k]),before[k]-N(prices[k]));
 // Both cache amounts use the same pre-payment production snapshot.
 const cache=clone(cheat);cache.settings.purchaseCheat=false;cache.currencies={money:1e31,coin:1e15};cache.timers.cache=economy(cache).interval-.1;const e=economy(cache),old={...cache.currencies},event=tick(cache,.2)[0];assert(event&&event.money.gt(0)&&event.coin.gt(0));assert.equal(N(event.money),N(e.rate)*e.burst);assert.equal(N(event.coin),N(e.coinRate)*e.coinBurst);
 for(const k of ['money','coin'])assert.equal(N(cache.currencies[k]),old[k]+N(e.rates[k])*.2+N(event[k]));
 // Split offline settlements, reloads, and full settlement agree for both currencies.
 const start=100000,whole=clone(cache),split=clone(cache);checkpointOffline(whole,start);checkpointOffline(split,start);const snapshot={...whole.offline};settleOffline(whole,start+7200000);for(let t=60;t<=7200;t+=60)settleOffline(split,start+t*1000);
 for(const k of ['money','coin'])assert(Math.abs(N(whole.currencies[k])-N(split.currencies[k]))/N(whole.currencies[k])<1e-12);assert.equal(N(settleOffline(whole,start+7200000).coin),0);assert.equal(N(settleOffline(validateSave(JSON.parse(JSON.stringify(whole)),start+7200000),start+7200000).amount),0);assert.equal(N(snapshot.coinRate),N(economy(cache).coinRate)*(1+economy(cache).coinBurst/economy(cache).interval));assert(effectiveOfflineSeconds(86400)<=2400);
-const saved=JSON.parse(JSON.stringify(cheat));for(const corrupt of [{...saved,version:1},{...saved,economyEpoch:'old'},{...saved,currencies:{money:-1,coin:0}},{...saved,levels:{105:1}},{...saved,levels:{1:99}},{...saved,currencies:{money:NaN,coin:0}},{...saved,currencies:{money:0,coin:Infinity}}])assert.throws(()=>validateSave(corrupt));
-const icons=NODES.map(n=>iconSvg(n.icon));assert.equal(new Set(icons).size,105);for(const svg of icons){assert(svg.includes('viewBox="0 0 24 24"'));assert(!/<text|<image|<foreignObject|href=/.test(svg));assert.notEqual(svg,iconSvg('LockKeyhole'));}
+// Level requirements: a node can ask for a prerequisite at a given level, not just bought.
+{const n=byId.get(6),keep=n.req;n.req=[{id:3,level:5}];const s=defaultState();s.settings.purchaseCheat=true;assert(purchase(s,byId.get(1)));
+ for(let l=1;l<5;l++){assert(purchase(s,byId.get(3)));assert(!unlocked(s,n));assert(!purchase(s,n));}
+ assert(purchase(s,byId.get(3)));assert(unlocked(s,n));assert(purchase(s,n));
+ const low=JSON.parse(JSON.stringify(s));low.levels[3]=4;assert.throws(()=>validateSave(low));n.req=keep;}
+// A/B choices: buying one option of a choice closes the others, and a save holding both is rejected.
+{const a=byId.get(6),b=byId.get(7);a.choice=b.choice='t';const s=defaultState();s.settings.purchaseCheat=true;for(const id of [1,3])assert(purchase(s,byId.get(id)));
+ assert(unlocked(s,a)&&unlocked(s,b));assert(purchase(s,a));assert(choiceTaken(s,b)&&!unlocked(s,b)&&!purchase(s,b));assert(!choiceTaken(s,a));
+ assert.deepEqual(validateSave(JSON.parse(JSON.stringify(s))).levels,s.levels);const both=JSON.parse(JSON.stringify(s));both.levels[7]=1;assert.throws(()=>validateSave(both));a.choice=b.choice=null;}
+// Island data: every placed node maps to one content id, prerequisites stay on known ids.
+for(const p of ISLAND_NODES){assert(byId.has(p.id));for(const r of p.req)assert(byId.has(typeof r==='number'?r:r.id));}
+const saved=JSON.parse(JSON.stringify(cheat));for(const corrupt of [{...saved,version:1},{...saved,economyEpoch:'old'},{...saved,currencies:{money:-1,coin:0}},{...saved,levels:{999:1}},{...saved,levels:{1:99}},{...saved,currencies:{money:NaN,coin:0}},{...saved,currencies:{money:0,coin:Infinity}}])assert.throws(()=>validateSave(corrupt));
+const icons=NODES.map(n=>iconSvg(n.icon));assert.equal(new Set(icons).size,30);for(const svg of icons){assert(svg.includes('viewBox="0 0 24 24"'));assert(!/<text|<image|<foreignObject|href=/.test(svg));assert.notEqual(svg,iconSvg('LockKeyhole'));}
 const html=fs.readFileSync('dist/index.html','utf8'),app=fs.readFileSync('dist/app.js','utf8');const ids=[...html.matchAll(/(?<![\w-])id="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);for(const match of app.matchAll(/\$\('([^']+)'\)/g))if(!match[1].endsWith('-'))assert(ids.includes(match[1]),`Missing ${match[1]}`);
 for(const ref of html.matchAll(/(?:src|href)="([^"?#]+)(?:\?[^"#]*)?"/g))if(!/^(https?:|data:|#)/.test(ref[1]))assert(fs.existsSync('dist/'+ref[1]),`Missing ${ref[1]}`);
 for(const [,name]of html.matchAll(/data-ui-icon="([^"]+)"/g))assert.notEqual(iconSvg(name),iconSvg('LockKeyhole'));
@@ -77,4 +92,4 @@ assert(!html.includes('id="progressBar"'));assert(!html.includes('coin-mark'));a
  assert.deepEqual(['short','scientific','engineering'].map(m=>u.compactNumber(B('1.5e400'),m,3)),['1.50e400','1.50e400','15.0e399']);
  for(let e=300;e<=320;e++){const text=f(`1.234e${e}`);assert(e<306?/^[0-9.]+(Ce|[A-Za-z]+)$/.test(text):text===`1.23e${e}`,text);}
 }
-console.log(JSON.stringify({economy:'passed',nodes:105,totalLevels:316,icons:105,dualCurrencyAtomicPurchase:'passed',coinUnlock:'1 per second',cacheSnapshot:'passed',offlineTwoCurrencies:'passed',saveEpoch:'passed',DOMReferences:'passed',bigNumbers:'passed'}));
+console.log(JSON.stringify({economy:'passed',nodes:30,totalLevels:107,icons:30,levelRequirement:'passed',choice:'passed',dualCurrencyAtomicPurchase:'passed',coinUnlock:'1 per second',cacheSnapshot:'passed',offlineTwoCurrencies:'passed',saveEpoch:'passed',DOMReferences:'passed',bigNumbers:'passed'}));
