@@ -51,14 +51,19 @@ const youngTrees=(r,x,y)=>{let s='';const k=1+Math.floor(r()*3);for(let i=0;i<k;
 const CARD_W=146,CARD_H=118;
 function roof(r,b,i){const [x0,y0,x1,y1]=b,w=x1-x0,h=y1-y0,c=18;let s='';
  const base=[[x0+c,y0],[x1-c,y0],[x1,y0+c],[x1,y1-c],[x1-c,y1],[x0+c,y1],[x0,y1-c],[x0,y0+c]];
- if(i%3===1){base.splice(2,2,[x1,y0+c],[x1-w*.3,y0+h*.35],[x1-w*.34,y1-h*.3],[x1,y1-c]);}// a broken corner
+ const kind=i%3;// 0 a glass band and plant, 1 a broken corner, 2 a caved-in roof
+ if(kind===1){base.splice(2,2,[x1,y0+c],[x1-w*.3,y0+h*.35],[x1-w*.34,y1-h*.3],[x1,y1-c]);}
  s+=poly(base,'fill="#3b4248" stroke="#262c31" stroke-width="3" stroke-linejoin="miter"');
  const inner=base.map(([x,y])=>[x+(x<x0+w/2?10:-10),y+(y<y0+h/2?10:-10)]);s+=poly(inner,'fill="#6f777e"');
- s+=`<rect x="${f1(x0+28)}" y="${f1(y0+h*.42)}" width="${f1(w-56)}" height="${f1(h*.16)}" fill="#2a3035" stroke="#4b5359" stroke-width="1.6"/>`;
- for(let k=0;k<3;k++)s+=`<rect x="${f1(x0+30+k*34)}" y="${f1(y0+24)}" width="22" height="16" fill="#9aa3aa" stroke="#4b5359" stroke-width="1.4"/>`;
- s+=`<circle cx="${f1(x1-40)}" cy="${f1(y1-40)}" r="13" fill="#8a939b" stroke="#4b5359" stroke-width="1.8"/><circle cx="${f1(x1-40)}" cy="${f1(y1-40)}" r="4" fill="#2a3035"/>`;
+ if(kind===0){s+=`<rect x="${f1(x0+28)}" y="${f1(y0+h*.42)}" width="${f1(w-56)}" height="${f1(h*.16)}" fill="#2a3035" stroke="#4b5359" stroke-width="1.6"/>`;
+  for(let k=0;k<3;k++)s+=`<rect x="${f1(x0+30+k*34)}" y="${f1(y0+24)}" width="22" height="16" fill="#9aa3aa" stroke="#4b5359" stroke-width="1.4"/>`;
+  s+=`<circle cx="${f1(x1-40)}" cy="${f1(y1-40)}" r="13" fill="#8a939b" stroke="#4b5359" stroke-width="1.8"/><circle cx="${f1(x1-40)}" cy="${f1(y1-40)}" r="4" fill="#2a3035"/>`;}
+ if(kind===1){for(let k=0;k<3;k++)s+=`<rect x="${f1(x0+30)}" y="${f1(y0+30+k*40)}" width="16" height="26" fill="#9aa3aa" stroke="#4b5359" stroke-width="1.4"/>`;
+  for(let k=0;k<6;k++)s+=poly(rectPts(x1-w*.2+(r()-.5)*70,y0+h*.5+(r()-.5)*90,10+r()*16,7+r()*9,r()*180),'fill="#8f979d" stroke="#4e565c" stroke-width="1.4"');}
+ if(kind===2){const cx=x0+w*.5,cy=y0+h*.52;s+=`<path d="${blobPath(r,cx,cy,Math.min(w,h)*.3,7,.25)}" fill="#1f252a" stroke="#4b5359" stroke-width="2"/>`;
+  for(let k=0;k<3;k++)s+=`<path d="${blobPath(r,cx+(r()-.5)*w*.3,cy+(r()-.5)*h*.3,8+r()*10,6,.2)}" fill="#3f6a30"/>`;
+  s+=`<circle cx="${f1(x1-36)}" cy="${f1(y0+34)}" r="14" fill="#8a939b" stroke="#4b5359" stroke-width="1.8"/><circle cx="${f1(x1-66)}" cy="${f1(y0+40)}" r="9" fill="#8a939b" stroke="#4b5359" stroke-width="1.6"/>`;}
  for(let k=0;k<4;k++)s+=`<path d="${blobPath(r,x0+20+r()*(w-40),y0+20+r()*(h-40),10+r()*14,7,.2)}" fill="${['#4f7d3a','#5f9144'][k%2]}"/>`;
- if(i%3===1)for(let k=0;k<5;k++)s+=poly(rectPts(x1-w*.2+(r()-.5)*60,y0+h*.5+(r()-.5)*80,10+r()*16,7+r()*9,r()*180),'fill="#8f979d" stroke="#4e565c" stroke-width="1.4"');
  return s;}
 function road(p){let s='';const d=p.pts.map((q,i)=>(i?'L':'M')+f1(q[0])+' '+f1(q[1])).join('');
  s+=`<path d="${d}" stroke="#30373d" stroke-width="${p.w}" fill="none" stroke-linecap="butt" stroke-linejoin="miter"/><path d="${d}" stroke="#4b5359" stroke-width="${p.w-6}" fill="none" stroke-linecap="butt" stroke-linejoin="miter"/>`;

@@ -117,12 +117,15 @@ for(const name of DESIGNS){
  const rockOK=(x,y,rad)=>onRock(x,y)&&!inHole(x,y)&&!nearCard(x,y,rad*.4+10)&&!nearFrame(x,y,rad*.4+6)&&!(x>labelBox[0]&&x<labelBox[2]&&y>labelBox[1]&&y<labelBox[3]);
  const OK={grass:grassOK,sand:sandOK,rock:rockOK};
  // the counts are for island 1's size; bigger islands get more
- const areaScale=D.seaFile?1:Math.max(1,Math.min(3,(PW*PH)/(3112*2502)));
+ const areaScale=D.seaFile?1:Math.max(1,Math.min(2.2,(PW*PH)/(3112*2502)));
  for(const [kind,count,rad,ground2,draw,seed] of T.decor)place(kind,Math.round(count*areaScale),rad,OK[ground2],draw,seed);
  decor.sort((a,b)=>Math.hypot(a.x-root.x,a.y-root.y)-Math.hypot(b.x-root.x,b.y-root.y));
  decor.forEach((d,i)=>d.t=+(.03+.9*i/decor.length).toFixed(3));
  const boxes=built.map(b=>b.box);
  const cleared=decor.filter(d=>!boxes.some(b=>d.x>b[0]-24&&d.x<b[2]+24&&d.y>b[1]-24&&d.y<b[3]+24));
+ // islands 2+: whole-unit coordinates in the decoration (a tenth of a unit is invisible; the module shrinks by a third)
+ const terse=svg=>svg.replace(/ (d|points)="([^"]*)"/g,(m,k,v)=>` ${k}="${v.replace(/-?\d+\.\d+/g,n=>String(Math.round(+n)))}"`).replace(/ (cx|cy|x|y|x1|y1|x2|y2)="(-?\d+)\.\d+"/g,' $1="$2"');
+ if(!D.seaFile)for(const d of cleared)d.svg=terse(d.svg);
  // ---- moving-sea data ----
  const fx={surfIn:GM.surf[16],surfOut:GM.surf[38],waves:GM.waveRuns,mask:[...GM.land,...SEA.reefs.flatMap(r=>r.parts),...(T.maskExtra?T.maskExtra({D,o,nodes,land:pieces}):[])],coast:GM.land,depth};
  // ---- game data ----
