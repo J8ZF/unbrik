@@ -167,7 +167,8 @@ function createGraph(){
  const region=document.createElementNS('http://www.w3.org/2000/svg','path');region.setAttribute('d',sector.path);region.setAttribute('class','sector-region');region.style.setProperty('--sector-color',c.color);region.style.display='none';$('sectorRegions').append(region);sectorEls.push(region);
  const jump=document.createElement('button');jump.className='sector-jump';jump.hidden=true;jump.style.setProperty('--sector-color',c.color);jump.innerHTML=`<span class="sector-jump-icon">${iconSvg(sector.members[0].icon)}</span><span class="sector-jump-copy"><span class="sector-jump-name">${c.name}</span><span class="sector-jump-progress"></span></span><span class="sector-jump-state" aria-hidden="true"></span>`;jump.onclick=()=>jumpToSector(i);$('sectorMenu').append(jump);
  }
- islandView=createIslandView({viewport,back:$('islandBack'),canvas:$('seaFx'),world,decorSvg:$('islandDecor'),beamSvg:$('islandBeam'),buildSvg:$('islandBuild'),mossSvg:$('islandMoss'),nodes:NODES,level:n=>level(state,n)});
+ islandView=createIslandView({viewport,back:$('islandBack'),canvas:$('seaFx'),world,decorSvg:$('islandDecor'),beamSvg:$('islandBeam'),buildSvg:$('islandBuild'),mossSvg:$('islandMoss'),nodes:NODES,level:n=>level(state,n),islandsDone:()=>CHAPTERS.map((_,i)=>sectorProgress(state,i).complete)});
+ $('centerNode').style.left=CENTER.x+'px';$('centerNode').style.top=CENTER.y+'px';
  $('centerNode').addEventListener('click',ev=>handleMapClick(ev,CENTER_SELECTION));
  createHeader();createPrestigeGraph();
 }
@@ -319,7 +320,7 @@ function mainGraph(){
  $('centerNode').classList.toggle('selected',selected===CENTER_SELECTION);$('centerNode').setAttribute('aria-pressed',String(selected===CENTER_SELECTION));
  MAP_LAYOUT.sectors.forEach((sector,i)=>{const found=sectorUnlocked(i),progress=sectorProgress(state,i);if(progress.complete)finished++;const autoAvail=autoSectors.has(i)&&!progress.complete,autoOn=!!state.prestige.auto[i],key=`${found}:${progress.done}:${byId.get(selected)?.chapter===i}:${autoAvail}:${autoOn}`;if(sectorEls[i].dataset.viewKey===key)return;sectorEls[i].dataset.viewKey=key;chapterEls[i].hidden=!found;placeHeading(i,sector,progress.complete);chapterEls[i].classList.toggle('complete',progress.complete);setText(chapterEls[i].querySelector('.island-progress'),`${sector.members.filter(n=>level(state,n)>0).length} / ${sector.members.length}`);
   const toggle=chapterEls[i].querySelector('.auto-toggle');toggle.hidden=!(found&&autoAvail);toggle.classList.toggle('is-on',autoOn);toggle.setAttribute('aria-pressed',String(autoOn));toggle.setAttribute('aria-label',`${CHAPTERS[i].ko} 자동 연구 ${autoOn?'켜짐':'꺼짐'}`);setHtml(toggle,iconSvg(autoOn?'Check':'Circle')+'<span>AUTO</span>');
-  sectorEls[i].style.display=progress.complete?'':'none';$('hubSector'+i).classList.toggle('complete',progress.complete);
+  sectorEls[i].style.display=progress.complete?'':'none';
  const button=$('sectorMenu').children[i];button.hidden=!found;button.disabled=!found;button.classList.toggle('complete',progress.complete);button.classList.toggle('is-current',byId.get(selected)?.chapter===i);button.setAttribute('aria-current',byId.get(selected)?.chapter===i?'true':'false');setText(button.querySelector('.sector-jump-progress'),progress.complete?'완료':found?`${progress.done} / ${progress.total} 레벨`:'미발견');setIcon(button.querySelector('.sector-jump-state'),progress.complete?'Check':found?'Circle':'LockKeyhole');button.setAttribute('aria-label',`${CHAPTERS[i].ko}. ${progress.complete?'완료':found?`연구 레벨 ${progress.done}/${progress.total}. 남은 연구로 이동`:'미발견'}`);
  });
  for(const {el,root}of spokeEls){const found=visibility.get(root.id)>1;el.classList.toggle('discovered',found);el.style.display=found?'':'none';}
@@ -407,6 +408,8 @@ function stopCamera(settle=true){
  cancelAnimationFrame(cameraAnim);cameraAnim=0;cameraEpoch++;cameraMoving=false;viewport.classList.remove('camera-moving');
  const done=cameraComplete;cameraComplete=null;if(settle&&done){done();render();}
 }
+// test hook: jump the camera to a target without animation
+if(typeof window!=='undefined')window.__cam=c=>{stopCamera(false);camera={...c};constrain();transform();state.camera={...camera};render();};
 function moveCamera(target,onComplete=null){
  stopCamera(false);const epoch=cameraEpoch;cameraComplete=onComplete;
  world.classList.toggle('overview',overviewMode(target.scale,world.classList.contains('overview')));
@@ -418,9 +421,9 @@ function moveCamera(target,onComplete=null){
 }
 function freeMapFrames(){const controls=viewport.querySelector('.map-tools');return mapFrames(viewport.clientWidth,viewport.clientHeight,{left:controls.offsetLeft,top:controls.offsetTop},state.settings.purchaseCheat?44:32);}
 function cameraForIntent(){
- if(cameraIntent?.type==='center')return fitCamera({minX:-184,maxX:184,minY:-184,maxY:184},freeMapFrames(),.82);
+ if(cameraIntent?.type==='center'){const c=onPrestige()?{x:0,y:0,r:184}:{x:CENTER.x,y:CENTER.y,r:CENTER.core+60};return fitCamera({minX:c.x-c.r,maxX:c.x+c.r,minY:c.y-c.r,maxY:c.y+c.r},freeMapFrames(),.82);}
  if(cameraIntent?.type==='node'){const n=lookupNode(cameraIntent.id);return fitCamera(boundsOf([n],86,66),freeMapFrames(),.88);}
- const visible=[...activeNodes().filter(n=>discoveryOf(n)>0),{x:-184,y:-184},{x:184,y:184}];return fitCamera(boundsOf(visible),freeMapFrames(),1);
+ const found=activeNodes().filter(n=>discoveryOf(n)>0),visible=onPrestige()||!found.length?[...found,{x:-184,y:-184},{x:184,y:184}]:found;return fitCamera(boundsOf(visible),freeMapFrames(),1);
 }
 function focusNode(id,onComplete=null){cameraIntent={type:'node',id};moveCamera(cameraForIntent(),onComplete);}
 function fit(){cancelSelection();render();cameraIntent={type:'fit'};moveCamera(cameraForIntent());}
@@ -542,7 +545,7 @@ function reframeViewport(){
 }
 new ResizeObserver(reframeViewport).observe(viewport);
 $('sectorDialog').querySelector('.navigator-content').addEventListener('scroll',updateNavigatorScroll,{passive:true});
-function animateHub(now){if(now-lastHubFrame<33||cameraMoving||document.hidden||suspended||document.body.classList.contains('reduced-motion')||camera.scale<.32)return;const r=205*camera.scale;if(camera.x+r<0||camera.x-r>viewport.clientWidth||camera.y+r<0||camera.y-r>viewport.clientHeight)return;lastHubFrame=now;const p=wireframePaths(now/1000),prefix=onPrestige()?'pWire':'hubWire';$(prefix+'Back').setAttribute('d',p.back);$(prefix+'Front').setAttribute('d',p.front);$(prefix+'Outline').setAttribute('d',p.outline);}
+function animateHub(now){if(now-lastHubFrame<33||cameraMoving||document.hidden||suspended||document.body.classList.contains('reduced-motion')||camera.scale<.32)return;const r=205*camera.scale,hx=onPrestige()?0:CENTER.x,hy=onPrestige()?0:CENTER.y,sx=camera.x+hx*camera.scale,sy=camera.y+hy*camera.scale;if(sx+r<0||sx-r>viewport.clientWidth||sy+r<0||sy-r>viewport.clientHeight)return;lastHubFrame=now;const p=wireframePaths(now/1000),prefix=onPrestige()?'pWire':'hubWire';$(prefix+'Back').setAttribute('d',p.back);$(prefix+'Front').setAttribute('d',p.front);$(prefix+'Outline').setAttribute('d',p.outline);}
 let autoClock=0;
 function runAutomation(){
  if(!state.prestige.count||!prestigeBonuses(state).auto.size)return;

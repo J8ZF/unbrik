@@ -90,9 +90,8 @@ export const NODES=ISLAND_NODES.map(p=>{const r=RESEARCH_BY_ID.get(p.content),is
   req:p.req.map(id=>typeof id==='number'?{id,level:1}:{id:id.id,level:id.level}),any:r.name==='OR GATE',choice:p.choice||null,
   gate:ISLANDS[island].last===p.id,currency:r.payment.length===1?r.payment[0]:'both',baseCost:costs[0]};});
 export const byId=new Map(NODES.map(n=>[n.id,n]));
-// Map frame: the islands plus the center node, which waits in the sea off the
-// north-west of island 1 until the observatory has its own place.
-export const MAP_LAYOUT=(()=>{const b=ISLANDS.reduce((a,i)=>({minX:Math.min(a.minX,i.bounds.minX),minY:Math.min(a.minY,i.bounds.minY),maxX:Math.max(a.maxX,i.bounds.maxX),maxY:Math.max(a.maxY,i.bounds.maxY)}),{minX:CENTER.x-260,minY:CENTER.y-260,maxX:CENTER.x+260,maxY:CENTER.y+260});
+// Map frame: the islands plus the observatory and everything in orbit round it.
+export const MAP_LAYOUT=(()=>{const b=ISLANDS.reduce((a,i)=>({minX:Math.min(a.minX,i.bounds.minX),minY:Math.min(a.minY,i.bounds.minY),maxX:Math.max(a.maxX,i.bounds.maxX),maxY:Math.max(a.maxY,i.bounds.maxY)}),{minX:CENTER.x-CENTER.reach,minY:CENTER.y-CENTER.reach,maxX:CENTER.x+CENTER.reach,maxY:CENTER.y+CENTER.reach});
  return {bounds:b,center:CENTER,sectors:ISLANDS.map((i,k)=>({chapter:k,island:i.id,members:NODES.filter(n=>n.chapter===k),label:{x:i.label[0],y:i.label[1],align:'left'},path:'',direction:{x:0,y:-1}}))};})();
 // The study that unlocks coin (3.x BASIS).
 export const COIN_UNLOCK=NODES.find(n=>n.effects.some(e=>e.type==='unlock'))?.id;

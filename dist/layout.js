@@ -16,7 +16,9 @@ export const BRANCHES=[
  {chapters:[5],angle:126},
  {chapters:[6,7],angle:198},
 ];
-export const CENTER={x:0,y:0,radius:154};
+import {OBS_ART} from './observatory-art.js?v=4.0.0-dev.1';
+// The centre node sits in the observatory's eye.
+export const CENTER={x:OBS_ART.center[0],y:OBS_ART.center[1],radius:154,reach:OBS_ART.radius,core:OBS_ART.core};
 export const CARD={halfWidth:73,halfHeight:59};
 // Direction and distance from the center of each sector's first row.
 export const PLACEMENT=[

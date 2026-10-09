@@ -44,7 +44,7 @@ const createUI=new Function('deps','$','document',`
 `);
 const documentAdapter={...element(),createElement:element,createElementNS:element,body:element()};
 // The island picture is drawn by island-view.js in the browser; here a stub records what the app asks of it.
-const islandCalls=[],createIslandView=()=>({setCamera(c){islandCalls.push(['camera',{...c}]);},resize(){},setMotion(v){islandCalls.push(['motion',v]);},setVisible(v){islandCalls.push(['visible',v]);},render(){islandCalls.push(['render']);}});
+const islandCalls=[];let islandsDone=()=>[];const createIslandView=o=>({...(islandsDone=o.islandsDone||islandsDone,{}),setCamera(c){islandCalls.push(['camera',{...c}]);},resize(){},setMotion(v){islandCalls.push(['motion',v]);},setVisible(v){islandCalls.push(['visible',v]);},render(){islandCalls.push(['render']);}});
 const ui=createUI({...data,...layout,...updates,...cameraHelpers,...prestigeModule,wireframePaths:hub.wireframePaths,...units,iconSvg,setIcon,createIslandView},$,documentAdapter);
 // 4.0 stage 1: one island. LONG is an upgradeable study deep in it, LAST its final study, CACHE the cache study.
 const LONG=data.byId.get(23),LAST=data.NODES.at(-1),CACHE=data.NODES.find(n=>n.effects.some(e=>e.type==='cache'));assert(LONG.max>1&&LAST.gate);
@@ -128,10 +128,10 @@ const displayedPrice=$('panelCost').textContent;assert(data.Big.from(ui.state.cu
 $('purchaseCheat').checked=false;$('purchaseCheat').onchange();assert(!ui.state.settings.purchaseCheat);assert($('cheatBadge').hidden);assert.equal($('costLabel').textContent,'RESEARCH COST');assert.equal($('panelCost').textContent,displayedPrice);assert.equal($('buy').className,'waiting');
 ui.openCenter();assert.equal(ui.selected,-1);assert.equal($('panelName').textContent,'UNBRIK');assert(!$('sectorDialog').open);assert.equal($('buyText').textContent,'내비게이터');assert($('panelEffect').hidden);assert($('requirements').hidden);assert($('purchaseTrack').hidden);ui.buySelected();assert($('sectorDialog').open);assert.equal(ui.jumpToSector(1),false);assert($('sectorDialog').open,'An island that does not exist cannot navigate');ui.jumpToSector(0);assert.equal($('buy').className,'pending');assert($('buy').disabled);assert.equal($('buyText').textContent,'…');assert.equal(ui.buySelected(),false);finishNavigation();assert(!$('sectorDialog').open);assert.equal(ui.selected,2);assert(!ui.pending);assert.equal($('buy').className,'waiting');
 for(const n of data.MAP_LAYOUT.sectors[0].members)ui.state.levels[n.id]=1;ui.render();assert.equal(ui.sectorEls[0].style.display,'none');
-for(const n of data.MAP_LAYOUT.sectors[0].members)ui.state.levels[n.id]=n.max;ui.render();assert.equal(ui.sectorEls[0].style.display,'');assert.equal($('centerProgress').textContent,'30 / 30 연구');assert($('hubSector0').classList.contains('complete'));
+for(const n of data.MAP_LAYOUT.sectors[0].members)ui.state.levels[n.id]=n.max;ui.render();assert.equal(ui.sectorEls[0].style.display,'');assert.equal($('centerProgress').textContent,'30 / 30 연구');assert.deepEqual(islandsDone(),[true],'a finished island lights its relic');
 assert.equal(ui.chapterEls[0].querySelector('.island-progress').textContent,'30 / 30');
 for(const n of data.NODES)ui.state.levels[n.id]=n.max;ui.state.levels[LONG.id]--;ui.render();assert.equal(ui.sectorEls[0].style.display,'none');ui.openCenter();ui.buySelected();ui.jumpToSector(0);assert(ui.pending);finishNavigation();assert.equal(ui.selected,LONG.id);assert(!$('sectorDialog').open);
-assert(!$('hubSector0').classList.contains('complete'));
+assert.deepEqual(islandsDone(),[false]);
 // Update log: two entries per page, page numbers five at a time; previous/next step to the neighbouring set.
 {const P=updates.updatePage(1).pages,nums=()=>$('updatePages').children.map(b=>b.textContent),cur=()=>$('updatePages').children.find(b=>b.attributes['aria-current']==='page').textContent;assert(P>10);
  assert.equal($('updateEntries').children.length,2);assert.deepEqual(nums(),['1','2','3','4','5']);assert($('updatesPrev').disabled);assert(!$('updatesNext').disabled);

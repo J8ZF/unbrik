@@ -10,7 +10,10 @@
 //         the camera, so the shore never lags behind the island.
 //  #world — growth layers around the HTML studies: decoration and grass, the
 //         lighthouse beam, landmark buildings, moss over bought cards.
+//  The observatory's moving parts go on two more screen-space canvases, one
+//  under the painted layer and one over the map (see observatory-view.js).
 import {ISLAND_ART as ART} from './island-art.js?v=4.0.0-dev.1';
+import {createObservatory} from './observatory-view.js?v=4.0.0-dev.1';
 
 const NS='http://www.w3.org/2000/svg';
 const f1=v=>(Math.round(v*10)/10).toString();
@@ -26,7 +29,11 @@ function moss(n){if(n.zone==='sand')return '';const r=rng(n.id*13);let s='';cons
  for(let i=0;i<5;i++)s+=`<path d="${blobPath(r,cx+(r()-.5)*34-r()*10,cy+(r()-.5)*24-r()*8,6+r()*8)}" fill="${['#6f9d4c','#5a8a40','#83b05c'][i%3]}"/>`;
  for(let i=0;i<4;i++)s+=`<circle cx="${f1(cx+(r()-.5)*36)}" cy="${f1(cy+(r()-.5)*26)}" r="${f1(1.5+r()*2)}" fill="#b6d886"/>`;return s;}
 
-export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,buildSvg,mossSvg,nodes,level}){
+export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,buildSvg,mossSvg,nodes,level,islandsDone=()=>[]}){
+ const obs=createObservatory(),obsUnder=document.createElement('canvas'),obsOver=document.createElement('canvas');
+ obsUnder.className=obsOver.className='obs-canvas';obsUnder.setAttribute('aria-hidden','true');obsOver.setAttribute('aria-hidden','true');
+ viewport.insertBefore(obsUnder,back);world.after(obsOver);
+ const ctxU=obsUnder.getContext('2d'),ctxO=obsOver.getContext('2d');
  const [WX0,WY0,WW,WH]=ART.world;
  let cam={x:0,y:0,scale:1},motion=true,visible=true,W=0,H=0,dpr=1;
  // ---- world-space sheets ----
@@ -108,10 +115,12 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
    ctx.globalCompositeOperation='destination-over';ctx.globalAlpha=.045;ctx.drawImage(waveCv,WX0,WY0,DW*WQ,DH*WQ);ctx.globalAlpha=1;}
   ctx.globalCompositeOperation='destination-out';ctx.fillStyle=ctx.strokeStyle='#000';ctx.lineWidth=6;for(const m of MASK)if(hit(m.b,v)){ctx.fill(m.p);ctx.stroke(m.p);}
   ctx.globalCompositeOperation='source-over';}
- function size(){const r=viewport.getBoundingClientRect();dpr=Math.min(2,window.devicePixelRatio||1);W=r.width;H=r.height;canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);}
- function draw(t){ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);if(!visible)return;
-  const s=cam.scale*dpr;ctx.setTransform(s,0,0,s,cam.x*dpr,cam.y*dpr);const v=viewRect();
-  drawGrid(t,v);ctx.setTransform(s,0,0,s,cam.x*dpr,cam.y*dpr);
+ function size(){const r=viewport.getBoundingClientRect();dpr=Math.min(2,window.devicePixelRatio||1);W=r.width;H=r.height;for(const c of [canvas,obsUnder,obsOver]){c.width=Math.round(W*dpr);c.height=Math.round(H*dpr);}}
+ function draw(t){for(const c of [ctx,ctxU,ctxO]){c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,c.canvas.width,c.canvas.height);}if(!visible)return;
+  const s=cam.scale*dpr;const v=viewRect();
+  obs.tick(t,motion);ctxU.setTransform(s,0,0,s,cam.x*dpr,cam.y*dpr);obs.drawUnder(ctxU,v,cam.scale);
+  ctxO.setTransform(s,0,0,s,cam.x*dpr,cam.y*dpr);obs.drawOver(ctxO,v,cam.scale,dpr);
+  ctx.setTransform(s,0,0,s,cam.x*dpr,cam.y*dpr);drawGrid(t,v);ctx.setTransform(s,0,0,s,cam.x*dpr,cam.y*dpr);
   ctx.strokeStyle='#eef4f5';ctx.lineJoin='round';ctx.lineCap='butt';
   const ph=(t/5000)%2,br=.12+.34*ease(ph<1?ph:2-ph);
   ctx.lineWidth=3;ctx.setLineDash([90,70,40,60,150,78]);ctx.lineDashOffset=motion?488*((t/28000)%1):0;ctx.globalAlpha=motion?br:.3;for(const o of SURF_OUT)if(hit(o.b,v))ctx.stroke(o.p);
@@ -129,11 +138,11 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
   clearTimeout(settleTimer);settleTimer=setTimeout(()=>{moving=false;world.classList.remove('moving');scheduleTiles();},220);}
  function resize(){size();draw(performance.now());scheduleTiles();}
  function setMotion(on){motion=on;viewport.classList.toggle('sea-still',!on);draw(performance.now());queue2();}
- function setVisible(on){visible=on;back.hidden=!on;canvas.hidden=!on;for(const el of [decorSvg,beamSvg,buildSvg,mossSvg])el.style.visibility=on?'':'hidden';draw(performance.now());if(on){scheduleTiles();queue2();}}
+ function setVisible(on){visible=on;back.hidden=!on;canvas.hidden=obsUnder.hidden=obsOver.hidden=!on;for(const el of [decorSvg,beamSvg,buildSvg,mossSvg])el.style.visibility=on?'':'hidden';draw(performance.now());if(on){scheduleTiles();queue2();}}
 
  // ---- growth: decoration by island progress, buildings at MAX, grass and moss ----
  let growthKey='';
- function render(){const owned=nodes.filter(n=>level(n)>0),p=owned.length/nodes.length,built=ART.landmarks.filter(l=>{const n=nodes.find(m=>m.id===l.node);return n&&level(n)>=n.max;});
+ function render(){obs.setLit(islandsDone());const owned=nodes.filter(n=>level(n)>0),p=owned.length/nodes.length,built=ART.landmarks.filter(l=>{const n=nodes.find(m=>m.id===l.node);return n&&level(n)>=n.max;});
   const key=owned.map(n=>n.id).join(',')+'|'+built.map(l=>l.node).join(',');if(key===growthKey)return;growthKey=key;
   const framed=new Set(built.map(l=>l.node)),rank=new Map(nodes.map((n,i)=>[n.id,i]));
   let dec='';for(const d of ART.decor)if(p>=d.t)dec+=d.svg;

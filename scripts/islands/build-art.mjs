@@ -6,6 +6,7 @@ import {execFileSync} from 'node:child_process';
 import * as G from './island1.mjs';
 import * as BLD from './buildings.mjs';
 import {rng,f1,poly,inside,edgeDist,blobPath} from './art.mjs';
+import {buildObservatory} from './observatory.mjs';
 const here=f=>new URL(f,import.meta.url),dist=f=>new URL('../../dist/'+f,import.meta.url);
 if(process.argv.includes('--geom')){
  fs.writeFileSync(here('island1.json'),JSON.stringify({coast:G.COAST,small:G.SMALL,nodes:G.NODES,sandBands:G.SAND_BANDS,beach:G.BEACH,smallBeach:G.SMALL_BEACH,rockZones:G.ROCK_ZONES,terrain:G.TERRAIN}));
@@ -16,7 +17,9 @@ const GM=JSON.parse(fs.readFileSync(here('geom.json')));
 const B=SEA.bounds,CW=G.CARD.w,CH=G.CARD.h;
 const nodes=G.NODES.map(([id,x,y,req])=>({id,x,y,req,zone:GM.zones[id]}));
 const nodeOf=id=>nodes.find(n=>n.id===id),root=nodes[0];
-const WX0=B.x0-1500,WY0=B.y0-1500,WW=B.x1-B.x0+3000,WH=B.y1-B.y0+3000;
+// the observatory sits in the sea west of island 1; the world covers both
+const OBS=buildObservatory(),[OCX,OCY]=OBS.center,OR=OBS.radius+120;
+const WX0=Math.min(B.x0-1500,OCX-OR),WY0=Math.min(B.y0-1500,OCY-OR),WX1=Math.max(B.x1+1500,OCX+OR),WY1=Math.max(B.y1+1500,OCY+OR),WW=WX1-WX0,WH=WY1-WY0;
 
 // ---- sea: v1 depth bands, shallows round the final outline, v1 triangles, canvas paths ----
 let sea=SEA.bands;for(const p of GM.near)sea+=poly(p,'fill="#112530"');
@@ -28,7 +31,7 @@ const tri=SEA.tri.split('<g class="drift"').slice(1).map(g=>{const style=g.match
 const DOT_TONE={'#0c1620':'#304250','#0e1c26':'#374b5b','#112530':'#3f5466'};
 const depth=[...SEA.bands.matchAll(/points="([^"]+)" fill="([^"]+)"/g)].map(m=>({c:DOT_TONE[m[2]],pts:m[1].split(' ').map(q=>q.split(',').map(Number))})).concat(GM.near.map(p=>({c:DOT_TONE['#112530'],pts:p})));
 if(depth.some(d=>!d.c))throw Error('unknown sea band colour');
-const fx={surfIn:GM.surf[16],surfOut:GM.surf[38],waves:GM.waveRuns,mask:[...GM.land,...SEA.reefs.flatMap(r=>r.parts)],coast:GM.land,depth};
+const fx={surfIn:GM.surf[16],surfOut:GM.surf[38],waves:GM.waveRuns,mask:[...GM.land,...SEA.reefs.flatMap(r=>r.parts),...OBS.fx.mask],coast:[...GM.land,...OBS.fx.coast],depth:[...OBS.fx.depth,...depth]};
 
 // ---- land: v1 reefs, grass, sand, rocks ----
 let land='';
@@ -43,7 +46,7 @@ for(const p of GM.rockBase)land+=poly(p,`fill="${ROCK[0][0]}" stroke="${ROCK[0][
 for(const r of GM.rocks){const [f,s]=ROCK[r.tone];land+=poly(r.pts,`fill="${f}" stroke="${s}" stroke-width="2.6" stroke-linejoin="miter"`);
  if(r.cap){const [f2,s2]=ROCK[Math.min(4,r.tone+1)];land+=poly(r.cap,`fill="${f2}" stroke="${s2}" stroke-width="2.2" stroke-linejoin="miter"`);}}
 land=SEA.reefsSvg+land;
-const back=`<svg xmlns="http://www.w3.org/2000/svg" width="${WW}" height="${WH}" viewBox="${WX0} ${WY0} ${WW} ${WH}">`+sea+land+`</svg>`;
+const back=`<svg xmlns="http://www.w3.org/2000/svg" width="${WW}" height="${WH}" viewBox="${WX0} ${WY0} ${WW} ${WH}">`+sea+land+OBS.svg+`</svg>`;
 
 // ---- landmark buildings (built when their study reaches MAX) ----
 const BUILD={harbor:n=>BLD.harbor(n,CW,CH),hall:n=>BLD.hall(n,CW,CH),radio:n=>BLD.radio(n,CW,CH),lighthouse:(n,l)=>BLD.lighthouse(n,CW,CH,l.oct)};
@@ -97,6 +100,7 @@ const islandNodes=nodes.map(n=>({id:n.id,content:G.CONTENT[n.id]||n.id,island:G.
 const xs=nodes.map(n=>n.x),ys=nodes.map(n=>n.y);
 const islands=[{...G.ISLAND,label:G.LABEL,landmarks:G.LANDMARKS.map(l=>({node:l.node,kind:l.kind})),bounds:{minX:B.x0,minY:B.y0,maxX:B.x1,maxY:B.y1}}];
 fs.writeFileSync(dist('islands.js'),head+`export const ISLANDS=${JSON.stringify(islands)};\nexport const ISLAND_NODES=${JSON.stringify(islandNodes)};\n`);
-const art={world:[WX0,WY0,WW,WH],back,tri,fx,decor:cleared.map(d=>({t:d.t,svg:d.svg})),landmarks,label:G.LABEL};
+const art={world:[WX0,WY0,WW,WH],back,tri:[...tri,...OBS.tri],fx,decor:cleared.map(d=>({t:d.t,svg:d.svg})),landmarks,label:G.LABEL};
 fs.writeFileSync(dist('island-art.js'),head+`export const ISLAND_ART=${JSON.stringify(art)};\n`);
-console.log('islands.js',(fs.statSync(dist('islands.js')).size/1024).toFixed(1)+'KB','island-art.js',(fs.statSync(dist('island-art.js')).size/1024).toFixed(0)+'KB','decor',cleared.length);
+fs.writeFileSync(dist('observatory-art.js'),head+`export const OBS_ART=${JSON.stringify(OBS.art)};\n`);
+console.log('islands.js',(fs.statSync(dist('islands.js')).size/1024).toFixed(1)+'KB','island-art.js',(fs.statSync(dist('island-art.js')).size/1024).toFixed(0)+'KB','observatory-art.js',(fs.statSync(dist('observatory-art.js')).size/1024).toFixed(0)+'KB','decor',cleared.length);
