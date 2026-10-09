@@ -106,29 +106,50 @@ const beachSet=(r,x,y)=>{const a=(r()-.5)*.6,col=['#e8475f','#4fe0cf','#ffd23f']
 const lagoonSvg=pts=>{const cx=pts.reduce((a,p)=>a+p[0],0)/pts.length,cy=pts.reduce((a,p)=>a+p[1],0)/pts.length,sh=k=>pts.map(([x,y])=>[cx+(x-cx)*k,cy+(y-cy)*k]);
  return poly(sh(1.18),'fill="#e2cc98" stroke="#f0e2b8" stroke-width="3" stroke-linejoin="round"')+poly(sh(1.08),'fill="#c4ad7c"')+poly(pts,'fill="#1d5a5c" stroke="#3f9aa0" stroke-width="3" stroke-linejoin="round"')+poly(sh(.62),'fill="#2a7f82"')+poly(sh(.3),'fill="#3fa0a2"')
   +`<path d="M${f1(cx-40)} ${f1(cy-18)}L${f1(cx+10)} ${f1(cy-26)}M${f1(cx-6)} ${f1(cy+22)}L${f1(cx+44)} ${f1(cy+14)}" stroke="#eef4f5" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"/>`;};
-// the volcano: a brown cone in three angular steps, cooled lava tongues running down
-// past its foot, glowing fissures opening from the crater, a dark rim and the crater pool
-const volcanoSvg=(r,cx,cy,R)=>{const ring=(k,n,jit)=>{const a0=r()*6.283,o=[];for(let i=0;i<n;i++){const a=a0+i/n*6.283+(r()-.5)*.3,rr=R*k*(1-jit+r()*jit*2);o.push([cx+Math.cos(a)*rr,cy+Math.sin(a)*rr]);}return o;};
- let s=poly(ring(1,9,.16),'fill="#5a4332" stroke="#765a46" stroke-width="3" stroke-linejoin="round"')+poly(ring(.76,8,.14),'fill="#6b5040" stroke="#8a6a55" stroke-width="3" stroke-linejoin="round"')+poly(ring(.52,7,.12),'fill="#7a5c4a" stroke="#98786a" stroke-width="2.5" stroke-linejoin="round"');
- // lava tongues: a wide dark band from the rim down the slope and past the foot, its upper reach still glowing
- const tongue=(a,len,w)=>{const dx=Math.cos(a),dy=Math.sin(a),px=-dy,py=dx,L=[],Rr=[];const n=6;
-  // the band narrows a little below the rim, then spreads into a broad lobed foot
-  for(let i=0;i<=n;i++){const t=i/n,d=R*.3+len*t,ww=w*(t<.5?1-t*.3:.85+(t-.5)*1.1)*(.86+r()*.28),wob=(r()-.5)*w*.4;L.push([cx+dx*d+px*(ww+wob),cy+dy*d+py*(ww+wob)]);Rr.push([cx+dx*d-px*(ww-wob),cy+dy*d-py*(ww-wob)]);}
-  const d1=R*.3+len,wEnd=w*1.4;const foot=[[cx+dx*(d1+wEnd*.5)+px*wEnd*.7,cy+dy*(d1+wEnd*.5)+py*wEnd*.7],[cx+dx*(d1+wEnd*.9)+px*wEnd*.15,cy+dy*(d1+wEnd*.9)+py*wEnd*.15],[cx+dx*(d1+wEnd*.75)-px*wEnd*.5,cy+dy*(d1+wEnd*.75)-py*wEnd*.5]];
+// The volcano, seen from above in the island's own flat language: a shield of
+// three uneven brown terraces, a cinder cone on one flank, two cooled lava flows
+// winding down from the rim with incandescent cracks, fissure vents, and a
+// jagged crater round a lava lake. The whole thing is a raised layer, so it
+// carries the game's translucent dark rim, and it is clipped to the land.
+let volcN=0;
+const volcanoSvg=(r,cx,cy,R,clipPoly)=>{
+ const jag=(ox,oy,rad,n,jit,a0=r()*6.283)=>{const o=[];for(let i=0;i<n;i++){const a=a0+i/n*6.283+(r()-.5)*.5/n*6.283,rr=rad*(1-jit+r()*jit*2);o.push([cx+ox+Math.cos(a)*rr,cy+oy+Math.sin(a)*rr]);}return o;};
+ const band=(pts,w,stroke)=>poly(pts,`fill="none" stroke="${stroke}" stroke-width="${w}" stroke-linejoin="round"`);
+ // a flow: a winding centre line from the rim, offset into a band that narrows then fans out
+ const flow=(a,len,w)=>{const line=[];let x=cx+Math.cos(a)*R*.33,y=cy+Math.sin(a)*R*.33,h=a;const n=5,seg=len/n;
+  for(let i=0;i<=n;i++){line.push([x,y,h]);h+=(r()-.5)*.7;x+=Math.cos(h)*seg;y+=Math.sin(h)*seg;}
+  const L=[],Rr=[];line.forEach(([x,y,h],i)=>{const t=i/n,ww=w*(t<.5?1-t*.35:.82+(t-.5)*1.3)*(.9+r()*.2),px=-Math.sin(h),py=Math.cos(h);L.push([x+px*ww,y+py*ww]);Rr.push([x-px*ww,y-py*ww]);});
+  const [ex,ey,eh]=line[n],we=w*1.5,px=-Math.sin(eh),py=Math.cos(eh),dx=Math.cos(eh),dy=Math.sin(eh);
+  const foot=[[ex+dx*we*.5+px*we*.75,ey+dy*we*.5+py*we*.75],[ex+dx*we*.95+px*we*.2,ey+dy*we*.95+py*we*.2],[ex+dx*we*.8-px*we*.45,ey+dy*we*.8-py*we*.45]];
   const body=[...L,...foot,...Rr.reverse()];
-  let g=poly(body,'fill="#2b221c" stroke="#1b1512" stroke-width="3" stroke-linejoin="round"');
-  // a second, slightly lighter crust plate inside the flow
-  g+=poly(body.map(([x,y])=>{const mx=cx+dx*(R*.3+len*.55),my=cy+dy*(R*.3+len*.55);return [mx+(x-mx)*.62,my+(y-my)*.62];}),'fill="#3a2e26"');
-  const core=[];for(let i=0;i<=2;i++){const t=i/2*.4,d=R*.32+len*t,ww=w*.3*(1-t*.8);core.push([cx+dx*d+px*ww,cy+dy*d+py*ww]);}for(let i=2;i>=0;i--){const t=i/2*.4,d=R*.32+len*t,ww=w*.3*(1-t*.8);core.push([cx+dx*d-px*ww,cy+dy*d-py*ww]);}
-  g+=poly(core,'fill="#b23a22"')+poly([core[0],core[1],core[4],core[5]].map(([x,y])=>[cx+(x-cx)*.97,cy+(y-cy)*.97]),'fill="#e0583a"');return g;};
- const a1=r()*6.283;s+=tongue(a1,R*.82,R*.2)+tongue(a1+2.1+r()*.6,R*.66,R*.17)+tongue(a1+4.2+r()*.5,R*.5,R*.15);
- // fissures: tapered dark wedges opening from the crater, red at the root
- for(let i=0;i<4;i++){const a=a1+1+i*1.5+(r()-.5)*.6,dx=Math.cos(a),dy=Math.sin(a),px=-dy,py=dx,r0=R*.3,r1=R*(.52+r()*.2),w0=R*.05;
-  const wedge=[[cx+dx*r0+px*w0,cy+dy*r0+py*w0],[cx+dx*r1,cy+dy*r1],[cx+dx*r0-px*w0,cy+dy*r0-py*w0]];s+=poly(wedge,'fill="#2a1d16"');
-  s+=poly([[cx+dx*r0+px*w0*.45,cy+dy*r0+py*w0*.45],[cx+dx*(r0+(r1-r0)*.45),cy+dy*(r0+(r1-r0)*.45)],[cx+dx*r0-px*w0*.45,cy+dy*r0-py*w0*.45]],'fill="#b23a22"');}
- s+=poly(ring(.34,8,.08),'fill="#3a2a22" stroke="#20160f" stroke-width="4" stroke-linejoin="round"')+poly(ring(.25,7,.1),'fill="#2a1d16"')+poly(ring(.14,6,.15),'fill="#8a2d1f"')+poly(ring(.08,5,.2),'fill="#d8512f"')+dot(cx+R*.02,cy-R*.02,R*.03,'#ffb060');
- return s;};
-const tropicExtras=({D,o})=>{const r=mkRng(21);let s='';for(const l of D.extras?.lagoon||[])s+=lagoonSvg((l.pts||l).map(([x,y])=>[x+o[0],y+o[1]]));for(const v of D.extras?.volcano||[])s+=volcanoSvg(r,v[0]+o[0],v[1]+o[1],v[2]);return s;};
+  const mid=line[Math.floor(n*.55)];const crust=body.map(([x,y])=>[mid[0]+(x-mid[0])*.6,mid[1]+(y-mid[1])*.6]);
+  // incandescent cracks along the upper half: slivers across the band, fading down the flow
+  let cracks='';for(let i=0;i<4;i++){const t=.08+i*.14,k=Math.min(n-1,Math.floor(t*n)),f=t*n-k,[x0,y0,h0]=line[k],[x1,y1]=line[k+1],x=x0+(x1-x0)*f,y=y0+(y1-y0)*f,qx=-Math.sin(h0),qy=Math.cos(h0),ww=w*(.55-i*.1),ll=w*.16;
+   cracks+=poly([[x+qx*ww+Math.cos(h0)*ll,y+qy*ww+Math.sin(h0)*ll],[x-qx*ww*.8,y-qy*ww*.8],[x+qx*ww-Math.cos(h0)*ll,y+qy*ww-Math.sin(h0)*ll]],`fill="${i<2?'#e0583a':'#b23a22'}"`);}
+  return {body,svg:poly(body,'fill="#2f2622" stroke="#1b1512" stroke-width="3" stroke-linejoin="round"')+poly(crust,'fill="#3d322b"')+cracks};};
+ const base=jag(0,0,R,11,.15),step1=jag(R*.06,R*.05,R*.74,9,.13),step2=jag(R*.1,R*.08,R*.5,8,.11);
+ const a1=r()*6.283,fl=[flow(a1,R*.78,R*.15),flow(a1+2.4+r()*.8,R*.62,R*.12)];
+ const cone2=[cx+Math.cos(a1+4.4)*R*.8,cy+Math.sin(a1+4.4)*R*.8],c2=jag(cone2[0]-cx,cone2[1]-cy,R*.24,8,.14),c2b=jag(cone2[0]-cx,cone2[1]-cy,R*.14,7,.14);
+ const id='vc'+(++volcN);let s=`<clipPath id="${id}">${poly(clipPoly,'')}</clipPath><g clip-path="url(#${id})">`;
+ // the translucent dark rim: the game's shadow, round the whole silhouette
+ for(const sh of [base,c2,...fl.map(f=>f.body)])s+=band(sh,30,'rgba(4,8,12,.5)');
+ s+=poly(base,'fill="#5a4332" stroke="#6f5541" stroke-width="3" stroke-linejoin="round"');
+ // ash fields on the lower slope
+ for(let i=0;i<2;i++){const a=a1+1.3+i*2.6+(r()-.5)*.6,d=R*.72;s+=poly(jag(Math.cos(a)*d,Math.sin(a)*d,R*.2,6,.3),'fill="#3f3732"');}
+ s+=poly(step1,'fill="#6b5040" stroke="#846757" stroke-width="3" stroke-linejoin="round"')+poly(step2,'fill="#7a5c4a" stroke="#957565" stroke-width="2.5" stroke-linejoin="round"');
+ // the cinder cone on the flank
+ s+=poly(c2,'fill="#4e3c30" stroke="#64503f" stroke-width="2.5" stroke-linejoin="round"')+poly(c2b,'fill="#5e4a3c"')+poly(jag(cone2[0]-cx,cone2[1]-cy,R*.055,6,.2),'fill="#2a1d16"')+dot(cone2[0],cone2[1],R*.02,'#d8512f');
+ // fissure vents on the upper slope
+ for(let i=0;i<3;i++){const a=a1+1.1+i*.5+(r()-.5)*.3,d0=R*.4,d1=R*(.52+r()*.1),dx=Math.cos(a),dy=Math.sin(a),px=-dy,py=dx,w=R*.02;
+  s+=poly([[cx+dx*d0+px*w,cy+dy*d0+py*w],[cx+dx*d1,cy+dy*d1],[cx+dx*d0-px*w,cy+dy*d0-py*w]],'fill="#2a1d16"');if(i===1)s+=dot(cx+dx*(d0+R*.02),cy+dy*(d0+R*.02),R*.016,'#e0583a');}
+ for(const f of fl)s+=f.svg;
+ // the crater: dark rim, jagged inner wall, two benches, the lava lake
+ s+=poly(jag(0,0,R*.36,9,.1),'fill="#3a2a22" stroke="#20160f" stroke-width="4" stroke-linejoin="round"')+poly(jag(0,0,R*.27,8,.15),'fill="#231812"');
+ for(let i=0;i<2;i++){const a=r()*6.283;s+=poly([[cx+Math.cos(a)*R*.26,cy+Math.sin(a)*R*.26],[cx+Math.cos(a+.9)*R*.25,cy+Math.sin(a+.9)*R*.25],[cx+Math.cos(a+.6)*R*.17,cy+Math.sin(a+.6)*R*.17]],'fill="#4a3a32"');}
+ s+=poly(jag(0,0,R*.17,7,.2),'fill="#8a2d1f"')+poly(jag(R*.01,-R*.01,R*.11,6,.25),'fill="#c8432a"')+poly(jag(R*.02,-R*.02,R*.055,5,.3),'fill="#f08a4a"')+dot(cx+R*.025,cy-R*.025,R*.02,'#ffd38a');
+ return s+'</g>';};
+const tropicExtras=({D,o,land})=>{const r=mkRng(21);let s='';for(const l of D.extras?.lagoon||[])s+=lagoonSvg((l.pts||l).map(([x,y])=>[x+o[0],y+o[1]]));
+ for(const v of D.extras?.volcano||[]){const cx=v[0]+o[0],cy=v[1]+o[1],piece=land.find(p=>inside(cx,cy,p))||land[0];s+=volcanoSvg(r,cx,cy,v[2],piece);}return s;};
 
 export const THEMES={
  meadow:{
