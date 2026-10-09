@@ -202,12 +202,12 @@ export const THEMES={
   layer:{a:['#3d6d5f','#62a08c'],b:['#4b7f68','#7fb996'],c:['#5f9470','#9fcf9a']},
   // the shores are dark earth, not sand; the island rests on blue-grey rock
   sand:['#6b593b','#8c7850'],wet:'#4f4230',dune:['#7c6844','#9e8a5a'],duneTop:['#8d7850','#b09b66'],
-  rock:[['#2d4256','#415a72'],['#3a5168','#546e8a'],['#486079','#6683a0'],['#587090','#7c99b4'],['#6a829e','#92aec6']],
+  rock:[['#2d4256','#415a72'],['#3a5168','#546e8a'],['#486079','#6683a0'],['#587090','#7c99b4'],['#6a829e','#92aec6']],shelf:['#22384c','#36516a','#2a4256'],
   sea:{far:'#0c1620',mid:'#0f1d27',near:'#142a33',tones:{far:'#304250',mid:'#3a4c5c',near:'#44586a'}},color:'#ff6b86',zones:{grass:'#5fd3b8',sand:'#c9a86a',rock:'#9fbbd6'},
   // fewer, bigger, translucent: maple canopies and teal brush in chains, gold birches, fallen birch logs on the grass
   decor:[
-   ['maple',11,110,'grass',(r,x,y)=>mapleCanopy(r,x,y),21],['maplebig',4,150,'grass',(r,x,y)=>mapleCanopy(r,x,y,1.45),29],
-   ['brush',9,74,'grass',tealBrush,23],['birch',4,90,'grass',birchStand,27],['birchlog',4,80,'grass',birchLog,26],
+   ['maple',14,104,'grass',(r,x,y)=>mapleCanopy(r,x,y),21,'core'],['maplebig',5,140,'grass',(r,x,y)=>mapleCanopy(r,x,y,1.45),29,'core'],
+   ['brush',9,74,'grass',tealBrush,23,'edge'],['birch',4,90,'grass',birchStand,27],['birchlog',4,80,'grass',birchLog,26],
    ['shorebrush',3,70,'sand',tealBrush,31],
    ['moss',7,50,'rock',rockMoss,41]]},
  ruins:{

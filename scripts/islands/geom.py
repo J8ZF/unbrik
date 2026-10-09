@@ -136,6 +136,17 @@ for k, i in enumerate(rocks):
         i['cap'] = rect(cx + rng.uniform(-.12, .12) * w, cy + rng.uniform(-.12, .12) * h, w * f, h * f, deg)
 rockM = mask([i['pts'] for i in rocks])
 landM = landBase | beachM | rockM
+# ---- the rock the island sits on: a ledge showing above the water round the land (wider where big blocks are
+# set), and a shelf under the water beyond it. The ledge counts as land for the coast lines.
+ledge, shelfP = [], []
+shelf = G.get('rockShelf')
+if shelf:
+    ledgeM = dil(landBase, int(shelf.get('ledge', 40))) | mask([rect(*b) for b in shelf.get('blocks', [])])
+    ledgeM = ero(dil(ledgeM, 40), 40)
+    shelfM = dil(ledgeM, int(shelf.get('shelf', 200))) | mask([rect(*b) for b in shelf.get('shelfBlocks', [])])
+    shelfM = ero(dil(shelfM, 60), 60)
+    ledge = trace(ledgeM, eps=5, min_area=400); shelfP = trace(shelfM, eps=8, min_area=400)
+    landM |= ledgeM
 # fill gaps between blocks so a rock zone reads as one mass; given rock polygons (a plateau) join the base
 rockBaseM = ero(dil(rockM, 34), 34) & (landM | rockM)
 rockBaseM |= mask(G.get('rockPolys', [])) & landBase
@@ -285,6 +296,6 @@ out = dict(
     land=trace(landM, eps=1.4), rockBase=trace(rockBaseM, eps=1.4),
     rocks=[dict(pts=i['pts'], tone=i['tone'], cap=i.get('cap'), zone=i['zone']) for i in rocks],
     sand=trace(sandM, eps=1.4), wet=trace(wetM, eps=1.4), beach=trace(beachM & ~landBase, eps=1.4), dunes=dunes,
-    layers=layers, surf=surf, near=near, waves=waves, waveRuns=waveRuns, zones=zones, offLand=bad, bands=bands)
+    layers=layers, surf=surf, near=near, waves=waves, waveRuns=waveRuns, zones=zones, offLand=bad, bands=bands, ledge=ledge, shelf=shelfP)
 json.dump(out, open(sys.argv[2], 'w'))
 print(os.path.basename(sys.argv[1]), 'rocks', len(rocks), 'dunes', len(dunes), 'layers', len(layers), 'cards too close to water', bad)
