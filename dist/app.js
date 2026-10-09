@@ -257,12 +257,12 @@ function createHeader(){
   row.append(symbol);row.append(balance);row.append(rate);ledger.append(row);ledgerEls.set(key,{row,balance,rate});
  }
  const pages=$('hudPages');
- pages.addEventListener('scroll',()=>{const width=pages.clientWidth||1,page=Math.round((pages.scrollLeft||0)/width);if(page!==hudPage){hudPage=page;renderPageDots();}},{passive:true});
+ pages.addEventListener('scroll',()=>{const width=pages.clientWidth||1,page=Math.round((pages.scrollLeft||0)/width);if(page!==hudPage){hudPage=page;renderPageDots();if(typeof syncPageHeight==='function')syncPageHeight();}},{passive:true});
  $('hudPrev').onclick=()=>goToPage(hudPage-1);$('hudNext').onclick=()=>goToPage(hudPage+1);
  renderPageDots();
 }
 function goToPage(page){
- const pages=$('hudPages');hudPage=Math.max(0,Math.min(hudPageCount-1,page));
+ const pages=$('hudPages');hudPage=Math.max(0,Math.min(hudPageCount-1,page));if(typeof syncPageHeight==='function')syncPageHeight();
  if(typeof pages.scrollTo==='function')pages.scrollTo({left:hudPage*(pages.clientWidth||0),behavior:state.settings.motion&&!motionPreference.matches?'smooth':'auto'});
  renderPageDots();
 }
@@ -573,6 +573,9 @@ function reframeViewport(){
  if($('sectorDialog').open)updateNavigatorScroll();
 }
 new ResizeObserver(reframeViewport).observe(viewport);
+// the open top panel is as tall as the page showing, not the tallest page
+function syncPageHeight(){const pages=$('hudPages'),page=pages.children[hudPage];if(page)pages.style.height=page.offsetHeight+'px';}
+{const ro=new ResizeObserver(syncPageHeight);for(const page of $('hudPages').children)ro.observe(page);}
 $('sectorDialog').querySelector('.navigator-content').addEventListener('scroll',updateNavigatorScroll,{passive:true});
 function animateHub(now){if(now-lastHubFrame<33||cameraMoving||document.hidden||suspended||document.body.classList.contains('reduced-motion')||camera.scale<.32)return;const r=205*camera.scale,hx=onPrestige()?0:CENTER.x,hy=onPrestige()?0:CENTER.y,sx=camera.x+hx*camera.scale,sy=camera.y+hy*camera.scale;if(sx+r<0||sx-r>viewport.clientWidth||sy+r<0||sy-r>viewport.clientHeight)return;lastHubFrame=now;const p=wireframePaths(now/1000),prefix=onPrestige()?'pWire':'hubWire';$(prefix+'Back').setAttribute('d',p.back);$(prefix+'Front').setAttribute('d',p.front);$(prefix+'Outline').setAttribute('d',p.outline);}
 let autoClock=0;
