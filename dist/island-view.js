@@ -73,18 +73,34 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
  const ease=u=>u*u*(3-2*u);
  const waveAlpha=(t,i)=>{const u=(((t/1000-i*1.1)%6.6)+6.6)%6.6/6.6;if(u<.22)return .62*ease(u/.22);if(u<.55)return .62+(.1-.62)*ease((u-.22)/.33);return .1*(1-ease((u-.55)/.45));};
  const TAN=Math.tan(28*Math.PI/180),BAND=560,SCAN_T=11000,[SX0,SX1]=ART.fx.scan;
+ // ---- sea grid ----
+ // Dots cover the whole view at any zoom. They sit on a world lattice (so they
+ // move with the map) whose step doubles or halves with the zoom: the screen
+ // gap stays between GRID_MIN and twice that, and the next finer set fades in
+ // as you zoom, so dots never pile up or thin out. Their tone follows the
+ // depth bands round the island; the scan band brightens them as it sweeps.
+ const GRID_MIN=18,DOT_R=1.5,DEEP='#212e3a',DQ=1/20;
+ const depth=document.createElement('canvas');depth.width=Math.ceil(WW*DQ);depth.height=Math.ceil(WH*DQ);
+ {const d=depth.getContext('2d');d.setTransform(DQ,0,0,DQ,-WX0*DQ,-WY0*DQ);if('filter' in d)d.filter='blur(1.5px)';for(const b of ART.fx.depth){d.fillStyle=b.c;d.fill(mkPath(b.pts,true));}}
+ const tiles2=new Map();
+ function dotPattern(P,r){const key=P+':'+r;let pat=tiles2.get(key);if(!pat){const c=document.createElement('canvas');c.width=c.height=P;const g=c.getContext('2d');g.fillStyle='#fff';g.beginPath();g.arc(P/2,P/2,r,0,6.2832);g.fill();pat=ctx.createPattern(c,'repeat');if(tiles2.size>80)tiles2.clear();tiles2.set(key,pat);}return pat;}
+ function drawGrid(t,v){
+  const s=cam.scale*dpr,G=40*2**Math.ceil(Math.log2(GRID_MIN/cam.scale/40)),fade=Math.min(1,Math.max(0,G*cam.scale/GRID_MIN-1)),r=Math.round(DOT_R*dpr*4)/4;
+  ctx.setTransform(1,0,0,1,0,0);
+  for(const [g,a] of [[G,1],[G/2,fade]]){if(a<.02)continue;const step=g*s,P=Math.max(4,Math.round(step)),pat=dotPattern(P,Math.min(r,P/2-.5));
+   pat.setTransform(new DOMMatrix([step/P,0,0,step/P,cam.x*dpr+(20-g/2)*s,cam.y*dpr+(20-g/2)*s]));ctx.globalAlpha=a;ctx.fillStyle=pat;ctx.fillRect(0,0,canvas.width,canvas.height);}
+  ctx.globalAlpha=1;ctx.globalCompositeOperation='source-atop';ctx.fillStyle=DEEP;ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.setTransform(s,0,0,s,cam.x*dpr,cam.y*dpr);ctx.drawImage(depth,WX0,WY0,depth.width/DQ,depth.height/DQ);
+  if(motion){
+   // brighter dots inside a slanted band that sweeps across the water
+   const bx=SX0-900+(SX1+1300-(SX0-900))*((t%SCAN_T)/SCAN_T),k=BAND/(1+TAN*TAN),gr=ctx.createLinearGradient(bx,0,bx+k,k*TAN);
+   gr.addColorStop(0,'rgba(125,152,173,0)');gr.addColorStop(.5,'rgba(125,152,173,.92)');gr.addColorStop(1,'rgba(125,152,173,0)');ctx.fillStyle=gr;ctx.fillRect(v[0],v[1],v[2]-v[0],v[3]-v[1]);}
+  ctx.globalCompositeOperation='destination-out';ctx.fillStyle=ctx.strokeStyle='#000';ctx.lineWidth=6;for(const m of MASK)if(hit(m.b,v)){ctx.fill(m.p);ctx.stroke(m.p);}
+  ctx.globalCompositeOperation='source-over';}
  function size(){const r=viewport.getBoundingClientRect();dpr=Math.min(2,window.devicePixelRatio||1);W=r.width;H=r.height;canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);}
  function draw(t){ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);if(!visible)return;
   const s=cam.scale*dpr;ctx.setTransform(s,0,0,s,cam.x*dpr,cam.y*dpr);const v=viewRect();
-  if(motion){
-   // brighter grid dots inside a slanted band that sweeps across the water
-   const bx=SX0-900+(SX1+1300-(SX0-900))*((t%SCAN_T)/SCAN_T);let any=false;ctx.fillStyle='#7d98ad';const lv=[];for(let k=0;k<6;k++)lv.push(new Path2D());
-   const j0=Math.ceil((v[1]-20)/40),j1=Math.floor((v[3]-20)/40);
-   for(let j=j0;j<=j1;j++){const y=20+40*j,xa=Math.max(v[0],bx-TAN*y),xb=Math.min(v[2],bx+BAND-TAN*y);if(xa>xb)continue;
-    for(let i=Math.ceil((xa-20)/40);20+40*i<=xb;i++){const x=20+40*i,u=(x+TAN*y-bx)/BAND,a=1-Math.abs(u-.5)*2;if(a<=0)continue;const k=Math.min(5,Math.floor(a*6));lv[k].moveTo(x+3,y);lv[k].arc(x,y,3,0,6.2832);any=true;}}
-   if(any){lv.forEach((p,k)=>{ctx.globalAlpha=(k+.5)/6;ctx.fill(p);});ctx.globalAlpha=1;const bv=[Math.max(v[0],bx-TAN*v[3]),v[1],Math.min(v[2],bx+BAND-TAN*v[1]),v[3]];
-    ctx.globalCompositeOperation='destination-out';ctx.lineWidth=6;for(const m of MASK)if(hit(m.b,bv)){ctx.fill(m.p);ctx.stroke(m.p);}ctx.globalCompositeOperation='source-over';}
-  }
+  drawGrid(t,v);ctx.setTransform(s,0,0,s,cam.x*dpr,cam.y*dpr);
   ctx.strokeStyle='#eef4f5';ctx.lineJoin='round';ctx.lineCap='butt';
   const ph=(t/5000)%2,br=.12+.34*ease(ph<1?ph:2-ph);
   ctx.lineWidth=3;ctx.setLineDash([90,70,40,60,150,78]);ctx.lineDashOffset=motion?488*((t/28000)%1):0;ctx.globalAlpha=motion?br:.3;for(const o of SURF_OUT)if(hit(o.b,v))ctx.stroke(o.p);

@@ -23,7 +23,11 @@ let sea=SEA.bands;for(const p of GM.near)sea+=poly(p,'fill="#112530"');
 const tri=SEA.tri.split('<g class="drift"').slice(1).map(g=>{const style=g.match(/style="([^"]*)"/)[1],pts=[...g.matchAll(/points="([^"]*)"/g)].flatMap(m=>m[1].split(' ').map(s=>s.split(',').map(Number)));
  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]),x0=Math.floor(Math.min(...xs))-30,y0=Math.floor(Math.min(...ys))-30,x1=Math.ceil(Math.max(...xs))+30,y1=Math.ceil(Math.max(...ys))+30;
  return {x0,y0,w:x1-x0,h:y1-y0,style,body:g.slice(g.indexOf('>')+1).replace(/<\/g>$/,'')};});
-const fx={surfIn:GM.surf[16],surfOut:GM.surf[38],waves:GM.waveRuns,mask:[...GM.land,...SEA.reefs.flatMap(r=>r.parts)],scan:[B.x0,B.x1]};
+// sea grid: the game draws the dots over the whole view; their tone follows the depth bands
+const DOT_TONE={'#0c1620':'#283845','#0e1c26':'#2d3f4d','#112530':'#334858'};
+const depth=[...SEA.bands.matchAll(/points="([^"]+)" fill="([^"]+)"/g)].map(m=>({c:DOT_TONE[m[2]],pts:m[1].split(' ').map(q=>q.split(',').map(Number))})).concat(GM.near.map(p=>({c:DOT_TONE['#112530'],pts:p})));
+if(depth.some(d=>!d.c))throw Error('unknown sea band colour');
+const fx={surfIn:GM.surf[16],surfOut:GM.surf[38],waves:GM.waveRuns,mask:[...GM.land,...SEA.reefs.flatMap(r=>r.parts)],scan:[B.x0,B.x1],depth};
 
 // ---- land: v1 reefs, grass, sand, rocks ----
 let land='';
@@ -38,8 +42,7 @@ for(const p of GM.rockBase)land+=poly(p,`fill="${ROCK[0][0]}" stroke="${ROCK[0][
 for(const r of GM.rocks){const [f,s]=ROCK[r.tone];land+=poly(r.pts,`fill="${f}" stroke="${s}" stroke-width="2.6" stroke-linejoin="miter"`);
  if(r.cap){const [f2,s2]=ROCK[Math.min(4,r.tone+1)];land+=poly(r.cap,`fill="${f2}" stroke="${s2}" stroke-width="2.2" stroke-linejoin="miter"`);}}
 land=SEA.reefsSvg+land;
-const back=`<svg xmlns="http://www.w3.org/2000/svg" width="${WW}" height="${WH}" viewBox="${WX0} ${WY0} ${WW} ${WH}"><defs><pattern id="dots" width="40" height="40" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="2.8" fill="#283845"/></pattern></defs>`+
- sea+`<rect x="${WX0}" y="${WY0}" width="${WW}" height="${WH}" fill="url(#dots)"/>`+land+`</svg>`;
+const back=`<svg xmlns="http://www.w3.org/2000/svg" width="${WW}" height="${WH}" viewBox="${WX0} ${WY0} ${WW} ${WH}">`+sea+land+`</svg>`;
 
 // ---- landmark buildings (built when their study reaches MAX) ----
 const BUILD={harbor:n=>BLD.harbor(n,CW,CH),hall:n=>BLD.hall(n,CW,CH),radio:n=>BLD.radio(n,CW,CH),lighthouse:(n,l)=>BLD.lighthouse(n,CW,CH,l.oct)};
