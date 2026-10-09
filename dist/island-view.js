@@ -98,7 +98,7 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
  const bed=document.createElement('canvas');bed.className='obs-canvas';bed.setAttribute('aria-hidden','true');viewport.insertBefore(bed,obsUnder);
  const bctx=bed.getContext('2d'),SB=ART.seabed,BT=SB.tone;let bedDirty=true;
  const basin=SB.basin.map((pts,i)=>({p:mkPath(pts,true),a:BT.basin[1][i]-(i?BT.basin[1][i-1]:0)}));
- const floors=Object.entries(SB.islands).map(([id,f])=>({island:+id,b:bbox(f.shelf.flat()),shelf:f.shelf.map(pts=>mkPath(pts,true)),shallow:(()=>{const p=new Path2D();for(const q of f.shallows)p.addPath(mkPath(q,true));return p;})(),water:f.shallow,
+ const floors=Object.entries(SB.islands).map(([id,f])=>({island:+id,b:bbox(f.shelf.flat()),shelf:f.shelf.map(pts=>mkPath(pts,true)),shallow:(()=>{const p=new Path2D();for(const q of f.shallows)p.addPath(mkPath(q,true));return p;})(),lagoon:(()=>{const p=new Path2D();for(const q of f.lagoon||[])p.addPath(mkPath(q,true));return p;})(),water:f.shallow,
   reefs:[3,2,1].map(k=>{const p=new Path2D();for(const r of f.reefs)if(r.t===k)p.addPath(mkPath(r.pts,true));return {p,a:BT.reef[1][k]};})}));
  function drawBed(v){bedDirty=false;bctx.setTransform(1,0,0,1,0,0);bctx.clearRect(0,0,bed.width,bed.height);if(!visible)return;
   const s=cam.scale*dpr;bctx.setTransform(s,0,0,s,cam.x*dpr,cam.y*dpr);
@@ -106,7 +106,7 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
   for(const f of floors){const pic=pics.find(q=>q.island===f.island&&!q.sat);if(!pic||!pic.shown||!hit(f.b,v))continue;
    bctx.fillStyle=BT.shelf[0];bctx.globalAlpha=BT.shelf[1]*pic.alpha;for(const p of f.shelf)bctx.fill(p);
    bctx.fillStyle=BT.reef[0];for(const r of f.reefs){bctx.globalAlpha=r.a*pic.alpha;bctx.fill(r.p);}
-   bctx.fillStyle=f.water[0];bctx.globalAlpha=f.water[1]*pic.alpha;bctx.fill(f.shallow);}
+   bctx.fillStyle=f.water[0];if(f.lagoon){bctx.globalAlpha=f.water[1]*.8*pic.alpha;bctx.fill(f.lagoon);}bctx.globalAlpha=f.water[1]*pic.alpha;bctx.fill(f.shallow);}
   bctx.globalAlpha=1;}
  const ease=u=>u*u*(3-2*u);
  const waveAlpha=(t,i)=>{const u=(((t/1000-i*1.1)%6.6)+6.6)%6.6/6.6;if(u<.22)return .62*ease(u/.22);if(u<.55)return .62+(.1-.62)*ease((u-.22)/.33);return .1*(1-ease((u-.55)/.45));};

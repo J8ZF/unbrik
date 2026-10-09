@@ -13,6 +13,7 @@ const P=pts=>pts.map(p=>p[0]+','+p[1]).join(' '),SB=A.seabed,T=SB.tone;let under
 SB.basin.forEach((b,i)=>{under+=`<polygon points="${P(b)}" fill="${T.basin[0]}" fill-opacity="${T.basin[1][i]-(i?T.basin[1][i-1]:0)}"/>`;});
 for(const f of Object.values(SB.islands)){for(const s of f.shelf)under+=`<polygon points="${P(s)}" fill="${T.shelf[0]}" fill-opacity="${T.shelf[1]}"/>`;
  for(const t of [3,2,1])for(const r of f.reefs)if(r.t===t)under+=`<polygon points="${P(r.pts)}" fill="${T.reef[0]}" fill-opacity="${T.reef[1][t]}"/>`;
+ if(f.lagoon)under+=`<path d="${f.lagoon.map(q=>'M'+P(q)+'Z').join('')}" fill="${f.shallow[0]}" fill-opacity="${f.shallow[1]*.8}"/>`;
  under+=`<path d="${f.shallows.map(q=>'M'+P(q)+'Z').join('')}" fill="${f.shallow[0]}" fill-opacity="${f.shallow[1]}"/>`;}
 const overlay={under,over:''};
 const W=Math.round((x1-x0)*k),H=Math.round((y1-y0)*k);
