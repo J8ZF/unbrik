@@ -267,7 +267,7 @@ assert($('coinCard').hidden&&$('compactCoinCard').hidden);
 const basisPath=new Set();(function walk(id){basisPath.add(id);for(const r of data.byId.get(id).req)walk(r.id);})(data.COIN_UNLOCK);
 for(const n of data.NODES.filter(n=>basisPath.has(n.id)||n===CACHE))ui.state.levels[n.id]=1;
 ui.render();assert(!$('coinCard').hidden&&!$('compactCoinCard').hidden);assert($('hud').classList.contains('has-coin'));
-assert.equal($('compactCoinRate').textContent,'+1 /s');
+assert.equal($('compactCoinRate').innerHTML,'+1'+'<span class="per">/s</span>');
 ui.state.timers.cache=29.9;const payout=data.tick(ui.state,.2).find(e=>e.type==='cache');assert(payout.coin.gt(0)&&payout.money.gt(0));
 ui.render();const awarded=JSON.stringify(ui.state.currencies);ui.showCacheReward(payout);
 for(const collapsed of [true,false]){ui.state.settings.hudCollapsed=collapsed;ui.render();assert(!$('cacheMeter').hidden);assert($('cacheCoin').classList.contains('is-visible'));assert($('compactCacheCoin').classList.contains('is-visible'));assert.equal(JSON.stringify(ui.state.currencies),awarded);}

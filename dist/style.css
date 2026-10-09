@@ -221,6 +221,7 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 .currency-secondary{position:relative;margin-top:9px;display:flex;flex-direction:row;align-items:baseline;justify-content:space-between;gap:4px;min-height:20px}
 .currency-rate{color:var(--currency-color);font:400 14px/1.4 var(--mono);white-space:nowrap;font-variant-numeric:tabular-nums}
 .currency-rate>span{font-size:12px;color:var(--muted)}
+.per{margin-left:.18em;font-size:.86em;color:var(--muted)}
 .cache-gain{display:inline-block;font:400 12px/1.2 var(--mono);color:var(--accent);opacity:0;transform:translateY(3px);transition:opacity .18s ease,transform .22s ease;white-space:nowrap;pointer-events:none}
 .cache-gain.is-visible{opacity:1;transform:none}
 .hud .compact-resources{grid-template-columns:minmax(0,1fr);align-items:center;gap:10px;min-width:0}

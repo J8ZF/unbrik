@@ -28,6 +28,8 @@ const SYMBOLS={money:'$',coin:'¢',token:'✿'};
 function defaultSelection(){if(state.map==='prestige')return PRESTIGE_NODES.filter(n=>prestigeLevel(state,n)).at(-1)?.id||CENTER_SELECTION;return NODES.filter(n=>level(state,n)).at(-1)?.id||1;}
 const setText=(el,value)=>{const next=String(value);if(el.textContent!==next)el.textContent=next;};
 const setHtml=(el,value)=>{if(el.dataset.html!==value){el.innerHTML=value;el.dataset.html=value;}};
+// per-second suffix: close to the number, smaller and muted
+const PER='<span class="per">/s</span>';
 // The reward display reads the same atomic payout as the economy.
 let cacheReward={money:0,coin:0,until:0};
 const KEY='unbrik-save-v4',BACKUP=KEY+'-backup';
@@ -98,8 +100,8 @@ function renderChrome(){
  for(const id of ['coinCard','compactCoinCard'])$(id).hidden=!showCoin;
  for(const id of ['tokenCard','compactTokenCard'])$(id).hidden=!showToken;
  setText($('compactToken'),tokenFormat(state.currencies.token));setText($('compactTokenNote'),tokenNote());
- setText($('compactMoneyValue'),compactFormat(state.currencies.money));setText($('compactRate'),'+'+compactFormat(econ.rate)+' /s');
- setText($('compactCoin'),compactFormat(state.currencies.coin));setText($('compactCoinRate'),'+'+compactFormat(econ.coinRate)+' /s');
+ setText($('compactMoneyValue'),compactFormat(state.currencies.money));setHtml($('compactRate'),'+'+compactFormat(econ.rate)+PER);
+ setText($('compactCoin'),compactFormat(state.currencies.coin));setHtml($('compactCoinRate'),'+'+compactFormat(econ.coinRate)+PER);
  renderCacheHud();
  if(!compact){renderWorld();renderLedger();}
  $('cheatBadge').hidden=!state.settings.purchaseCheat;
@@ -283,7 +285,8 @@ function renderLedger(){
  for(const [key,def] of Object.entries(CURRENCY_DEFS)){
   const els=ledgerEls.get(key);if(!els)continue;
   const visible=def.shown(state,econ);els.row.hidden=!visible;if(!visible)continue;shown++;
-  setText(els.balance,amountFormat(key,state.currencies[key]));setText(els.rate,key==='token'?tokenNote():'+'+compactFormat(econ.rates[key])+' /s');
+  // the list keeps to three figures (367NoDc); the first page carries the decimals
+  setText(els.balance,key==='token'?tokenFormat(state.currencies[key]):compactFormat(state.currencies[key]));setHtml(els.rate,key==='token'?tokenNote():'+'+compactFormat(econ.rates[key])+PER);
  }
  setText($('ledgerTitle'),`재화 목록 · ${shown}`);
  hudPageCount=1+Math.max(1,Math.ceil(shown/LEDGER_PER_PAGE));
@@ -398,9 +401,9 @@ function syncPrestigeReady(){
  if(ready&&!state.prestige.noticed){state.prestige.noticed=true;toast('환생 가능 · UNBRIK 센터에서 환생',0,'important');}
 }
 function render(){
- econ=economy(state);weatherFx?.refresh();setText($('money'),format(state.currencies.money));setHtml($('rate'),`+${format(econ.rate)}<span> /s</span>`);
+ econ=economy(state);weatherFx?.refresh();setText($('money'),format(state.currencies.money));setHtml($('rate'),`+${format(econ.rate)}${PER}`);
  setText($('token'),tokenFormat(state.currencies.token));setText($('tokenNote'),tokenNote());syncPrestigeReady();
- setText($('coin'),format(state.currencies.coin));setHtml($('coinRate'),`+${format(econ.coinRate)}<span> /s</span>`);
+ setText($('coin'),format(state.currencies.coin));setHtml($('coinRate'),`+${format(econ.coinRate)}${PER}`);
  renderChrome();if(!cameraMoving){graph();renderPanel();}if($('settingsDialog').open&&!$('pane-stats').hidden)renderStats();
 }
 function animatePanel(){
@@ -540,7 +543,7 @@ function renderStats(){
  const coinStats=e.coinUnlocked||Big.from(state.stats.coinEarned).gt(0);
  const condition=prestigeReady(state)?`충족 · ✿${tokenFormat(tokensFor(state))}`:prestigeGateMet(state)?`$${format(Big.from(PRESTIGE_THRESHOLD).sub(state.currencies.money))} 더`:`${byId.get(PRESTIGE_GATE).name} 연구 + $${format(PRESTIGE_THRESHOLD)}`;
  // 2.2.2 entries and order, minus the removed ones; prestige entries follow.
- const entries=[['구매한 노드',`${e.count} / ${NODES.length}`],['총 연구 레벨',format(e.total,0)],['총 달러 획득','$'+format(state.stats.earned)],...(coinStats?[['총 코인 획득','¢'+format(state.stats.coinEarned)]]:[]),...(e.coinUnlocked?[['코인 생산','¢'+format(e.coinRate)+' /s']]:[]),['현재 생산','$'+format(e.rate)+' /s'],['캐시 보너스',e.burst?`${priceText({money:e.rate.mul(e.burst),...(e.coinUnlocked?{coin:e.coinRate.mul(e.coinBurst)}:{})})} / ${Math.round(e.interval)}s`:'미해금'],['총 플레이 시간',time(state.stats.seconds)],['오프라인 경과',time(state.stats.offlineSeconds)],['오프라인 수입',priceText({money:state.stats.offlineEarned,...(coinStats?{coin:state.stats.offlineCoinEarned}:{})})]];
+ const entries=[['구매한 노드',`${e.count} / ${NODES.length}`],['총 연구 레벨',format(e.total,0)],['총 달러 획득','$'+format(state.stats.earned)],...(coinStats?[['총 코인 획득','¢'+format(state.stats.coinEarned)]]:[]),...(e.coinUnlocked?[['코인 생산','¢'+format(e.coinRate)+PER]]:[]),['현재 생산','$'+format(e.rate)+PER],['캐시 보너스',e.burst?`${priceText({money:e.rate.mul(e.burst),...(e.coinUnlocked?{coin:e.coinRate.mul(e.coinBurst)}:{})})} / ${Math.round(e.interval)}s`:'미해금'],['총 플레이 시간',time(state.stats.seconds)],['오프라인 경과',time(state.stats.offlineSeconds)],['오프라인 수입',priceText({money:state.stats.offlineEarned,...(coinStats?{coin:state.stats.offlineCoinEarned}:{})})]];
  const rebirth=[['환생 횟수',`${pr.count}회`],['환생 조건',condition],...(pr.count?[['보유 토큰','✿'+tokenFormat(state.currencies.token)],['누적 토큰','✿'+tokenFormat(pr.tokensEarned)],['환생 노드',`${owned} / ${purchasable.length} · ${levels} / ${levelsTotal} 레벨`],['생산 배율',`$ ×${format(pb.moneyMul*pb.allMul)} · ¢ ×${format(pb.coinMul*pb.allMul)}`],['자동 연구 섹터',`${pb.auto.size} / 8 해금 · ${Object.keys(pr.auto).length} 켜짐`],['이번 회차',time(state.stats.seconds-(state.stats.runStart||0))],...(pr.last?[['마지막 환생',`$${format(pr.last.money)} → ✿${tokenFormat(pr.last.tokens)}`]]:[])]:[])];
  const row=([a,b])=>{const div=document.createElement('div');div.className='stat';const span=document.createElement('span'),strong=document.createElement('strong');span.textContent=a;strong.innerHTML=symbolMarkup(b);div.append(span,strong);return div;};
  $('stats').replaceChildren();for(const entry of entries)$('stats').append(row(entry));
