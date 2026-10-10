@@ -10,8 +10,12 @@
 //  canvas (screen space) — the moving sea: the grid sweep, surf lines along the
 //         shores and waves on the beaches of the open islands. It is drawn in
 //         the same call that moves the camera, so the shore never lags behind.
-//  #world — growth layers around the HTML studies: decoration and grass, the
-//         lighthouse beam, landmark buildings, moss over bought cards.
+//  #world — growth layers around the HTML studies: the lighthouse beam, landmark
+//         buildings, moss over bought cards (one small image per card).
+//  Decoration and the grass behind bought cards are not DOM: each island bakes
+//  them into a picture of its own that its tiles and coarse copy are drawn with
+//  (thousands of SVG elements in a world-sized sheet were re-parsed on every
+//  purchase and re-rasterised on every zoom).
 //  The observatory's moving parts: the machinery under its painted city goes
 //  on one more screen-space canvas below the painted layer (sized 1×1 while
 //  the observatory is off screen); what floats above the sea round it is
@@ -44,7 +48,8 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
  // ---- world-space sheets ----
  // sizes go in style: the game's base CSS gives every svg 24×24 px
  const sheet=el=>{el.setAttribute('viewBox',`${WX0} ${WY0} ${WW} ${WH}`);Object.assign(el.style,{left:WX0+'px',top:WY0+'px',width:WW+'px',height:WH+'px'});};
- for(const el of [decorSvg,buildSvg,mossSvg,overSvg])if(el)sheet(el);
+ for(const el of [buildSvg,overSvg])if(el)sheet(el);
+ if(mossSvg)Object.assign(mossSvg.style,{left:'0px',top:'0px',width:'0px',height:'0px'});
  // moving parts of buildings (the fountain's rings) live in small HTML elements just above the buildings: animated
  // inside the world-sized SVG sheet they would repaint the whole sheet every frame
  const fxEl=document.createElement('div');fxEl.className='fx-layer';fxEl.setAttribute('aria-hidden','true');
@@ -58,6 +63,7 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
   const coarse=document.createElement('canvas'),tilesEl=document.createElement('div');coarse.className='island-coarse';tilesEl.className='island-tiles';el.append(coarse,tilesEl);
   const fx=p.fx;
   return {island:p.island,sat:p.sat||null,art:p,x0,y0,w,h,el,coarse,tilesEl,img:null,ready:false,shown:false,alpha:0,fading:0,tiles:new Map(),
+   gen:0,decorImg:null,decorHave:'',decorWant:null,decorLoading:false,decorKey:'',coarseDirty:false,staleSweep:false,
    surfOut:fx.surfOut.map(q=>({p:mkPath(q,true),b:bbox(q)})),surfIn:fx.surfIn.map(q=>({p:mkPath(q,true),b:bbox(q)})),
    waves:fx.waves.map(q=>({i:q.i,p:mkPath(q.pts,false),b:bbox(q.pts)})),mask:fx.mask.map(q=>({p:mkPath(q,true),b:bbox(q)})),coast:fx.coast,depth:fx.depth,
    landmarks:p.landmarks,pairs:p.pairs||[],decor:p.decor};});
@@ -65,9 +71,20 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
  const open=p=>p.island===0||(revealing&&revealing.island===p.island)||islandOpen(p.island);
  // the picture bitmap loads when the island first opens; the coarse copy is drawn then
  function load(p){if(p.img)return;const img=new Image();img.decoding='async';p.img=img;
-  img.onload=()=>{p.ready=true;const q=Math.min(.25,1000/Math.max(p.w,p.h));p.coarse.width=Math.round(p.w*q);p.coarse.height=Math.round(p.h*q);Object.assign(p.coarse.style,{left:'0px',top:'0px',width:p.w+'px',height:p.h+'px'});p.coarse.getContext('2d').drawImage(img,0,0,p.coarse.width,p.coarse.height);scheduleTiles();};
+  img.onload=()=>{p.ready=true;const q=Math.min(.25,1000/Math.max(p.w,p.h));p.coarse.width=Math.round(p.w*q);p.coarse.height=Math.round(p.h*q);Object.assign(p.coarse.style,{left:'0px',top:'0px',width:p.w+'px',height:p.h+'px'});drawCoarse(p);scheduleTiles();};
   img.onerror=()=>{const holder=document.createElement('div');holder.innerHTML=p.art.back;const svg=holder.firstElementChild;svg.setAttribute('class','island-sheet');Object.assign(svg.style,{left:'0px',top:'0px',width:p.w+'px',height:p.h+'px'});p.tilesEl.append(svg);};
   img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(p.art.back);}
+ function drawCoarse(p){p.coarseDirty=false;const g=p.coarse.getContext('2d');g.clearRect(0,0,p.coarse.width,p.coarse.height);g.drawImage(p.img,0,0,p.coarse.width,p.coarse.height);if(p.decorImg)g.drawImage(p.decorImg,0,0,p.coarse.width,p.coarse.height);}
+ // ---- the island's decoration baked into a picture of its own (same frame as the island picture) ----
+ // A newer bake waits for the one loading; tiles drawn before it stay until their replacements are drawn.
+ function bakeDecor(p,markup){p.decorWant=markup;if(!p.decorLoading)startBake(p);}
+ function startBake(p){const markup=p.decorWant;p.decorWant=null;if(markup===null||markup===p.decorHave)return;
+  if(!markup){p.decorHave='';p.decorImg=null;bumpGen(p);return;}
+  const img=new Image();p.decorLoading=true;
+  const done=ok=>{p.decorLoading=false;if(ok){p.decorImg=img;p.decorHave=markup;bumpGen(p);}if(p.decorWant!==null)startBake(p);};
+  img.onload=()=>done(true);img.onerror=()=>done(false);
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${p.w}" height="${p.h}" viewBox="${p.x0} ${p.y0} ${p.w} ${p.h}">${markup}</svg>`);}
+ function bumpGen(p){p.gen++;p.staleSweep=true;p.coarseDirty=true;if(p.ready&&(neededLevel()===0||!p.tiles.size))drawCoarse(p);scheduleTiles();}
  const lh=ART.pictures.flatMap(p=>p.landmarks).find(l=>l.beam);
  if(lh){const [cx,cy]=lh.beam,L=760;Object.assign(beamSvg.style,{left:(cx-L)+'px',top:(cy-L)+'px',width:2*L+'px',height:2*L+'px'});beamSvg.setAttribute('viewBox',`${cx-L} ${cy-L} ${2*L} ${2*L}`);
   beamSvg.innerHTML=[[.13,.13],[.07,.12]].map(([a,o])=>`<polygon points="${cx},${cy} ${cx+L},${cy-L*a} ${cx+L},${cy+L*a}" fill="#fff3b0" fill-opacity="${o}"/>`).join('');}
@@ -79,15 +96,19 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
  function scheduleTiles(){if(!visible)return;const L=neededLevel();queue=[];const now=performance.now();if(!L)return;const span=T/L,v=viewRect(.2),cx=(v[0]+v[2])/2,cy=(v[1]+v[3])/2;
   for(const p of pics){if(!p.ready||!p.shown)continue;if(p.x0>v[2]||p.x0+p.w<v[0]||p.y0>v[3]||p.y0+p.h<v[1])continue;
    const i0=Math.max(0,Math.floor((v[0]-p.x0)/span)),i1=Math.min(Math.ceil(p.w/span)-1,Math.floor((v[2]-p.x0)/span)),j0=Math.max(0,Math.floor((v[1]-p.y0)/span)),j1=Math.min(Math.ceil(p.h/span)-1,Math.floor((v[3]-p.y0)/span));
-   for(let i=i0;i<=i1;i++)for(let j=j0;j<=j1;j++){const k=L+':'+i+':'+j,t=p.tiles.get(k);if(t){t.used=now;continue;}queue.push({p,L,i,j,k,d:Math.hypot(p.x0+(i+.5)*span-cx,p.y0+(j+.5)*span-cy)});}}
-  queue.sort((a,b)=>a.d-b.d);pump();}
+   const need=p.staleSweep?new Set():null;
+   for(let i=i0;i<=i1;i++)for(let j=j0;j<=j1;j++){const k=L+':'+i+':'+j,t=p.tiles.get(k);need?.add(k);if(t&&t.gen===p.gen){t.used=now;continue;}queue.push({p,L,i,j,k,d:Math.hypot(p.x0+(i+.5)*span-cx,p.y0+(j+.5)*span-cy)});}
+   if(need){p.staleSweep=false;for(const [k,t] of p.tiles)if(t.gen!==p.gen&&!need.has(k)){t.cv.remove();p.tiles.delete(k);tileCount--;}}}
+  queue.sort((a,b)=>a.d-b.d);if(queue.length)pump();else idleCoarse();}
  function pump(){if(pumping||!queue.length)return;pumping=true;requestAnimationFrame(function step(){const t0=performance.now();
   while(queue.length&&performance.now()-t0<10&&!moving)renderTile(queue.shift());
-  if(queue.length)requestAnimationFrame(step);else{pumping=false;evict();}});}
- function renderTile({p,L,i,j,k}){const span=T/L,b=1/L,wx=i*span-b,wy=j*span-b,cv=document.createElement('canvas');cv.width=cv.height=T+2;
-  cv.getContext('2d').drawImage(p.img,wx,wy,span+2*b,span+2*b,0,0,T+2,T+2);
+  if(queue.length)requestAnimationFrame(step);else{pumping=false;evict();idleCoarse();}});}
+ // a coarse copy whose decoration changed is redrawn when nothing else is waiting, one picture a frame
+ let coarsing=false;function idleCoarse(){if(coarsing||moving)return;const p=pics.find(q=>q.coarseDirty&&q.ready&&q.shown);if(!p)return;coarsing=true;requestAnimationFrame(()=>{coarsing=false;if(p.coarseDirty&&!moving)drawCoarse(p);idleCoarse();});}
+ function renderTile({p,L,i,j,k}){if(!p.shown)return;const span=T/L,b=1/L,wx=i*span-b,wy=j*span-b,cv=document.createElement('canvas');cv.width=cv.height=T+2;
+  const g=cv.getContext('2d');g.drawImage(p.img,wx,wy,span+2*b,span+2*b,0,0,T+2,T+2);if(p.decorImg)g.drawImage(p.decorImg,wx,wy,span+2*b,span+2*b,0,0,T+2,T+2);
   Object.assign(cv.style,{left:wx+'px',top:wy+'px',width:(span+2*b)+'px',height:(span+2*b)+'px',zIndex:String(LEVELS.indexOf(L)+1)});
-  p.tilesEl.append(cv);p.tiles.set(k,{cv,used:performance.now()});tileCount++;}
+  p.tilesEl.append(cv);const old=p.tiles.get(k);if(old){old.cv.remove();tileCount--;}p.tiles.set(k,{cv,used:performance.now(),gen:p.gen});tileCount++;}
  function evict(){if(tileCount<=MAX_TILES)return;const list=[];for(const p of pics)for(const [k,t] of p.tiles)list.push([p,k,t]);list.sort((a,b)=>a[2].used-b[2].used);for(const [p,k,t] of list.slice(0,tileCount-MAX_TILES)){t.cv.remove();p.tiles.delete(k);tileCount--;}}
  function dropTiles(p){for(const [,t] of p.tiles)t.cv.remove();tileCount-=p.tiles.size;p.tiles.clear();}
 
@@ -200,8 +221,12 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
  let obsReady=false;function setReady(on){on=!!on;if(on===obsReady)return;obsReady=on;obs.setReady(on);draw(performance.now());queue2();}
  function setVisible(on){visible=on;bedDirty=true;back.hidden=!on;canvas.hidden=obsUnder.hidden=bed.hidden=!on;for(const el of [decorSvg,beamSvg,buildSvg,mossSvg,overSvg,fxEl])if(el)el.style.visibility=on?'':'hidden';draw(performance.now());if(on){scheduleTiles();queue2();}}
 
- // ---- growth: decoration by island progress, buildings at MAX, grass and moss ----
- let growthKey='';
+ // ---- growth: decoration by island progress (baked into the picture), buildings at MAX, grass and moss ----
+ // Each part is rewritten only when what it shows changes: the decoration of one island when its bought studies change,
+ // the buildings when a landmark, frame or pair changes state, the moss one card at a time.
+ let buildKey='',mossKey='';const mossShown=new Map(),mossCache=new Map();
+ function mossSpot(n){let el=mossCache.get(n.id);if(!el){const x=n.x+CW/2-58,y=n.y+CH/2-50,svg=`<svg xmlns="http://www.w3.org/2000/svg" width="88" height="74" viewBox="${x} ${y} 88 74">${moss(n)}</svg>`;
+  el=document.createElement('i');el.className='moss-spot';Object.assign(el.style,{left:x+'px',top:y+'px',backgroundImage:`url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`});mossCache.set(n.id,el);}return el;}
  function render(){syncOpen();obs.setLit(islandsDone());const owned=nodes.filter(n=>level(n)>0);
   const shown=new Set(pics.filter(p=>p.shown&&!p.fading).map(p=>p.island));
   const lms=pics.flatMap(p=>shown.has(p.island)?p.landmarks:[]),node=id=>nodes.find(m=>m.id===id);
@@ -211,19 +236,25 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
   // an A/B pair drawn together: dark until its prerequisite is researched, then open, then the chosen side
   const pairs=pics.flatMap(p=>shown.has(p.island)?p.pairs:[]).map(q=>{const a=node(q.a),b=node(q.b);if(!a||!b||(!seen(a)&&!seen(b)))return null;const par=a.req[0]&&node(a.req[0].id);
    return {q,st:level(a)>0?'a':level(b)>0?'b':par&&level(par)>0?'open':'dormant'};}).filter(Boolean);
-  const key=owned.map(n=>n.id).join(',')+'|'+built.map(l=>l.node).join(',')+'|'+[...shown].join(',')+'|'+frames.map(f=>f.l.node+f.st).join(',')+'|'+pairs.map(p=>p.q.a+p.st).join(',');if(key===growthKey)return;growthKey=key;
-  const framed=new Set(built.map(l=>l.node));
-  let dec='';
-  for(const p of pics){if(!shown.has(p.island)||!p.decor.length)continue;const mine=nodes.filter(n=>n.island===p.island),ownedHere=mine.filter(n=>level(n)>0),q=ownedHere.length/Math.max(1,mine.length),rank=new Map(mine.map((n,i)=>[n.id,i]));
-   for(const d of p.decor)if(q>=d.t)dec+=d.svg;
-   for(const n of ownedHere)if(!framed.has(n.id)&&!n.tint&&ownedHere.length>=rank.get(n.id)+1)dec+=grassBehind(n);}
-  decorSvg.innerHTML=dec;
-  buildSvg.innerHTML=pairs.map(p=>p.q.states[p.st]).join('')+frames.map(f=>f.l.frame.under[f.st]).join('')+built.map(l=>l.svg).join('');
-  if(overSvg)overSvg.innerHTML=frames.map(f=>f.l.frame.over[f.st]).join('')+built.map(l=>l.over||'').join('');
-  fxEl.innerHTML=built.flatMap(l=>l.fx||[]).map(([x,y,r,d,dl,w,o])=>`<i class="fx-ring" style="left:${x-r}px;top:${y-r}px;width:${2*r}px;height:${2*r}px;border-width:${w}px;border-color:rgba(232,246,246,${o});animation-duration:${d}s;animation-delay:${dl}s"></i>`).join('');
-  beamSvg.style.display=built.some(l=>l.beam)?'':'none';
-  let mo='';for(const p of pics){if(!shown.has(p.island))continue;const mine=nodes.filter(n=>n.island===p.island),ownedHere=mine.filter(n=>level(n)>0),rank=new Map(mine.map((n,i)=>[n.id,i]));mo+=ownedHere.filter(n=>!n.tint&&ownedHere.length>=rank.get(n.id)+4).map(moss).join('');}
-  mossSvg.innerHTML=mo;}
+  const bk=built.map(l=>l.node).join(',')+'|'+frames.map(f=>f.l.node+f.st).join(',')+'|'+pairs.map(p=>p.q.a+p.st).join(',');
+  if(bk!==buildKey){buildKey=bk;
+   buildSvg.innerHTML=pairs.map(p=>p.q.states[p.st]).join('')+frames.map(f=>f.l.frame.under[f.st]).join('')+built.map(l=>l.svg).join('');
+   if(overSvg)overSvg.innerHTML=frames.map(f=>f.l.frame.over[f.st]).join('')+built.map(l=>l.over||'').join('');
+   fxEl.innerHTML=built.flatMap(l=>l.fx||[]).map(([x,y,r,d,dl,w,o])=>`<i class="fx-ring" style="left:${x-r}px;top:${y-r}px;width:${2*r}px;height:${2*r}px;border-width:${w}px;border-color:rgba(232,246,246,${o});animation-duration:${d}s;animation-delay:${dl}s"></i>`).join('');
+   beamSvg.style.display=built.some(l=>l.beam)?'':'none';}
+  const framed=new Set(built.map(l=>l.node)),mossOf=[];
+  for(const p of pics){if(p.sat||!p.shown)continue;const mine=nodes.filter(n=>n.island===p.island);if(!mine.length&&!p.decor.length)continue;
+   const ownedHere=mine.filter(n=>level(n)>0),rank=new Map(mine.map((n,i)=>[n.id,i]));
+   // decoration: what the island's progress has grown, and grass behind its bought cards (not behind a building or a drawn study)
+   const key=ownedHere.map(n=>n.id).join(',')+'|'+ownedHere.filter(n=>framed.has(n.id)).map(n=>n.id).join(',');
+   if(key!==p.decorKey){p.decorKey=key;const q=ownedHere.length/Math.max(1,mine.length);let dec='';
+    for(const d of p.decor)if(q>=d.t)dec+=d.svg;
+    for(const n of ownedHere)if(!framed.has(n.id)&&!n.tint&&ownedHere.length>=rank.get(n.id)+1)dec+=grassBehind(n);
+    bakeDecor(p,dec);}
+   if(shown.has(p.island))for(const n of ownedHere)if(!n.tint&&ownedHere.length>=rank.get(n.id)+4)mossOf.push(n);}
+  const mk=mossOf.map(n=>n.id).join(',');
+  if(mk!==mossKey&&mossSvg){mossKey=mk;const want=new Set(mossOf.map(n=>n.id));for(const [id,el] of mossShown)if(!want.has(id)){el.remove();mossShown.delete(id);}
+   for(const n of mossOf)if(!mossShown.has(n.id)){const el=mossSpot(n);mossSvg.append(el);mossShown.set(n.id,el);}}}
 
  size();syncOpen();queue2();
  // The map area changes size when the panel or header folds, or the phone's

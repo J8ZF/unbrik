@@ -7,7 +7,7 @@
 | 무엇 | 링크 | 쓰임 |
 |---|---|---|
 | UNBRIK 4.0 기획서 (Docs) | https://claude.ai/artifact/5ozeH5NWTB9BTQ9nq5yhnY | 모든 결정의 기준. 특히 "섬 비주얼"(표·실루엣·**피할 것**), "디자인 방향"(관측소), "바다와 해안", "디자인 메모: 가라앉은 지형", "확정" 목록 |
-| 4.0 개발 빌드 | https://claude.ai/artifact/LovxWagJxq8hr8qAmcDmKE | 새 빌드는 여기에 올림 (현재 v42) |
+| 4.0 개발 빌드 | https://claude.ai/artifact/LovxWagJxq8hr8qAmcDmKE | 새 빌드는 여기에 올림 (현재 v43) |
 | 섬 3 노드 시안 (Design 캔버스) | https://claude.ai/artifact/QTaGZRfwEP1P2dpJRuHgEa | '2차 시안' 페이지: 프레임 노드 둘, 천문대, 분수 광장, A/B 세 가지(1번은 쓰지 않기로). 게임에 적용한 원본 |
 | 3.1 게임 | https://claude.ai/artifact/TuZxhvLHqJ9a3mRM1ypCJg | **건드리지 않음** |
 | 프로젝트 관측소 시안 | https://claude.ai/artifact/PBtEijVXvp1rnQsVn781py | 관측소 레퍼런스 |
@@ -96,6 +96,8 @@ node -e "import('./dist/data.js').then(d=>{const s=d.defaultState();s.settings.p
 - 설정 창: 위 탭(설정·통계·정보) 아래, 설정 안에서 종류별 탭 DISPLAY · TEST · SAVE DATA(`data-subtab`, `#sub-display|test|save`). 탭 이름은 영어 대문자로 통일(원래 구역 이름 '테스트'만 한국어여서 사용자가 지적함). 설정이 늘면 이 탭들에 나눠 넣을 것.
 - 확대 3단: 60% 이상이면 카드 위 이끼가 옅어짐, 9% 아래면 노드·링크를 숨기고 섬 제목을 섬 위/아래에 고정 크기로(설정 "축소 시 섬만 표시"). 자세히 보기(눈 버튼)는 인터페이스를 모두 숨김.
 - 섬 3 특수 노드(v41): `scripts/islands/maple-nodes.mjs`에 손으로 그림 — 시안 캔버스의 좌표 그대로 쓰고 카드 중심으로 옮김(시안은 카드를 몇 도 기울였고 게임 카드는 똑바르므로 그만큼 되돌려 돌림, 천문대는 좌우 반전). `frameClock/frameLambda`는 상태별 그림 `{under,over}[dormant|on|max]`(램프가 카드 위로 겹치는 부분은 over), `fountain/astro`는 MAX에 서는 건물, `pairDiamond(a,b)`는 쌍 그림 `{hub,states[dormant|open|a|b]}`. `TINT`(카드 색)·`BOX`(장식이 비켜 가는 범위). 섬 설계에서는 `landmarks`의 kind, `extraLandmarks:[{kind,node(섬 안 번호)}]`(트리 표시가 아니고 내용 교체 없음), `pairArt:'diamond'`. build-art가 `pictures[].landmarks[].frame`, `pictures[].pairs`, `ISLANDS[].pairs[{a,b,hub}]`, `ISLAND_NODES[].tint`를 냄. island-view `render()`가 카드가 보이면(`seen`) 프레임을 상태대로, 쌍을 상태대로 그림; tint 카드에는 풀·이끼를 두지 않음. app.js: `--node-color`는 tint 우선, `.tinted` 카드 아이콘 흰색, 고르지 않은 쪽은 `.declined`(불투명도 .8, 문구 '잠김'), 쌍의 두 링크는 선행 연구 → 마름모 하나로. 분수 링은 SVG 안이 아니라 건물 층 바로 위의 작은 HTML 고리(`island-view`의 `.fx-layer`/`.fx-ring`, 데이터는 `buildings.mjs FX` → `pictures[].landmarks[].fx`; 애니메이션 끄면 멈춤).
-- **성능**: 월드 크기 SVG 시트(장식·건물·이끼·over) 안에서 무엇이든 움직이면 시트 전체를 매 프레임 다시 칠함 — v41에서 분수 링을 SVG 안에 넣었다가 드래그 프레임이 떨어짐(헤드리스 측정 약 45→32fps), v42에서 HTML 고리로 빼서 v40 수준으로 돌림. 움직이는 것은 SVG 시트 밖(작은 HTML 요소나 캔버스)에 둘 것. 측정은 스크래치 `tools/perf.mjs 포트[,포트]`(빈둥/드래그 fps와 초당 메인 스레드 시간). 헤드리스 측정에서 가장 큰 상시 비용은 바다 캔버스(약 30fps로 다시 그림, 끄면 메인 스레드 시간이 약 45% 줄어듦), 그다음이 DOM 요소 약 2만 5천 개의 SVG 장식 층.
+- **성능**: 월드 크기 SVG 시트 안에서 무엇이든 움직이면 시트 전체를 매 프레임 다시 칠함 — v41에서 분수 링을 SVG 안에 넣었다가 드래그 프레임이 떨어짐, v42에서 HTML 고리로 뺌. 움직이는 것은 SVG 시트 밖(작은 HTML 요소나 캔버스)에 둘 것.
+- **v43 장식 굽기**(사용자 선택 '2번'): 장식(나무·풀 등)과 산 카드 뒤 풀은 DOM이 아니라 섬마다 SVG 이미지 한 장(`pictures`와 같은 틀)으로 구워 섬 그림 조각·축소본을 그릴 때 함께 그림(`island-view` `bakeDecor`/`bumpGen`, 조각에 `gen`을 달아 바뀐 것만 다시 그리고 새 조각이 그려질 때까지 옛 조각 유지, 축소본은 한가할 때 `idleCoarse`). 그래서 장식은 바다 효과 캔버스 아래에 있음(땅 위라 겉모습 차이는 가장자리 앤티에일리어싱뿐 — 기준 스크린샷과 픽셀 비교함). 이끼는 카드마다 작은 이미지 하나(`.moss-spot`, `#islandMoss`는 div). 건물·프레임·쌍·램프·분수 링은 그 내용이 바뀔 때만 다시 씀. 화면 요소 약 19,000 → 7,300개, 구매할 때마다 생기던 110–180ms 멈춤이 사라짐(헤드리스 측정).
+- 측정 도구(스크래치 `tools/`): `perf.mjs 포트[,포트]`(빈둥·드래그·확대 fps와 초당 메인 스레드 시간, `CSS=` 주입 가능), `trace.mjs`(이벤트별 시간), `prof.mjs`(JS 함수별), `buytest.mjs`(구매 때 long task), `cmpshots.mjs 포트 폴더`(고정 지점 스크린샷, 두 빌드를 픽셀 비교). **주의**: 이 컨테이너의 헤드리스 크롬은 GPU가 없어 캔버스를 매 프레임 메인 스레드에서 복사함 — 바다 캔버스 비용이 실제 기기보다 크게 나옴(v42 보고의 '바다 45%'는 이 탓이 큼). `ARGS=--use-angle=swiftshader ...`로 GPU를 흉내 내면 전체가 4fps라 비교가 안 됨. 실제 기기에서도 확실한 상시 비용은 바다 파도 계산(`island-view waves()`, 프레임마다 약 100만 칸을 도는 JS, 이 기기에서 메인 스레드의 약 7%).
 - 지도 스크린샷 확인: 스크래치 `tools/spot.mjs`(세이브를 addInitScript로 넣고 카메라를 지점에 맞춰 찍음, 토스트는 숨김).
 - 커밋 메시지는 한국어, 끝에 세션이 알려 주는 attribution 줄.
