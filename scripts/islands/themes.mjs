@@ -219,6 +219,10 @@ export const THEMES={
   layer:{oasis:['#4f7d40','#8fc25c'],oasis2:['#62904f','#a6d07a'],high:['#b08a52','#c9a66a'],high2:['#bf9a5e','#d6b47a']},
   sand:['#c8a86a','#e0c48a'],wet:'#a88a55',dune:['#d6b878','#eadca0'],duneTop:['#e4ca8e','#f3e6b8'],
   rock:[['#6b5538','#8a7250'],['#7a6342','#9b835a'],['#8a714a','#ad9465'],['#9a7f54','#bda572'],['#aa8e60','#ccb37e']],
+  // the reefs round the island (satellites.mjs, spires): grey with a little dark brown in it, six steps from the waterline
+  // to the tip, so the height of a rock shows as how light it gets; under the water three steps that fade into the sea
+  cragRock:[['#3f3936','#57504b'],['#514a45','#6c645e'],['#665d57','#827870'],['#7c726a','#998e85'],['#938880','#b0a59b'],['#ada195','#c9beb2']],
+  sunken:[['#45484a',.7],['#323e48',.5],['#243442',.32]],
   sea:{far:'#0c1620',mid:'#0f1b24',near:'#15262d',tones:{far:'#304250',mid:'#3a4a58',near:'#4a5a62'}},color:'#ffbf4a',zones:{grass:'#b9f36d',sand:'#ffd98a',rock:'#c9a86a'},
   layersOverSand:true,
   // the highland: a raised sand table with a dark cliff line round it

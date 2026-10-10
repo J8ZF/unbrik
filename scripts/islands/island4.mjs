@@ -2,7 +2,9 @@
 // north-west over the lowland, an oasis, ruins and rune stones. Local
 // coordinates, scaled.
 export const DESIGN={
- id:4,name:'섬 4',theme:'ruins',origin:[-10500,-2700],scale:1.42,eps:16,
+ // reefs:0 — no scattered reefs: the reef zone round this island is drawn by hand (satellites.mjs, seabed.mjs), and
+ // the island's frame takes it in (frameReefs)
+ id:4,name:'섬 4',theme:'ruins',origin:[-10500,-2700],scale:1.42,eps:16,reefs:0,frameReefs:true,
  outline:[[160,900],[260,560],[640,300],[1200,340],[1500,180],[2100,160],[2560,420],[2520,760],[2700,1040],[2600,1440],[2200,1740],[1700,1700],[1480,1860],[1000,1800],[720,1960],[420,1720],[480,1400],[160,1260]],
  sandPieces:['a'],
  label:[2300,60],

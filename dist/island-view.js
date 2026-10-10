@@ -62,7 +62,7 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
   el.innerHTML=p.tri.map(t=>`<svg class="tri" style="left:${t.x0-x0}px;top:${t.y0-y0}px;width:${t.w}px;height:${t.h}px;${t.style}" viewBox="${t.x0} ${t.y0} ${t.w} ${t.h}">${t.body}</svg>`).join('');
   const coarse=document.createElement('canvas'),tilesEl=document.createElement('div');coarse.className='island-coarse';tilesEl.className='island-tiles';el.append(coarse,tilesEl);
   const fx=p.fx;
-  return {island:p.island,sat:p.sat||null,art:p,x0,y0,w,h,el,coarse,tilesEl,img:null,ready:false,shown:false,alpha:0,fading:0,tiles:new Map(),
+  return {island:p.island,sat:p.sat||null,art:p,x0,y0,w,h,parts:p.parts?p.parts.map(([a,b,c,d])=>[a-x0,b-y0,c-x0,d-y0]):null,el,coarse,tilesEl,img:null,ready:false,shown:false,alpha:0,fading:0,tiles:new Map(),
    gen:0,decorImg:null,decorHave:'',decorWant:null,decorLoading:false,decorKey:'',coarseDirty:false,staleSweep:false,
    surfOut:fx.surfOut.map(q=>({p:mkPath(q,true),b:bbox(q)})),surfIn:fx.surfIn.map(q=>({p:mkPath(q,true),b:bbox(q)})),
    waves:fx.waves.map(q=>({i:q.i,p:mkPath(q.pts,false),b:bbox(q.pts)})),mask:fx.mask.map(q=>({p:mkPath(q,true),b:bbox(q)})),coast:fx.coast,depth:fx.depth,
@@ -97,7 +97,7 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
   for(const p of pics){if(!p.ready||!p.shown)continue;if(p.x0>v[2]||p.x0+p.w<v[0]||p.y0>v[3]||p.y0+p.h<v[1])continue;
    const i0=Math.max(0,Math.floor((v[0]-p.x0)/span)),i1=Math.min(Math.ceil(p.w/span)-1,Math.floor((v[2]-p.x0)/span)),j0=Math.max(0,Math.floor((v[1]-p.y0)/span)),j1=Math.min(Math.ceil(p.h/span)-1,Math.floor((v[3]-p.y0)/span));
    const need=p.staleSweep?new Set():null;
-   for(let i=i0;i<=i1;i++)for(let j=j0;j<=j1;j++){const k=L+':'+i+':'+j,t=p.tiles.get(k);need?.add(k);if(t&&t.gen===p.gen){t.used=now;continue;}queue.push({p,L,i,j,k,d:Math.hypot(p.x0+(i+.5)*span-cx,p.y0+(j+.5)*span-cy)});}
+   for(let i=i0;i<=i1;i++)for(let j=j0;j<=j1;j++){if(p.parts&&!partsIn(p,i*span-1/L,j*span-1/L,(i+1)*span+1/L,(j+1)*span+1/L))continue;const k=L+':'+i+':'+j,t=p.tiles.get(k);need?.add(k);if(t&&t.gen===p.gen){t.used=now;continue;}queue.push({p,L,i,j,k,d:Math.hypot(p.x0+(i+.5)*span-cx,p.y0+(j+.5)*span-cy)});}
    if(need){p.staleSweep=false;for(const [k,t] of p.tiles)if(t.gen!==p.gen&&!need.has(k)){t.cv.remove();p.tiles.delete(k);tileCount--;}}}
   queue.sort((a,b)=>a.d-b.d);if(queue.length)pump();else idleCoarse();}
  function pump(){if(pumping||!queue.length)return;pumping=true;requestAnimationFrame(function step(){const t0=performance.now();
@@ -105,9 +105,14 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
   if(queue.length)requestAnimationFrame(step);else{pumping=false;evict();idleCoarse();}});}
  // a coarse copy whose decoration changed is redrawn when nothing else is waiting, one picture a frame
  let coarsing=false;function idleCoarse(){if(coarsing||moving)return;const p=pics.find(q=>q.coarseDirty&&q.ready&&q.shown);if(!p)return;coarsing=true;requestAnimationFrame(()=>{coarsing=false;if(p.coarseDirty&&!moving)drawCoarse(p);idleCoarse();});}
- function renderTile({p,L,i,j,k}){if(!p.shown)return;const span=T/L,b=1/L,wx=i*span-b,wy=j*span-b,cv=document.createElement('canvas');cv.width=cv.height=T+2;
-  const g=cv.getContext('2d');g.drawImage(p.img,wx,wy,span+2*b,span+2*b,0,0,T+2,T+2);if(p.decorImg)g.drawImage(p.decorImg,wx,wy,span+2*b,span+2*b,0,0,T+2,T+2);
-  Object.assign(cv.style,{left:wx+'px',top:wy+'px',width:(span+2*b)+'px',height:(span+2*b)+'px',zIndex:String(LEVELS.indexOf(L)+1)});
+ // a tile at a picture's right or bottom edge is cut to the picture, so a small picture (an islet, a group of reefs)
+ // gets a small canvas instead of a whole tile of empty sea; a picture that lists its parts gets no tile where none lies
+ // whether any of a picture's parts meets a rectangle (picture coordinates)
+ function partsIn(p,x0,y0,x1,y1){return p.parts.some(q=>!(q[2]<x0||q[0]>x1||q[3]<y0||q[1]>y1));}
+ function renderTile({p,L,i,j,k}){if(!p.shown)return;const span=T/L,b=1/L,wx=i*span-b,wy=j*span-b,cv=document.createElement('canvas');
+  cv.width=Math.ceil(Math.min(span+2*b,p.w+b-wx)*L);cv.height=Math.ceil(Math.min(span+2*b,p.h+b-wy)*L);const sw=cv.width/L,sh=cv.height/L;
+  const g=cv.getContext('2d');g.drawImage(p.img,wx,wy,sw,sh,0,0,cv.width,cv.height);if(p.decorImg)g.drawImage(p.decorImg,wx,wy,sw,sh,0,0,cv.width,cv.height);
+  Object.assign(cv.style,{left:wx+'px',top:wy+'px',width:sw+'px',height:sh+'px',zIndex:String(LEVELS.indexOf(L)+1)});
   p.tilesEl.append(cv);const old=p.tiles.get(k);if(old){old.cv.remove();tileCount--;}p.tiles.set(k,{cv,used:performance.now(),gen:p.gen});tileCount++;}
  function evict(){if(tileCount<=MAX_TILES)return;const list=[];for(const p of pics)for(const [k,t] of p.tiles)list.push([p,k,t]);list.sort((a,b)=>a[2].used-b[2].used);for(const [p,k,t] of list.slice(0,tileCount-MAX_TILES)){t.cv.remove();p.tiles.delete(k);tileCount--;}}
  function dropTiles(p){for(const [,t] of p.tiles)t.cv.remove();tileCount-=p.tiles.size;p.tiles.clear();}
