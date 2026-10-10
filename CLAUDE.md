@@ -7,7 +7,7 @@
 | 무엇 | 링크 | 쓰임 |
 |---|---|---|
 | UNBRIK 4.0 기획서 (Docs) | https://claude.ai/artifact/5ozeH5NWTB9BTQ9nq5yhnY | 모든 결정의 기준. 특히 "섬 비주얼"(표·실루엣·**피할 것**), "디자인 방향"(관측소), "바다와 해안", "디자인 메모: 가라앉은 지형", "확정" 목록 |
-| 4.0 개발 빌드 | https://claude.ai/artifact/LovxWagJxq8hr8qAmcDmKE | 새 빌드는 여기에 올림 (현재 v39) |
+| 4.0 개발 빌드 | https://claude.ai/artifact/LovxWagJxq8hr8qAmcDmKE | 새 빌드는 여기에 올림 (현재 v40) |
 | 3.1 게임 | https://claude.ai/artifact/TuZxhvLHqJ9a3mRM1ypCJg | **건드리지 않음** |
 | 프로젝트 관측소 시안 | https://claude.ai/artifact/PBtEijVXvp1rnQsVn781py | 관측소 레퍼런스 |
 | AXIOM 섬 1 시안 | https://claude.ai/artifact/YNUECihdQqg9SYhExtM9gQ | 섬 표현 레퍼런스 |
@@ -88,6 +88,6 @@ node -e "import('./dist/data.js').then(d=>{const s=d.defaultState();s.settings.p
 - 지도 위 글씨(좌표, RESEARCH NETWORK, CHEAT): **밝은 글자색 + 글자 둘레 반투명 검정 띠 둘 다**(사용자 확정, v38). 색은 `.coordinates` `#b3c3cf`, 환생 지도 `#b9c2de`, CHEAT `#ffe59a`; 띠는 `index.html`의 SVG 필터 `#textRim`(`#04080c` .5, 글자 모양을 키워 한 번만 칠함)과 그 옆 인라인 `<style>`.
 - 상단바 워드마크(v38, 사용자 요청으로 되돌림): 흰 삼각형 로고 + 초록 UNBRIK + 그 밑에 UPGRADE TREE, 크기는 예전 값(15px/8px, 로고 24px). v37의 로고 색 바꾸기(로고가 지도 색, UNBRIK 흰색)는 취소됨 — 다시 하지 말 것. 설정 DISPLAY의 '언브릭 싫어'(`settings.noWordmark`)를 켜면 글자를 숨기고 삼각형만 남김(`.hud.no-name`).
 - 자동 저장 스위치(v39, 설정 SAVE DATA 탭, `settings.autoSave` 기본 켜짐): 끄면 자동 저장(10초마다·화면을 떠날 때·구매나 설정 변경 뒤)이 저장소에 쓰지 않음. 손으로 하는 것만 씀 — '지금 저장', 복원·초기화, 그리고 스위치 자체(선택이 남도록). `app.js save(notify,manual)`과 `saveMark()`. 하단 표시는 평소 '자동 저장', 꺼져 있으면 빨간 '저장 안됨', 브라우저가 저장을 거부하면 빨간 '저장 안됨 · 설정에서 내보내기'(예전 '저장 불가 · 설정에서 내보내기'를 대신함).
-- 설정 창: 위 탭(설정·통계·정보) 아래, 설정 안에서 종류별 탭 DISPLAY · 테스트 · SAVE DATA(`data-subtab`, `#sub-display|test|save`). 탭 이름은 원래 섹션 이름 그대로. 설정이 늘면 이 탭들에 나눠 넣을 것.
+- 설정 창: 위 탭(설정·통계·정보) 아래, 설정 안에서 종류별 탭 DISPLAY · TEST · SAVE DATA(`data-subtab`, `#sub-display|test|save`). 탭 이름은 영어 대문자로 통일(원래 구역 이름 '테스트'만 한국어여서 사용자가 지적함). 설정이 늘면 이 탭들에 나눠 넣을 것.
 - 확대 3단: 60% 이상이면 카드 위 이끼가 옅어짐, 9% 아래면 노드·링크를 숨기고 섬 제목을 섬 위/아래에 고정 크기로(설정 "축소 시 섬만 표시"). 자세히 보기(눈 버튼)는 인터페이스를 모두 숨김.
 - 커밋 메시지는 한국어, 끝에 세션이 알려 주는 attribution 줄.
