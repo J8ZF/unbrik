@@ -1,13 +1,16 @@
 // The small islands and rock fragments round each island, drawn by hand in
 // world coordinates. Each island has its own set; later, after a rebirth, the
-// upgrades that open will be studied on these (every islet has room for a card).
+// upgrades that open are studied round these. Nodes may stand on the sea about an
+// islet, so an islet is drawn for its look alone, never sized to hold a node.
 //
 // A set is traced by geom.py like an island (same shore, sand, rock and terrain
 // language, the island's own theme), but nothing in it is scattered: rock blocks
 // are the listed `core` rectangles [cx,cy,w,h,deg], sand runs along the listed
 // stretch of shore, terrain is the listed polygons. `fragments` are bare rocks
 // breaking the surface near an islet: each a few shards [points, tone 0 dark … 4 light],
-// the later ones lying on the earlier.
+// the later ones lying on the earlier. `rocks` are the same, standing on their own
+// where there is no islet: the tops of a reef ground (seabed.mjs) out of the water.
+const R=(cx,cy,w,h,deg=0)=>{const a=deg*Math.PI/180,c=Math.cos(a),s=Math.sin(a);return [[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]].map(([x,y])=>[Math.round(cx+c*x-s*y),Math.round(cy+s*x+c*y)]);};
 export const SATELLITES={
  1:{theme:'meadow',
   land:{
@@ -48,38 +51,38 @@ export const SATELLITES={
   ]},
  2:{theme:'tropic',
   land:{
-   // south-west: a motu, a hook of sand and green round a little bay that opens to the south-east
-   sw:[[-2520,7090],[-2460,6930],[-2300,6840],[-2080,6820],[-1930,6880],[-1880,6990],[-1960,7040],[-2110,6980],[-2270,7010],[-2330,7120],[-2250,7230],[-2390,7250]],
    // north-east: lava that reached the sea and stayed, a forked shard of basalt with a green patch on its lee
    ne:[[1450,4960],[1560,4830],[1760,4800],[1900,4700],[2060,4760],[2040,4900],[1900,4960],[2000,5080],[1860,5180],[1700,5120],[1560,5160],[1440,5080]],
    // south-east: two lobes, the bigger one green with basalt on its point, the smaller one a sand cove
    se:[[1560,7050],[1670,6870],[1900,6830],[2100,6890],[2130,7030],[1990,7090],[2020,7220],[1840,7300],[1680,7240],[1700,7120]],
   },
   terrain:[
-   {c:'a',pts:[[-2470,7080],[-2420,6960],[-2290,6890],[-2100,6870],[-1990,6910],[-2090,6930],[-2280,6960],[-2370,7090],[-2330,7190],[-2420,7200]]},
-   {c:'b',pts:[[-2440,7060],[-2400,6980],[-2320,6950],[-2350,7050],[-2380,7140]]},
    {c:'a',pts:[[1500,5000],[1620,4950],[1740,5000],[1700,5090],[1570,5120],[1480,5060]]},
    {c:'a',pts:[[1680,6920],[1880,6880],[2060,6930],[2070,7020],[1940,7050],[1760,7040]]},
    {c:'b',pts:[[1840,6920],[2000,6930],[2020,7000],[1900,7010]]},
   ],
   rockZones:[
-   {name:'sw',core:[[-1900,6930,130,100,-25],[-1960,6880,90,70,20]]},
    {name:'ne',core:[[1650,4880,280,170,-12],[1880,4790,220,150,-28],[1960,4830,150,120,14],[1810,4930,180,140,30],[1900,5080,170,130,-20],[1560,4900,150,110,34],[1740,4830,120,90,8],[1990,4760,100,80,-40],[1830,5120,110,80,16]]},
    {name:'se',core:[[2090,6910,150,110,24],[2020,6860,100,80,-20],[2130,6990,90,80,48]]},
   ],
   sandBands:[
-   {piece:'sw',from:[-1880,6990],to:[-2250,7230],depths:[0,50,70,90,80,0],seed:31},
    {piece:'se',from:[1700,7120],to:[2020,7220],depths:[0,70,110,80,0],seed:32},
   ],
   fragments:[
-   [[[[-2640,6846],[-2590,6822],[-2556,6862],[-2588,6902],[-2634,6890]],0],[[[-2614,6848],[-2580,6850],[-2582,6878],[-2610,6880]],2]],
-   [[[[-1850,7214],[-1806,7198],[-1782,7234],[-1812,7262]],1],[[[-1832,7216],[-1806,7214],[-1806,7238],[-1828,7240]],3]],
-   [[[[-2224,7388],[-2190,7376],[-2174,7402],[-2202,7422]],0]],
    [[[[1340,4690],[1392,4662],[1428,4702],[1396,4744],[1348,4732]],0],[[[1366,4688],[1402,4692],[1398,4720],[1368,4720]],2],[[[1446,4640],[1470,4632],[1482,4654],[1458,4666]],1]],
    [[[[2076,5112],[2124,5092],[2152,5130],[2120,5170],[2082,5156]],0],[[[2098,5112],[2130,5116],[2126,5144],[2100,5142]],3]],
    [[[[2136,4628],[2172,4612],[2192,4642],[2164,4666]],1]],
    [[[[1426,7206],[1472,7186],[1500,7224],[1468,7260],[1430,7248]],0],[[[1446,7206],[1478,7210],[1476,7236],[1450,7236]],2]],
    [[[[2152,7306],[2192,7290],[2214,7324],[2184,7350]],1],[[[2168,7306],[2194,7306],[2194,7328],[2170,7330]],3]],
    [[[[2218,6808],[2252,6796],[2268,6824],[2242,6844]],0]],
-  ]},
+  ],
+  // south-west: no islet here, but a reef ground under the water; a few of its rocks stand a little out of the sea
+  rocks:{sw:[
+   [[R(-2420,6980,120,84,14),0],[R(-2392,6956,76,56,-22),2],[R(-2452,7002,50,40,40),3]],
+   [[R(-2060,7225,96,66,18),0],[R(-2080,7206,54,42,-30),2]],
+   [[R(-2130,6890,84,58,-30),1],[R(-2112,6872,44,34,12),3]],
+   [[[[-1920,6938],[-1884,6928],[-1870,6956],[-1902,6972]],0]],
+   [[[[-2574,7172],[-2542,7164],[-2530,7190],[-2560,7202]],1]],
+   [[[[-2306,7294],[-2276,7290],[-2270,7314],[-2298,7322]],0]],
+  ]}},
 };

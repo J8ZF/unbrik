@@ -182,7 +182,11 @@ for(const name of DESIGNS){
    const sback=`<svg xmlns="http://www.w3.org/2000/svg" width="${bx1-bx0}" height="${by1-by0}" viewBox="${bx0} ${by0} ${bx1-bx0} ${by1-by0}">`+sea2+fr+groundSvg(G2,ST,[SAT.land[key]])+`</svg>`;
    const sdepth=[...SG.bands.far.filter(mine).map(q=>({c:ST.sea.tones.far,pts:q})),...SG.bands.mid.filter(mine).map(q=>({c:ST.sea.tones.mid,pts:q})),...G2.land.map(q=>({c:ST.sea.tones.near,pts:q})),...G2.near.map(q=>({c:ST.sea.tones.near,pts:q}))];
    pictures.push({island:D.id,sat:key,bounds:[bx0,by0,bx1-bx0,by1-by0],back:sback,tri:[],fx:{surfIn:SG.surf['16'].filter(mine),surfOut:SG.surf['38'].filter(mine),waves:SG.waveRuns.filter(w=>mine(w.pts)),mask:[...G2.land,...shards],coast:G2.land,depth:sdepth},decor:[],landmarks:[],label:null});}
-  console.log(name,'satellites',keys.join('/'),'fragments',(SAT.fragments||[]).length);
+  // rocks standing alone (no islet): the tops of a reef ground out of the water, one small picture per group
+  for(const [key,frags] of Object.entries(SAT.rocks||{})){const shards=frags.flatMap(f=>f.map(s=>s[0])),all=shards.flat(),bx0=Math.floor(Math.min(...all.map(q=>q[0])))-40,by0=Math.floor(Math.min(...all.map(q=>q[1])))-40,bx1=Math.ceil(Math.max(...all.map(q=>q[0])))+40,by1=Math.ceil(Math.max(...all.map(q=>q[1])))+40;
+   let fr='';for(const f of frags){for(const [q] of f)fr+=poly(q,'fill="none" stroke="#e8f0f2" stroke-opacity=".42" stroke-width="5" stroke-linejoin="miter"');for(const [q,tone] of f)fr+=poly(q,`fill="${ST.rock[tone][0]}" stroke="${ST.rock[tone][1]}" stroke-width="2" stroke-linejoin="miter"`);}
+   pictures.push({island:D.id,sat:key,rocks:true,bounds:[bx0,by0,bx1-bx0,by1-by0],back:`<svg xmlns="http://www.w3.org/2000/svg" width="${bx1-bx0}" height="${by1-by0}" viewBox="${bx0} ${by0} ${bx1-bx0} ${by1-by0}">`+fr+`</svg>`,tri:[],fx:{surfIn:[],surfOut:[],waves:[],mask:shards,coast:[],depth:[]},decor:[],landmarks:[],label:null});}
+  console.log(name,'satellites',keys.join('/'),'fragments',(SAT.fragments||[]).length,'rock groups',Object.keys(SAT.rocks||{}).join('/')||'-');
  }
  if(SEABED[D.id])shallowsOf[D.id]=shallows.map(q=>q.map(([x,y])=>[Math.round(x),Math.round(y)]));
  console.log(name,'nodes',nodes.length,'decor',cleared.length,'picture',PW+'×'+PH,'landmarks',landmarks.map(l=>l.kind).join('/'));
