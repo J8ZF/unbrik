@@ -30,16 +30,16 @@ export function simulatePrestige({cadence=5,maxMinutes=900,maxWaitMinutes=15,log
   // but never longer than maxWaitMinutes after completion.
   const waited=(t-completedAt)/60,need=Math.max(10,nextPrestigeTargets());
   if(!prestigeReady(s))continue;
-  const e=economy(s),incomePerMinute=(e.rate*(1+e.burst/e.interval))*60,now=tokensFor(s),later=tokensFor(s,s.currencies.money+incomePerMinute*5);
+  const e=economy(s),incomePerMinute=e.rate.mul(1+e.burst/e.interval).mul(60),now=tokensFor(s).toNumber(),later=tokensFor(s,s.currencies.money.add(incomePerMinute.mul(5))).toNumber();
   const runEstimate=runs.length?runs.at(-1).minutes:120,marginal=(later-now)/5,restartRate=now/Math.max(20,runEstimate*.8);
   const remaining=purchasable.reduce((a,n)=>a+n.cost.slice(prestigeLevel(s,n)).reduce((x,y)=>x+y,0),0);
   if(now<need)continue;
-  if(now+s.currencies.token<remaining&&marginal>restartRate&&waited<maxWaitMinutes)continue;
+  if(now+s.currencies.token.toNumber()<remaining&&marginal>restartRate&&waited<maxWaitMinutes)continue;
   const tokens=prestige(s);
-  const run={run:runs.length+1,minutes:(t-runStart)/60,waited:+waited.toFixed(1),tokens,money:s.prestige.last.money,bought:[]};
+  const run={run:runs.length+1,minutes:(t-runStart)/60,waited:+waited.toFixed(1),tokens:tokens.toNumber(),money:s.prestige.last.money.toNumber(),bought:[]};
   // Spend: cheapest affordable unlocked node first, repeatedly.
   for(;;){const e=purchasable.filter(n=>prestigeUnlocked(s,n)&&prestigeLevel(s,n)<n.max&&prestigeAffordable(s,n)).sort((a,b)=>prestigeCost(s,a).token-prestigeCost(s,b).token);if(!e[0])break;prestigePurchase(s,e[0]);run.bought.push(e[0].name+(e[0].max>1?' L'+prestigeLevel(s,e[0]):''));}
-  run.tokensLeft=s.currencies.token;runs.push(run);runStart=t;completedAt=null;s.map='main';
+  run.tokensLeft=s.currencies.token.toNumber();runs.push(run);runStart=t;completedAt=null;s.map='main';
   if(log)console.log(JSON.stringify(run));
  }
  return {minutes:t/60,runs,totalLevels,done:false,owned:purchasable.reduce((a,n)=>a+prestigeLevel(s,n),0)};

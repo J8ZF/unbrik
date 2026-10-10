@@ -1,0 +1,312 @@
+"""Raster geometry for an island: unions, offsets and clipping done on a
+1-unit grid with OpenCV, then traced back to angular polygons.
+    python3 geom.py <island.json> <geom.json>
+The island file holds the pieces of land, nodes, sand bands, beach boxes,
+rock zones, terrain layers, reef parts and seeds (see build-art.mjs)."""
+import json, math, random, sys, os
+import numpy as np, cv2
+
+G = json.load(open(sys.argv[1]))
+pieces = G['land']                      # name -> polygon
+names = list(pieces.keys())
+allpts = [p for poly in pieces.values() for p in poly]
+bx0, by0 = min(p[0] for p in allpts), min(p[1] for p in allpts)
+bx1, by1 = max(p[0] for p in allpts), max(p[1] for p in allpts)
+R = G.get('raster')                     # island 1 keeps its original raster frame
+OX, OY, W, H = R if R else (int(400 - bx0), int(400 - by0), int(bx1 - bx0 + 800), int(by1 - by0 + 800))
+
+
+def mask(polys):
+    m = np.zeros((H, W), np.uint8)
+    arr = [np.round(np.array(p, float) + [OX, OY]).astype(np.int32) for p in polys if len(p) >= 3]
+    if arr:
+        cv2.fillPoly(m, arr, 255)
+    return m
+
+
+_k = {}
+def octk(r):
+    if r not in _k:
+        k = np.zeros((2 * r + 1, 2 * r + 1), np.uint8)
+        pts = [[r + r * math.cos(i / 8 * 2 * math.pi + math.pi / 8) / math.cos(math.pi / 8) * .999,
+                r + r * math.sin(i / 8 * 2 * math.pi + math.pi / 8) / math.cos(math.pi / 8) * .999] for i in range(8)]
+        cv2.fillPoly(k, [np.round(np.array(pts)).astype(np.int32)], 1)
+        _k[r] = k
+    return _k[r]
+
+
+def dil(m, r): return cv2.dilate(m, octk(r)) if r > 0 else m
+def ero(m, r): return cv2.erode(m, octk(r)) if r > 0 else m
+
+
+def trace(m, eps=1.3, min_area=150):
+    cs, _ = cv2.findContours(m, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    out = []
+    for c in cs:
+        if cv2.contourArea(c) < min_area:
+            continue
+        a = cv2.approxPolyDP(c, eps, True).reshape(-1, 2).astype(float) - [OX, OY]
+        out.append([[round(x, 1), round(y, 1)] for x, y in a])
+    return out
+
+
+def inside(x, y, poly):
+    c = False
+    j = len(poly) - 1
+    for i in range(len(poly)):
+        xi, yi = poly[i]; xj, yj = poly[j]
+        if (yi > y) != (yj > y) and x < (xj - xi) * (y - yi) / (yj - yi) + xi:
+            c = not c
+        j = i
+    return c
+
+
+def seg_angle_near(x, y, polys):
+    best, ang = 1e9, 0
+    for poly in polys:
+        for i in range(len(poly)):
+            a, b = poly[i], poly[(i + 1) % len(poly)]
+            dx, dy = b[0] - a[0], b[1] - a[1]
+            t = max(0, min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / (dx * dx + dy * dy)))
+            d = math.hypot(x - a[0] - t * dx, y - a[1] - t * dy)
+            if d < best:
+                best, ang = d, math.degrees(math.atan2(dy, dx))
+    return ang, best
+
+
+def rect(cx, cy, w, h, deg):
+    a = math.radians(deg); c, s = math.cos(a), math.sin(a)
+    return [[round(cx + c * x - s * y, 1), round(cy + s * x + c * y, 1)] for x, y in ((-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, h / 2), (-w / 2, h / 2))]
+
+
+polys = list(pieces.values())
+align_polys = [pieces[k] for k in G.get('rockAlign', names)]   # shores the rock blocks line up with
+reef_pts = [p for part in G.get('reefs', []) for p in part]
+
+
+def reef_clear(poly, clear=34):
+    # every reef vertex stays `clear` units away from the block
+    c = np.array(poly, np.float32).reshape(-1, 1, 2)
+    return all(cv2.pointPolygonTest(c, (float(x), float(y)), True) < -clear for x, y in reef_pts)
+
+
+# ---- beaches (outward widening inside boxes) ----
+landBase = mask(polys)
+beachM = np.zeros_like(landBase)
+for x0, y0, x1, y1, w in G.get('beach', []):
+    box = mask([[[x0, y0], [x1, y0], [x1, y1], [x0, y1]]])
+    beachM |= dil(landBase, int(w)) & box
+
+# ---- rocks ----
+rng = random.Random(G.get('seeds', {}).get('rocks', 11))
+rocks = []
+for z in G.get('rockZones', []):
+    area = z['area']
+    xs = [p[0] for p in area]; ys = [p[1] for p in area]
+    items = [dict(pts=rect(*c), core=True) for c in z.get('core', [])]
+    tries = 0
+    while len([i for i in items if not i['core']]) < z['count'] and tries < 4000:
+        tries += 1
+        cx, cy = rng.uniform(min(xs), max(xs)), rng.uniform(min(ys), max(ys))
+        if not inside(cx, cy, area):
+            continue
+        w = rng.uniform(*z['size']); h = w * rng.uniform(.45, .95)
+        ang, dist = seg_angle_near(cx, cy, align_polys)
+        deg = ang + rng.gauss(0, 16) if rng.random() < .7 else rng.uniform(0, 90)
+        pts = rect(cx, cy, w, h, deg)
+        if not all(inside(px, py, area) for px, py in pts):
+            continue
+        items.append(dict(pts=pts, core=False))
+    items = [i for i in items if reef_clear(i['pts'])]
+    for i in items:
+        i['zone'] = z['name']
+        i['area'] = abs(cv2.contourArea(np.array(i['pts'], np.float32)))
+    rocks += items
+rocks.sort(key=lambda i: -i['area'])
+for k, i in enumerate(rocks):
+    # bigger blocks sit lower (darker); small ones stack on top (lighter)
+    rank = k / max(1, len(rocks) - 1)
+    i['tone'] = min(4, max(0, int(rank * 4.2 + rng.uniform(-.6, .6))))
+    if i['area'] > 26000 and rng.random() < .75:
+        cx = sum(p[0] for p in i['pts']) / 4; cy = sum(p[1] for p in i['pts']) / 4
+        e0, e1 = i['pts'][0], i['pts'][1]
+        deg = math.degrees(math.atan2(e1[1] - e0[1], e1[0] - e0[0])) + rng.uniform(-9, 9)
+        w = math.dist(e0, e1); h = math.dist(i['pts'][1], i['pts'][2])
+        f = rng.uniform(.42, .62)
+        i['cap'] = rect(cx + rng.uniform(-.12, .12) * w, cy + rng.uniform(-.12, .12) * h, w * f, h * f, deg)
+rockM = mask([i['pts'] for i in rocks])
+landM = landBase | beachM | rockM
+# ---- sunken rock: where a zone says so, its big blocks continue under the water in steps away from the island,
+# each step smaller and deeper (drawn fainter), like a mountain's flank going down ----
+sunken = []
+for z in G.get('rockZones', []):
+    steps = int(z.get('sunken', 0))
+    if not steps:
+        continue
+    zone_items = sorted([i for i in rocks if i['zone'] == z['name']], key=lambda i: -i['area'])[:int(z.get('sunkenFrom', 5))]
+    for i in zone_items:
+        cx = sum(p[0] for p in i['pts']) / 4; cy = sum(p[1] for p in i['pts']) / 4
+        e0, e1 = i['pts'][0], i['pts'][1]; w = math.dist(e0, e1); h = math.dist(i['pts'][1], i['pts'][2])
+        deg = math.degrees(math.atan2(e1[1] - e0[1], e1[0] - e0[0]))
+        # outward: away from the middle of the piece the block belongs to
+        piece = min(pieces.values(), key=lambda poly: math.dist((cx, cy), (sum(p[0] for p in poly) / len(poly), sum(p[1] for p in poly) / len(poly))))
+        mx, my = sum(p[0] for p in piece) / len(piece), sum(p[1] for p in piece) / len(piece)
+        dx, dy = cx - mx, cy - my; L = math.hypot(dx, dy) or 1; dx, dy = dx / L, dy / L
+        for k in range(1, steps + 1):
+            f = 1 - .14 * k; d = (.62 * max(w, h)) * k * (.92 + rng.uniform(0, .16))
+            px, py = cx + dx * d + rng.uniform(-30, 30), cy + dy * d + rng.uniform(-30, 30)
+            if landM[min(H - 1, max(0, int(py + OY))), min(W - 1, max(0, int(px + OX)))]:
+                continue
+            sunken.append(dict(pts=rect(px, py, w * f, h * f, deg + rng.gauss(0, 14)), level=k))
+# fill gaps between blocks so a rock zone reads as one mass; given rock polygons (a plateau) join the base
+rockBaseM = ero(dil(rockM, 34), 34) & (landM | rockM)
+rockBaseM |= mask(G.get('rockPolys', [])) & landBase
+landM |= rockBaseM
+
+# ---- sand ----
+# beaches follow the shore: octagons swept along stretches of coast with a depth that
+# changes vertex to vertex, wobbled a little, then traced back to an angular inland edge
+def coast_band(poly, chain, seed):
+    r = random.Random(seed); ph = [r.uniform(0, 6.28) for _ in range(3)]
+    m = np.zeros((H, W), np.uint8); s_acc = 0
+    for (i0, d0), (i1, d1) in zip(chain, chain[1:]):
+        a, b = poly[i0 % len(poly)], poly[i1 % len(poly)]; L = math.dist(a, b); n = max(1, int(L / 12))
+        for k in range(n + 1):
+            t = k / n; x, y = a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t; s = s_acc + L * t
+            wob = 1 + .16 * math.sin(s / 140 + ph[0]) + .1 * math.sin(s / 61 + ph[1]) + .06 * math.sin(s / 29 + ph[2])
+            d = (d0 + (d1 - d0) * t) * wob
+            if d < 4:
+                continue
+            o = [[x + d * math.cos(j / 8 * 6.2832 + .3927) / .9239, y + d * math.sin(j / 8 * 6.2832 + .3927) / .9239] for j in range(8)]
+            cv2.fillPoly(m, [np.round(np.array(o) + [OX, OY]).astype(np.int32)], 255)
+        s_acc += L
+    return mask(trace(m, eps=9, min_area=400))
+
+
+def nearest_vertex(poly, pt):
+    return min(range(len(poly)), key=lambda i: math.dist(poly[i], pt))
+
+
+def stretch_chain(poly, band):
+    # a stretch of coast from one point to another (the shorter way round), depths spread along it
+    n = len(poly); i0, i1 = nearest_vertex(poly, band['from']), nearest_vertex(poly, band['to'])
+    fwd = (i1 - i0) % n; back = (i0 - i1) % n
+    length = lambda step, cnt: sum(math.dist(poly[(i0 + step * k) % n], poly[(i0 + step * (k + 1)) % n]) for k in range(cnt))
+    step = 1 if length(1, fwd) <= length(-1, back) else -1; count = (fwd if step == 1 else back) + 1
+    ds = band['depths']
+    chain = []
+    for k in range(count):
+        t = k / max(1, count - 1) * (len(ds) - 1); j = min(len(ds) - 2, int(t)); f = t - j
+        chain.append([(i0 + step * k) % n, ds[j] + (ds[j + 1] - ds[j]) * f])
+    return chain
+
+
+bandM = np.zeros((H, W), np.uint8)
+for band in G.get('sandBands', []):
+    if isinstance(band, dict):
+        # the piece is the one whose shore is nearest the stretch's start
+        key = band.get('piece') if band.get('piece') in pieces else min(names, key=lambda k: min(math.dist(p, band['from']) for p in pieces[k]))
+        bandM |= coast_band(pieces[key], stretch_chain(pieces[key], band), band.get('seed', 7))
+    else:
+        poly_key, chain, seed = band
+        bandM |= coast_band(pieces[poly_key], chain, seed)
+# whole pieces of land can be sand (desert ground)
+for key in G.get('sandPieces', []):
+    bandM |= mask([pieces[key]])
+for hole in G.get('sandHoles', []):
+    bandM &= ~mask([hole])
+sandM = (landBase | beachM) & bandM
+sandM &= ~rockBaseM
+wetM = sandM & ~ero(landM, 26)
+srng = random.Random(G.get('seeds', {}).get('dunes', 5))
+inner = ero(sandM, 70)
+dunes = []
+dbox = G.get('duneBox') or [bx0, by0, bx1, by1]
+for _ in range(400):
+    if len(dunes) >= G.get('duneCount', 7):
+        break
+    x, y = srng.uniform(dbox[0], dbox[2]), srng.uniform(dbox[1], dbox[3])
+    xi, yi = int(x + OX), int(y + OY)
+    if xi < 0 or yi < 0 or xi >= W or yi >= H or not inner[yi, xi]:
+        continue
+    k = srng.randint(5, 7); Rd = srng.uniform(60, 120); a0 = srng.uniform(0, 6.28)
+    pts = [[x + math.cos(a0 + t / k * 6.283 + srng.uniform(-.3, .3)) * Rd * srng.uniform(.65, 1.15) * 1.5,
+            y + math.sin(a0 + t / k * 6.283 + srng.uniform(-.3, .3)) * Rd * srng.uniform(.65, 1.15) * .8] for t in range(k)]
+    dm = mask([pts]) & ero(sandM, 34)
+    if any(math.hypot(x - d['c'][0], y - d['c'][1]) < 220 for d in dunes):
+        continue
+    polys_d = trace(dm)
+    if not polys_d:
+        continue
+    top = trace(mask([[[x + (p[0] - x) * .5 + 10, y + (p[1] - y) * .5 - 4] for p in pts]]) & dm)
+    dunes.append(dict(c=[x, y], polys=polys_d, top=top))
+
+# ---- terrain layers (clipped to the land, away from the shore) ----
+grassClip = ero(landBase, 24)
+layers = []
+for t in G.get('terrain', []):
+    p = trace(mask([t['pts']]) & grassClip)
+    if p:
+        layers.append(dict(c=t['c'], polys=p))
+
+# ---- depth bands: coarse angular outlines stepping out from the land ----
+bands = dict(far=trace(dil(landBase, 170), eps=40, min_area=1000), mid=trace(dil(landBase, 98), eps=24, min_area=600))
+
+# ---- coast: surf lines and shallows follow the final outline ----
+smoothM = ero(dil(landM, 22), 22)
+surf = {d: trace(dil(smoothM, d), eps=2.2) for d in (16, 38)}
+near = trace(dil(landM, 46), eps=1.6)
+waves = {d: trace(dil(smoothM, d), eps=2.2) for d in (64, 92, 120)}
+# rolling waves only where the shore is sand: keep runs of each offset line that face a beach
+waveRuns = []
+for i, d in enumerate((120, 92, 64)):
+    near_sand = dil(sandM, d + 34)
+    for poly in waves[d]:
+        ok = [bool(near_sand[min(H - 1, max(0, int(y + OY))), min(W - 1, max(0, int(x + OX)))]) for x, y in poly]
+        if all(ok):
+            waveRuns.append(dict(i=i, pts=poly + [poly[0]])); continue
+        if not any(ok):
+            continue
+        start = ok.index(False); run = []
+        for k in range(1, len(poly) + 1):
+            j = (start + k) % len(poly)
+            if ok[j]:
+                run.append(poly[j])
+            else:
+                if len(run) > 1:
+                    waveRuns.append(dict(i=i, pts=run))
+                run = []
+        if len(run) > 1:
+            waveRuns.append(dict(i=i, pts=run))
+
+# ---- zones of nodes ----
+def zone_at(x, y):
+    xi, yi = int(x + OX), int(y + OY)
+    if rockBaseM[yi, xi] or rockM[yi, xi]:
+        return 'rock'
+    if sandM[yi, xi]:
+        return 'sand'
+    return 'grass'
+
+
+zones = {n[0]: zone_at(n[1], n[2]) for n in G['nodes']}
+# land test for the layout check: card corners vs the final land
+_lm = ero(landM, 36)
+def land_margin(x, y, w, h):
+    m = _lm
+    for fx in (-1, -.5, 0, .5, 1):
+        for fy in (-1, -.5, 0, .5, 1):
+            xi, yi = int(x + fx * w / 2 + OX), int(y + fy * h / 2 + OY)
+            if not m[yi, xi]:
+                return False
+    return True
+
+
+bad = [n[0] for n in G['nodes'] if not land_margin(n[1], n[2], 146, 118)]
+out = dict(
+    land=trace(landM, eps=1.4), rockBase=trace(rockBaseM, eps=1.4),
+    rocks=[dict(pts=i['pts'], tone=i['tone'], cap=i.get('cap'), zone=i['zone']) for i in rocks],
+    sand=trace(sandM, eps=1.4), wet=trace(wetM, eps=1.4), beach=trace(beachM & ~landBase, eps=1.4), dunes=dunes,
+    layers=layers, surf=surf, near=near, waves=waves, waveRuns=waveRuns, zones=zones, offLand=bad, bands=bands, sunken=sunken)
+json.dump(out, open(sys.argv[2], 'w'))
+print(os.path.basename(sys.argv[1]), 'rocks', len(rocks), 'dunes', len(dunes), 'layers', len(layers), 'cards too close to water', bad)

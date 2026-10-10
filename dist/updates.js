@@ -1,4 +1,8 @@
 export const UPDATES=[
+ {version:'3.1.0',title:'큰 수',items:['숫자 상한 제거: 1e100에서 멈추지 않고 1e308도 넘어감','단위는 1000배씩 Ce(1e303)까지, 그 이상은 1.50e400처럼 지수로 표시','기존 저장은 그대로 불러옴']},
+ {version:'3.0.9',title:'단위 표기',items:['새 기본 표기 "단위": K · M · B · T · Qa · Qi · Sx · Sp · Oc · No · Dc 다음으로 UDc · DDc · TDc … NoDc, Vg · UVg … 센틸리온 Ce(1e303)까지','이제 1e36 같은 지수 대신 1.89UDc처럼 표시','축약 · 과학 · 공학 표기는 설정에서 그대로 선택 가능']},
+ {version:'3.0.8',title:'환생 연구 이름',items:['환생 연구 이름을 실제 인공지능 용어로: DORMANT는 RNN · LSTM 같은 기억 모델, SCALING은 PERCEPTRON부터 TRANSFORMER까지, EXPANSION은 BERT · RAG · CLIP, REWARD는 Q-LEARNING · ALPHAGO · MUZERO','AUTOPILOT I~VIII는 그대로']},
+ {version:'3.0.7',title:'날씨 효과',items:['화면의 날씨가 게임 날씨를 따름: 비가 올 때만 비, 맑으면 없음','AXIOM은 눈이 올 때 눈, 환생은 눈 대신 꽃','환생은 비가 많이, AXIOM은 훨씬 적게','날씨가 바뀌면 내리던 것은 끝까지 떨어지고 새 날씨가 위에서 들어옴']},
  {version:'3.0.6',title:'상단 버튼 크기',items:['상단바 열기·닫기 버튼을 지도·설정 버튼과 같은 크기로']},
  {version:'3.0.5',title:'표기 정리',items:['설정 통계의 환생 섹터 진행도를 본섬 섹터와 같이 구매한 연구 수로','지도 이름 본섬 → AXIOM']},
  {version:'3.0.4',title:'환생 인터페이스 정리 2',items:['내비게이터의 환생 섹터 이름 옆 한국어 제거, 진행 표시는 본섬과 같은 형식','환생 연구 번호를 본섬과 같은 001 형식으로','지도 탭의 · 현재 표기 제거, 환생 지도에서 지도 버튼만 분홍이던 것 제거','통계 섹터 목록의 · AUTO 표기 제거','본섬에 없는 공지(섹터 완료, AUTO 켜기·끄기, 자동 연구 섹터 완료) 제거','환생 섹터 이름도 본섬처럼 해금 전선을 따라옴']},
@@ -23,4 +27,8 @@ export const UPDATES=[
  {version:'1.2',title:'아이콘과 성장 속도',items:['80개 연구의 내장 SVG 아이콘','일반 반복 연구는 다음 지역에서 마무리, 일부 연구는 후반까지 성장','오프라인 생산은 처음 30분 100%, 이후 지수 감쇠']},
 ];
 export const UPDATE_PAGE_SIZE=2;
-export function updatePage(page,entries=UPDATES){const pages=Math.max(1,Math.ceil(entries.length/UPDATE_PAGE_SIZE)),current=Math.max(1,Math.min(pages,Math.floor(Number(page)||1)));return {current,pages,entries:entries.slice((current-1)*UPDATE_PAGE_SIZE,current*UPDATE_PAGE_SIZE)};}
+// Page numbers show five at a time (1–5, 6–10, …); previous/next step to the neighbouring set.
+export const UPDATE_PAGE_GROUP=5;
+export function updatePage(page,entries=UPDATES){const pages=Math.max(1,Math.ceil(entries.length/UPDATE_PAGE_SIZE)),current=Math.max(1,Math.min(pages,Math.floor(Number(page)||1)));
+ const first=Math.floor((current-1)/UPDATE_PAGE_GROUP)*UPDATE_PAGE_GROUP+1,last=Math.min(pages,first+UPDATE_PAGE_GROUP-1);
+ return {current,pages,entries:entries.slice((current-1)*UPDATE_PAGE_SIZE,current*UPDATE_PAGE_SIZE),first,last,prev:first>1?first-1:null,next:last<pages?last+1:null};}

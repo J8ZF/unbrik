@@ -1,4 +1,4 @@
-# UNBRIK — 3.0.6 (2.0 economy, mainland map, paged header, 환생 prestige and the bloom map)
+# UNBRIK — 3.1.0 (2.0 economy, mainland map, paged header, 환생 prestige and the bloom map)
 
 A portrait incremental game with 105 research nodes across the original eight sectors, 316 finite research levels, dollars and coins. The center is navigation, not a purchasable research. AXIOM is research 105.
 
@@ -83,9 +83,9 @@ One rule everywhere a number is displayed: the symbol carries the currency color
 Built from the roadmap the user dictated (below, kept for reference) plus the follow-up decisions: coins reset too; tokens scale with the dollar balance; the first prestige is worth at least 10 tokens, calibrated to "finish the tree, then wait about five minutes"; a first prestige buys roughly one sector of automation plus a ×2–×3 on production; cheat mode makes prestige nodes free; no new mainland studies (not designed) — only the prestige system and the prestige map, whose undesigned slots are visible reserved nodes; 6–10 nodes per petal with upgradable nodes; the whole prestige tree is meant to take about four hours; the statistics tab was reorganized for the new system; tokens are fractional.
 
 - Trigger (`prestigeReady` in `data.js`): every study at its cap and `money ≥ PRESTIGE_THRESHOLD = $5.00Dc` (5e33; the final study costs about $2.9Dc and late production is ≈ $4No/s, so the threshold is a few minutes of waiting after AXIOM). Once the tree is complete the center panel shows a 환생 button left of the navigator (disabled with the remaining amount until the threshold is met, then showing the tokens); when prestige becomes available a sticky notice appears once per run and the center node carries a ✿ badge. A confirm dialog states the balance and the tokens. Both center-panel buttons are dark with bright text: pink for 환생, white for the navigator. Notice copy stays terse, in keeping with the rest of the game.
-- Tokens (`tokensFor` in `prestige.js`): `10 · √(money / $5.00Dc) · (1 + REWARD MODEL) + DISTILLATION`, rounded to two decimals (balances keep two decimals; node costs are whole). At exactly the threshold: 10; four times the threshold: 20.
+- Tokens (`tokensFor` in `prestige.js`): `10 · √(money / $5.00Dc) · (1 + Q-LEARNING) + DQN`, rounded to two decimals (balances keep two decimals; node costs are whole). At exactly the threshold: 10; four times the threshold: 20.
 - Reset (`prestige` in `data.js`): studies, dollars, coins, cache timer, camera and the automation checks reset; prestige count, tokens, prestige levels, lifetime statistics, settings and the world clock remain. `stats.prestigeRuns / lastRunSeconds / runStart` record runs. The offline snapshot restarts at the base rate.
-- Prestige tree (`prestige.js`): 36 nodes, ids 1001–1036, five petals from a pentagon center with the mainland's row/upstream rule (1-2-2-2-1 ×3, 1-2-2-1 ×2). DORMANT (offline reward), SCALING (production), AGENT (automation, one AUTOPILOT per mainland sector), EXPANSION (6 reserved nodes for studies that are not designed yet), REWARD (REWARD MODEL ×tokens, DISTILLATION +tokens, 4 reserved). Reserved nodes are visible, named and dotted, never purchasable; `petalProgress` ignores them so a petal can still light up. 26 purchasable nodes, 66 levels, 451 tokens in total. Effects aggregate in `prestigeBonuses` and apply in `economy()` (base/multipliers/cache/discount) and `offlineParams()` (full window, decay constant, offline rate).
+- Prestige tree (`prestige.js`): 36 nodes, ids 1001–1036, five petals from a pentagon center with the mainland's row/upstream rule (1-2-2-2-1 ×3, 1-2-2-1 ×2). DORMANT (offline reward), SCALING (production), AGENT (automation, one AUTOPILOT per mainland sector), EXPANSION (6 reserved nodes for studies that are not designed yet), REWARD (Q-LEARNING ×tokens, DQN +tokens, 4 reserved). Reserved nodes are visible, named and dotted, never purchasable; `petalProgress` ignores them so a petal can still light up. 26 purchasable nodes, 66 levels, 451 tokens in total. Effects aggregate in `prestigeBonuses` and apply in `economy()` (base/multipliers/cache/discount) and `offlineParams()` (full window, decay constant, offline rate).
 - Pacing: `scripts/prestige-sim.mjs` simulates the loop with automation; the whole prestige tree completes in about 3.9 hours over four prestiges (≈135, 52, 37 and 11 minutes).
 - Automation (`autoResearch`): each owned AUTOPILOT shows an AUTO check beside its sector heading on the mainland; while checked, that sector's cheapest affordable unlocked study is bought (up to six per second). A sector cannot run ahead of its gate, so an unopened sector never completes by itself. Checks clear on every prestige.
 - Map (`prestige-layer` in `index.html`, `bloom.js`): the flower shares the viewport and the camera code; `state.map` selects the layer (the mainland layers are hidden by the `hidden` attribute, which also works on SVG). The flower's land is five separate angular lobes (`buildLand` with no center land) around a bare pentagon hub with the same rotating polyhedron. Discovery, ghost cards, link flashing, petal completion lighting on the hub, the navigator (petal list) and the center panel all mirror the mainland.
@@ -94,6 +94,33 @@ Built from the roadmap the user dictated (below, kept for reference) plus the fo
 - Rebirth sequence: confirm → blackout with the spinning UNBRIK polyhedron, "N번째 환생 · ✿tokens" → the mainland resets under the blackout → the flower appears with a sticky notice.
 - Statistics: MAINLAND (nodes, levels, production, cache, lifetime gains), REBIRTH (count, condition, tokens held and earned, nodes, production multiplier, automation, current run, last prestige), TIME (play time, offline). Removed as noise: purchase count, total spent, peak rate, offline-equivalent production, current session, cost discount. A BLOOM PETALS block appears after the first prestige.
 - Save: `currencies.token` (fractional), `prestige {count, tokensEarned, tokensSpent, purchases, levels, auto, last}`, `map`, the new `stats` keys and `offline.full/decay` are all optional on load, so 2.2 saves load unchanged.
+
+### 3.1.0 big numbers
+
+- Amounts no longer stop at 1e100 (the old `MAX_VALUE`) or at the double limit (~1.8e308). `big.js` adds an immutable `Big` (value = m × 10^e): below 1e300 it is a plain double, so every existing calculation, the fixed price table (`authorPrices()` still matches `prices.js`) and the pacing (3.85 h prestige sim) are unchanged; from 1e300 up the exponent is an integer with no practical limit (1.2e293910).
+- Big values: dollars, coins and tokens; production rates and the compounding multipliers; costs; cache payouts; offline rates and payouts; the lifetime stats (earned, spent, peaks, offline earnings); prestige `tokensEarned/tokensSpent/last`. Counts, seconds, levels and fixed token prices stay plain numbers. `waitTime`/`normalizedCost` return seconds as numbers.
+- Notation: `formatNumber`/`compactNumber` in `units.js` work on the mantissa/exponent, so named units continue to Ce (1e303), each 1000× the previous one, and past Ce the exponent is shown (`1.50e400`); short, scientific and engineering also go past 1e308.
+- Saves: a Big is written as a plain number while it is below 1e300 (so saves look exactly as before) and as a string such as `"1.5e400"` above. Every older save (plain numbers) loads; negative, NaN and malformed amounts are rejected.
+- Checks run with `globalThis.BIG_STRICT`, which makes any implicit numeric use of a Big (`big > 0`, `big + 1`) throw. `check.mjs` covers arithmetic past 1e308, save round trips, a 1.5e400 save that ticks and buys, prestige with an astronomical balance and every notation past Ce; `ui-check.mjs` renders and prestiges a 1.5e400 balance.
+- Module queries are `?v=3.1.0`.
+
+### 3.0.9 named units
+
+- New default number notation `named` (설정 → 숫자 표기 → 단위), in the style of idle games such as Miner's Haven: `units.js` names every power of 1000 up to centillion — K, M, B, T, Qa, Qi, Sx, Sp, Oc, No, Dc, UDc, DDc, TDc, QaDc … NoDc, Vg, UVg … NoVg, Tg … Qag … Qig … Sxg … Spg … Ocg … Nog … NoNog, Ce (1e303). Above that it falls back to scientific. `formatNamed` keeps two decimals (1.89UDc), `compactNamed` keeps significant digits (42.0DDc).
+- The short, scientific and engineering notations are unchanged and still selectable. Saves that had the old default (short) and predate `settings.formatV2` switch to named once; picking short again sticks.
+- Module queries are `?v=3.0.9`; `check.mjs` covers the unit table, every power of ten up to 1e303 and the save migration.
+
+### 3.0.8 prestige research names
+
+- The prestige studies carry concrete AI/ML names instead of generic ones (effects, costs, icons and positions unchanged; AUTOPILOT I–VIII kept): DORMANT — RNN, GRU, HOPFIELD NET, KV CACHE, BOLTZMANN MACHINE, NEURAL TURING MACHINE, WAKE-SLEEP, LSTM; SCALING — PERCEPTRON, ADAM, WORD2VEC, BACKPROP, RESNET, BPE, LORA, TRANSFORMER; EXPANSION (reserved) — BERT, RAG, TOOLFORMER, CLIP, DIFFUSION, MIXTURE OF EXPERTS; REWARD — Q-LEARNING, DQN, ALPHAGO (reserved), MCTS (reserved), PPO (reserved), MUZERO (reserved).
+- Module queries are `?v=3.0.8`.
+
+### 3.0.7 screen weather
+
+- `weather.js` replaces `bloom.js`: one canvas (`#weatherFx`) over both maps draws what the game weather (`worldState().weather`) says. Rain → rain streaks, light on AXIOM (4 streaks on a phone screen) and heavy on the prestige map (16); snow → snowflakes on AXIOM and falling flowers instead of snow on the prestige map; clear → nothing. The prestige map is the rainier place by design.
+- On a weather change the old particles finish their fall and are not replaced while the new kind drifts in from the top over about two seconds; the loop stops when the sky is clear, when motion is off, or when the page is hidden.
+- Module query strings are `?v=3.0.7` so browsers fetch the new files.
+- `weather-check.mjs` covers the six weather × map cases, transitions and the idle stop.
 
 ### 3.0.6 header toggle
 
@@ -164,13 +191,14 @@ Current key: `unbrik-save-v2`, schema version 2, economy epoch `unbrik-2.0-rewor
 - `hub.js`, `camera.js`: dodecahedron projection and cancellable movement.
 - `effects.js`, `notifications.js`: selection guard, opal motion, toast deadlines.
 - `prestige.js`: the prestige node table, petal layout, token formula, purchases and aggregated bonuses.
-- `bloom.js`: petals-and-rain canvas for the prestige map.
+- `units.js`: named large-number units (default notation).
+- `weather.js`: screen weather (rain, snow, flowers) for both maps, driven by the game weather.
 - `index.html`, `style.css`: game interface; the 2.1 header, the 2.2 header pages and the 3.0 bloom theme/prestige layer are the last blocks of `style.css`.
 - `UNBRIK_3.0.html` (repository root, optional): single-file build of `dist/` (inline CSS, bundled script) that runs from `file://`; regenerate with `scripts/bundle-single.mjs` after changing `dist/`.
 
 ## Verification
 
-Run `npm run check`, `node balance-check.mjs`, `node ui-check.mjs`, `node offline-check.mjs`, `node layout-check.mjs`, `node effects-check.mjs`, `node motion-check.mjs`, `node notification-check.mjs`, `node prestige-check.mjs`; `node scripts/prestige-sim.mjs` prints the prestige pacing.
+Run `npm run check`, `node balance-check.mjs`, `node ui-check.mjs`, `node offline-check.mjs`, `node layout-check.mjs`, `node effects-check.mjs`, `node motion-check.mjs`, `node notification-check.mjs`, `node prestige-check.mjs`, `node weather-check.mjs`; `node scripts/prestige-sim.mjs` prints the prestige pacing.
 
 Checks cover the prestige node table, petal lobes, token formula, reset semantics, cheat-free prestige, automation gates, offline windows and prestige save round-trips; the prestige row, the rebirth flow, flower discovery, token purchases, reserved nodes, map switching and automation checks against the real renderers; stacked and sticky notices, weather kinds, the world clock, weather roll, ledger pages, pager controls and map-aware cache strip; reachable prerequisites; finite costs and distinct icons; exact initial coin production; both-currency shortages with no partial debit; cheat guards; cache snapshot consistency; split, duplicate and reloaded offline settlements; save epoch rejection; row plans, upstream-only prerequisites and non-crossing links; every card inside its own sector polygon and outside the others, headings off the land, all eight sectors forming one connected mainland; hidden-sector boundaries; complete-card re-selection; gesture cancellation; navigator state; settings and reduced-motion combinations; original color/opal constraints.
 

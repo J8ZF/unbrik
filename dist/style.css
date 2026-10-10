@@ -221,6 +221,7 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 .currency-secondary{position:relative;margin-top:9px;display:flex;flex-direction:row;align-items:baseline;justify-content:space-between;gap:4px;min-height:20px}
 .currency-rate{color:var(--currency-color);font:400 14px/1.4 var(--mono);white-space:nowrap;font-variant-numeric:tabular-nums}
 .currency-rate>span{font-size:12px;color:var(--muted)}
+.per{margin-left:.18em;font-size:.86em;color:var(--muted)}
 .cache-gain{display:inline-block;font:400 12px/1.2 var(--mono);color:var(--accent);opacity:0;transform:translateY(3px);transition:opacity .18s ease,transform .22s ease;white-space:nowrap;pointer-events:none}
 .cache-gain.is-visible{opacity:1;transform:none}
 .hud .compact-resources{grid-template-columns:minmax(0,1fr);align-items:center;gap:10px;min-width:0}
@@ -320,7 +321,8 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
    of pages scrolls sideways with snap; arrows and dots sit over the top-right
    corner. The research panel icon takes its sector color. */
 #hudDetails{position:relative}
-.hud-pages{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.hud-pages{display:flex;align-items:flex-start;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;transition:height .22s ease}
+.reduced-motion .hud-pages{transition:none}
 .hud-pages::-webkit-scrollbar{display:none}
 .hud-page{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;display:flex;flex-direction:column}
 .page-line{display:flex;align-items:center;height:21px;padding:4px 92px 0 14px;font:10px/1 var(--mono);letter-spacing:.08em;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
@@ -459,8 +461,6 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 @media(max-width:360px){#prestigeButton{width:92px;min-width:92px}}
 /* Center node badge: prestige is available */
 /* Prestige available: a small square on the center node, like a notification mark. */
-.hub-badge{position:absolute;right:24px;top:24px;width:20px;height:20px;background:#f3a1c8;box-shadow:0 0 0 3px #0b1017;z-index:2}
-#world.overview .hub-badge{transform:scale(2.2);transform-origin:top right}
 /* Navigator: map jump */
 #petalMenu{display:grid;gap:10px;padding-bottom:2px}
 .nav-maps{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;min-height:52px;margin-top:12px;padding:12px 14px;border:1px dashed #4a515c;border-radius:9px;background:transparent;color:#d6d9df;font-size:14px;text-align:left}
@@ -495,10 +495,9 @@ html,body,#game,#game *{-webkit-user-select:none;user-select:none;-webkit-touch-
 #game{transition:opacity .36s ease}
 #game.map-fading{opacity:0;transition-duration:.23s}
 .theme-tween,.theme-tween #viewport,.theme-tween .hud,.theme-tween #nodePanel,.theme-tween footer,.theme-tween .icon-button,.theme-tween .disclosure-button,.theme-tween .currency-card,.theme-tween .ledger-row,.theme-tween .cache-meter,.theme-tween #buy,.theme-tween .wordmark b,.theme-tween .node{transition:background-color .7s ease,border-color .7s ease,color .7s ease}
-/* Falling petals and rain over the flower */
-.bloom-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;display:none}
-.theme-bloom .bloom-canvas{display:block}
-.effects-paused .bloom-canvas{opacity:0}
+/* Screen weather (rain, snow, flowers) over the map, both maps */
+.weather-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+.effects-paused .weather-canvas{opacity:0}
 /* Night theme: dark blue-gray, pink logo, grid kept */
 body.theme-bloom{--bg:#0e111c;--panel:#141a28;--line:#2a3348;--accent:#f3a1c8;--muted:#95a0bd;--text:#e9ecf5;background:#090b14}
 .theme-bloom #viewport{background-color:#0d111d;background-image:radial-gradient(circle,#2c3552 1px,transparent 1px)}
@@ -569,3 +568,103 @@ body.theme-bloom{--bg:#0e111c;--panel:#141a28;--line:#2a3348;--accent:#f3a1c8;--
    ✿ pink — even where the theme changes the accent color. */
 .theme-bloom .sym-money,.theme-bloom .price-money .sym,.theme-bloom .cash-symbol,.theme-bloom .currency-card.currency-cash .currency-symbol{color:#b9f36d}
 .theme-bloom .currency-card.currency-cash,.theme-bloom .compact-currency.currency-cash{--currency-color:#b9f36d}
+/* 4.0 islands: painted islands behind the studies (island-view.js) */
+body:not(.theme-bloom) #viewport{background-image:none}
+#islandBack{position:absolute;left:0;top:0;width:0;height:0;overflow:visible;transform-origin:0 0;will-change:transform;pointer-events:none}
+#islandBack .island-tri,#islandBack .island-tiles,#islandBack .island-pic{position:absolute;left:0;top:0}#islandBack .island-pic{overflow:visible}
+#islandBack canvas,#islandBack .island-sheet{position:absolute}
+#islandBack .tri{position:absolute;overflow:visible;animation:islandDrift 26s ease-in-out infinite alternate}
+@keyframes islandDrift{from{transform:translate(0,0);opacity:.55}to{transform:translate(18px,-10px);opacity:1}}
+#seaFx,.obs-canvas{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}body.cutscene .topbar,body.cutscene #hud,body.cutscene #nodePanel,body.cutscene footer,body.cutscene #mapTools,body.cutscene #hint,body.cutscene #coords,body.cutscene #toasts{display:none!important}
+#world.moving{will-change:transform}
+.island-sheet{position:absolute;overflow:visible;pointer-events:none}
+#islandDecor{z-index:0}
+#islandBeam{position:absolute;z-index:0;overflow:visible;pointer-events:none;animation:islandSpin 14s linear infinite}
+@keyframes islandSpin{to{transform:rotate(360deg)}}
+.sea-still #islandBack .tri,.sea-still #islandBeam{animation-play-state:paused}
+#edgeCasings{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none;z-index:2}
+#islandBuild{z-index:2}
+#islandMoss{z-index:4;transition:opacity .25s ease}#islandOver{z-index:5}
+/* close up, the moss over the cards thins out so their text reads */
+#world.close #islandMoss{opacity:.3}
+/* links: white over a dark casing; brighter once researched */
+body:not(.theme-bloom) #edges{--edge-color:#f2f4f7}
+body:not(.theme-bloom) .edge{stroke:#f2f4f7;stroke-width:3;stroke-opacity:.5}
+body:not(.theme-bloom) .edge.researched{stroke-opacity:.95;stroke-width:4.5}
+body:not(.theme-bloom) .edge.active{opacity:1;stroke-opacity:.7}
+body:not(.theme-bloom) .edge.ghost{stroke-dasharray:10 12;opacity:1;stroke-opacity:.35}
+.edge-casing{fill:none;stroke:#0a1017;stroke-opacity:.4;stroke-width:8;stroke-linecap:round}
+.edge-casing.researched{stroke-width:10}
+#world.overview .edge-casing{stroke-width:11px}
+/* cards: locked grey, available white, bought in the colour of the ground */
+body:not(.theme-bloom) .node.locked{border-color:#46505a}
+/* island heading */
+.island-mark{margin-top:-24px;color:#8b9da9;font:26px/1 var(--mono);letter-spacing:4px}
+.island-mark:before{display:none}
+.island-mark .island-no{display:block}
+.island-mark .mark-text{display:block;margin-top:12px;color:#e6edf1;font:700 44px/1 Arial,'Apple SD Gothic Neo',sans-serif;letter-spacing:2px}
+.island-mark .island-progress{display:block;margin-top:14px;font:24px/1 var(--mono);letter-spacing:2px}
+/* island drawings use plain SVG defaults, not the icon defaults set for every svg */
+#islandBack svg,.island-sheet,#islandBeam{fill:#000;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter}
+
+/* The observatory's eye: the hub button sits in the pupil; the painted city round it is the art. */
+#centerNode .hub-content{display:none}
+#centerNode:before{content:'';position:absolute;left:50%;top:50%;width:2040px;height:2040px;margin:-1020px 0 0 -1020px;border-radius:50%}
+#centerNode .hub-eye{fill:#07111a;stroke:#04090d;stroke-width:3}
+#centerNode .hub-inset{display:none;fill:none;stroke:#f2f4f7;stroke-width:3}
+#centerNode.selected .hub-inset{display:block}
+#centerNode .hub-wire{transform:translate(0,69px) scale(1.5)}
+/* the eye steps down in three octagons; two broken rings run round the steps, opposite ways */
+#centerNode .hub-well{fill:#12293a;stroke:none}
+#centerNode .hub-pit{fill:#03080c;stroke:none}
+#centerNode .hub-ring{fill:none;stroke-linecap:butt;stroke-linejoin:miter}
+#centerNode .hub-ring-a{stroke:#f2f4f7;stroke-width:3.8;stroke-dasharray:290 50 120 40 210 60 150 80}
+#centerNode .hub-ring-b{stroke:#a9bcc7;stroke-width:2.8;stroke-dasharray:90 60 240 50 130 70 300 60}
+
+/* 4.0: three zoom stages — under 9% the studies and links go; each island keeps its heading (name, progress) at a fixed size, under islands below the observatory and over islands above it. */
+#world.far #nodes,#world.far #edges,#world.far #edgeCasings,#world.far #spokes{display:none}
+.island-mark{transition:none}
+#world.far .island-mark{left:var(--far-x)!important;top:var(--far-y)!important;transform:var(--far-tf)!important;transform-origin:var(--far-origin);text-align:center}
+#world.far .island-mark .auto-toggle{display:none}
+/* view mode: the map alone; the exit arrow sits where the top bar was */
+body.viewing #hud,body.viewing #nodePanel,body.viewing footer,body.viewing #mapTools,body.viewing #hint,body.viewing .coordinates,body.viewing #toasts{display:none!important}
+.exit-view{position:absolute;right:12px;top:12px;z-index:31;width:38px;height:38px;background:#111b24;border:1px solid #2a3540;border-radius:7px}
+.map-tools #fit{grid-column:auto;width:auto}
+/* the header buttons keep their icons centred at any width (the default button padding pushed the 24px settings icon right in the 32px collapsed button) */
+.hud .hud-actions .icon-button,.hud #toggleHud{padding:0}
+#settings svg{width:21px;height:21px;display:block}
+/* one top bar height, open or collapsed: 50px, 32×34 buttons, a smaller wordmark; collapsed, the currency cells get the width to themselves */
+.hud .topbar,.hud.is-collapsed .topbar{min-height:50px;padding:5px 10px;gap:8px}
+.hud .hud-actions,.hud.is-collapsed .hud-actions{gap:4px}
+.hud .hud-actions .icon-button,.hud #toggleHud,.hud.is-collapsed .hud-actions .icon-button,.hud.is-collapsed #toggleHud{width:32px;height:34px}
+.hud .topbar .wordmark{gap:7px}
+.hud .topbar .wordmark .logo,.hud .topbar .wordmark .logo .brand-mark{width:24px;height:24px}
+.hud .topbar .wordmark b{display:block;font-size:26px;line-height:1;letter-spacing:.14em}
+/* the wordmark stands as tall as the logo: where the browser knows the font's cap height the triangle is drawn exactly that tall and set on the baseline */
+@supports (width:1cap){
+ .hud .topbar .wordmark{align-items:baseline;font:700 26px/1 var(--mono)}
+ .hud .topbar .wordmark .logo{font:inherit;position:relative;top:calc(1cap*.233)}
+ .hud .topbar .wordmark .logo,.hud .topbar .wordmark .logo .brand-mark{width:calc(1cap*1.3675);height:calc(1cap*1.3675)}
+}
+.hud.is-collapsed .compact-resources{gap:6px}
+.compact-currency{overflow:hidden}
+.compact-currency.currency-coin,.compact-currency.currency-token{padding-left:6px}
+.compact-value-line{gap:4px;overflow:hidden}
+.hud .compact-resources strong{font-size:15px;line-height:1.2}
+.hud .compact-resources .cache-gain{font-size:9.5px}
+.hud .compact-resources .currency-rate{font-size:11px;line-height:1.2;margin-top:2px}
+.compact-value-line.is-tight strong{font-size:13px}
+.compact-value-line.is-tight .cache-gain{font-size:8.5px}
+.hud.is-collapsed .cache-meter{height:24px}
+.hud.is-collapsed .cache-meter-meta{height:21px}
+/* open top bar: one full-width row per currency (dollar above, coin below) — balance with decimals, rate and the cache gain beside it */
+.hud .resources,.hud.has-coin .resources{display:flex;flex-direction:column;gap:5px;padding:4px 12px 8px;overflow:visible;scroll-snap-type:none}
+.currency-card{flex:0 0 auto;display:flex;align-items:center;gap:8px;min-width:0;height:38px;padding:0 8px 0 42px;scroll-snap-align:none}
+.currency-card .currency-symbol{width:32px;font-size:15px}
+.currency-card .balance,.hud:not(.has-coin) .balance{display:block;font-size:19px;line-height:1;min-width:0;flex:0 1 auto;overflow:hidden}
+.currency-secondary{margin:0 0 0 auto;min-height:0;flex-direction:row-reverse;overflow:visible;gap:7px;flex-shrink:0}
+.currency-card .currency-rate{font-size:12px;line-height:1}
+.currency-secondary .cache-gain{transform:translateX(4px)}
+.currency-secondary .cache-gain.is-visible{transform:none}
+@media(max-width:400px){.currency-card{min-width:0;height:36px;padding:0 7px 0 38px}.currency-card .currency-symbol{width:30px}.currency-card .balance,.hud:not(.has-coin) .balance{font-size:18px}.currency-card .currency-rate{font-size:11px}}
+@media(max-width:350px){.currency-card{min-width:0;padding-left:34px}.currency-card .currency-symbol{width:26px}.currency-card .balance,.hud:not(.has-coin) .balance{font-size:16px}.currency-card .currency-rate{font-size:10.5px}.currency-secondary .cache-gain{font-size:9px}}

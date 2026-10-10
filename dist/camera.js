@@ -1,6 +1,8 @@
 export function interpolateCamera(start,target,progress){const t=Math.max(0,Math.min(1,progress)),e=1-(1-t)**3;return {x:start.x+(target.x-start.x)*e,y:start.y+(target.y-start.y)*e,scale:start.scale+(target.scale-start.scale)*e};}
 // Hysteresis prevents repeated detail changes at the overview boundary.
 export function overviewMode(scale,wasOverview){return wasOverview?scale<.4:scale<.32;}
+// Farther out still (under 9%), the islands show one badge each instead of their studies.
+export function farMode(scale,wasFar){return wasFar?scale<.11:scale<.09;}
 // Choose an unobstructed rectangle above or beside the map controls.
 export function mapFrames(width,height,tools,top=32){
  const pad=14,bottom=Math.max(top+1,height-pad),right=Math.max(pad+1,width-pad);
