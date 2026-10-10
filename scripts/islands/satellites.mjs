@@ -8,9 +8,13 @@
 // are the listed `core` rectangles [cx,cy,w,h,deg], sand runs along the listed
 // stretch of shore, terrain is the listed polygons. `fragments` are bare rocks
 // breaking the surface near an islet: each a few shards [points, tone 0 dark … 4 light],
-// the later ones lying on the earlier. `rocks` are the same, standing on their own
-// where there is no islet: the tops of a reef ground (seabed.mjs) out of the water.
-const R=(cx,cy,w,h,deg=0)=>{const a=deg*Math.PI/180,c=Math.cos(a),s=Math.sin(a);return [[-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]].map(([x,y])=>[Math.round(cx+c*x-s*y),Math.round(cy+s*x+c*y)]);};
+// the later ones lying on the earlier. A `crag` is one big rock standing out of the
+// sea where there is no islet, the summit of a reef ground (seabed.mjs). Every part of
+// it is a shape cut for its place, never a rectangle: `base` the low rock awash at the
+// waterline (traced like land, so it has a shore), `talus` broken slabs lying on that,
+// `body` the rock proper (a raised layer, so it carries the game's dark rim), `slabs`
+// its lighter layers [points, tone], `cracks` cut into it, and `sunken` the same rock
+// going on under the water [points, step 0 just under the surface … 2 deep].
 export const SATELLITES={
  1:{theme:'meadow',
   land:{
@@ -76,13 +80,35 @@ export const SATELLITES={
    [[[[2152,7306],[2192,7290],[2214,7324],[2184,7350]],1],[[[2168,7306],[2194,7306],[2194,7328],[2170,7330]],3]],
    [[[[2218,6808],[2252,6796],[2268,6824],[2242,6844]],0]],
   ],
-  // south-west: no islet here, but a reef ground under the water; a few of its rocks stand a little out of the sea
-  rocks:{sw:[
-   [[R(-2420,6980,120,84,14),0],[R(-2392,6956,76,56,-22),2],[R(-2452,7002,50,40,40),3]],
-   [[R(-2060,7225,96,66,18),0],[R(-2080,7206,54,42,-30),2]],
-   [[R(-2130,6890,84,58,-30),1],[R(-2112,6872,44,34,12),3]],
-   [[[[-1920,6938],[-1884,6928],[-1870,6956],[-1902,6972]],0]],
-   [[[[-2574,7172],[-2542,7164],[-2530,7190],[-2560,7202]],1]],
-   [[[[-2306,7294],[-2276,7290],[-2270,7314],[-2298,7322]],0]],
-  ]}},
+  // south-west: no islet. A reef ground lies under the water here (seabed.mjs) and its summit stands out of the
+  // sea as one big crag: a slab of basalt tilted up out of the reef. Its cliff faces the open sea (north-west) and
+  // every layer ends flush on that edge, the lightest at the top of the cliff; to the south-east the layers step
+  // down, the low rock runs out in two feet, and the steps go on under the water, fainter each time. One crack
+  // runs across it from the cliff to the notch between the feet. Two broken-off rocks keep it company.
+  crags:{sw:{
+   base:[[-2489,7146],[-2455,6996],[-2414,6972],[-2346,6852],[-2211,6831],[-2057,6879],[-2006,6961],[-2042,7026],[-2003,7089],[-2057,7143],[-2031,7199],[-2099,7242],[-2164,7182],[-2207,7233],[-2320,7219],[-2357,7264],[-2464,7234]],
+   sunken:[
+    [[[-2500,7300],[-2342,7323],[-2267,7383],[-2417,7428]],2],
+    [[[-1960,7075],[-1885,7053],[-1847,7150],[-1907,7210]],2],
+    [[[-2215,7278],[-2027,7285],[-1915,7210],[-1892,7293],[-2035,7375]],1],
+    [[[-2147,7218],[-2012,7128],[-1945,7165],[-2020,7263]],0],
+    [[[-2425,7251],[-2290,7236],[-2237,7270],[-2357,7326]],0],
+   ],
+   talus:[
+    [[[-2095,7135],[-2039,7150],[-2042,7199],[-2091,7221]],1],
+    [[[-2275,7173],[-2215,7188],[-2215,7221],[-2312,7210]],1],
+   ],
+   body:[[-2470,7135],[-2436,7008],[-2399,6985],[-2335,6869],[-2215,6850],[-2072,6895],[-2027,6963],[-2065,7030],[-2031,7083],[-2117,7135],[-2174,7101],[-2215,7169],[-2324,7158],[-2357,7206],[-2436,7199]],
+   slabs:[
+    [[[-2454,7075],[-2436,7008],[-2399,6985],[-2335,6869],[-2215,6850],[-2072,6895],[-2048,6933],[-2084,7004],[-2166,7026],[-2185,7086],[-2290,7079],[-2327,7131],[-2421,7131]],2],
+    [[[-2441,7026],[-2436,7008],[-2399,6985],[-2335,6869],[-2215,6850],[-2162,6867],[-2200,6933],[-2267,6955],[-2297,7030],[-2372,7045]],3],
+    [[[-2386,6962],[-2348,6892],[-2290,6903],[-2305,6963],[-2350,7000]],4],
+    [[[-2151,6903],[-2084,6918],[-2072,6978],[-2140,6993]],3],
+   ],
+   cracks:[[[-2162,6867],[-2150,6870],[-2161,6940],[-2149,6970],[-2167,7104],[-2177,7101],[-2161,6973],[-2173,6943]]],
+  }},
+  cragRocks:[
+   [[[[-1790,7250],[-1738,7222],[-1712,7262],[-1752,7300]],0],[[[-1772,7254],[-1742,7240],[-1730,7264],[-1754,7282]],2],[[[-1700,7306],[-1676,7296],[-1668,7320],[-1690,7330]],1]],
+   [[[[-2642,6866],[-2600,6826],[-2560,6850],[-2578,6900],[-2626,6906]],1],[[[-2622,6866],[-2598,6846],[-2578,6862],[-2596,6886]],3]],
+  ]},
 };

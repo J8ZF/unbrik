@@ -37,7 +37,7 @@ assert.deepEqual([...new Set(NODES.map(n=>n.zone))].sort(),['grass','rock','sand
 const [WX,WY,WW,WH]=ISLAND_ART.world,SATS=ISLAND_ART.pictures.filter(p=>p.sat);
 assert.equal(ISLAND_ART.pictures.length-SATS.length,ISLANDS.length+1);
 // A satellite belongs to an island, stands clear of that island's own picture land and of every study, and has shore data of its own.
-for(const s of SATS){assert(ISLANDS.some(i=>i.id===s.island)&&s.back.startsWith('<svg')&&!/NaN|Infinity|undefined/.test(s.back));assert(!s.decor.length&&!s.landmarks.length);if(s.rocks)assert(s.fx.mask.length>=1&&!s.fx.coast.length,'bare rocks have no shore of their own');else assert(s.fx.coast.length>=1&&s.fx.surfIn.length>=1);
+for(const s of SATS){assert(ISLANDS.some(i=>i.id===s.island)&&s.back.startsWith('<svg')&&!/NaN|Infinity|undefined/.test(s.back));assert(!s.decor.length&&!s.landmarks.length);assert(s.fx.coast.length>=1&&s.fx.surfIn.length>=1);
  const [x,y,w,h]=s.bounds;assert(x>WX&&y>WY&&x+w<WX+WW&&y+h<WY+WH);for(const n of NODES)assert(!(n.x>x&&n.x<x+w&&n.y>y&&n.y<y+h),`study ${n.id} under satellite ${s.island}/${s.sat}`);}
 // The sea floor: the basin steps inward, and an island's shelf contours and reefs come with shallows traced round its land.
 const SBD=ISLAND_ART.seabed;assert(SBD.basin.length===SBD.tone.basin[1].length&&SBD.basin.every(b=>b.length>=8));

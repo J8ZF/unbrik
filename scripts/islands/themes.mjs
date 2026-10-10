@@ -188,7 +188,7 @@ export const THEMES={
   layer:{a:['#4d8a3a','#8ac85a'],b:['#5f9a3e','#a4d862'],c:['#73ac47','#bde86e'],lagoon:['#1d5a5c','#3f9aa0']},
   sand:['#d8c08a','#ecdcaa'],wet:'#b9a070',dune:['#e2cc98','#f0e2b8'],duneTop:['#ecd9ab','#f6ecd0'],
   // volcanic rock: basalt browns
-  rock:[['#4a3a30','#6a5648'],['#5a4638','#7c6656'],['#6b5343','#8f7563'],['#7c6150','#a1866f'],['#8d6f5c','#b3977e']],
+  rock:[['#4a3a30','#6a5648'],['#5a4638','#7c6656'],['#6b5343','#8f7563'],['#7c6150','#a1866f'],['#8d6f5c','#b3977e']],sunken:[['#3f4a55',.75],['#2c4152',.55],['#1f3447',.36]],
   sea:{far:'#0c1a22',mid:'#0e2a30',near:'#124042',tones:{far:'#2f4452',mid:'#355a62',near:'#427478'}},color:'#4fe0cf',zones:{grass:'#bfe85a',sand:'#f0d8a0',rock:'#b39a7c'},
   extras:tropicExtras,
   // fewer, bigger things: flowers two thirds of a card, plants at three sizes, loungers on the beaches
