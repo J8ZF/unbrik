@@ -639,13 +639,8 @@ body.viewing #hud,body.viewing #nodePanel,body.viewing footer,body.viewing #mapT
 .hud .hud-actions .icon-button,.hud #toggleHud,.hud.is-collapsed .hud-actions .icon-button,.hud.is-collapsed #toggleHud{width:32px;height:34px}
 .hud .topbar .wordmark{gap:7px}
 .hud .topbar .wordmark .logo,.hud .topbar .wordmark .logo .brand-mark{width:24px;height:24px}
-.hud .topbar .wordmark b{display:block;font-size:26px;line-height:1;letter-spacing:.14em}
-/* the wordmark stands as tall as the logo: where the browser knows the font's cap height the triangle is drawn exactly that tall and set on the baseline */
-@supports (width:1cap){
- .hud .topbar .wordmark{align-items:baseline;font:700 26px/1 var(--mono)}
- .hud .topbar .wordmark .logo{font:inherit;position:relative;top:calc(1cap*.233)}
- .hud .topbar .wordmark .logo,.hud .topbar .wordmark .logo .brand-mark{width:calc(1cap*1.3675);height:calc(1cap*1.3675)}
-}
+.hud .topbar .wordmark b{font-size:15px;letter-spacing:.14em}
+.hud .topbar .wordmark div>span{font-size:8px;letter-spacing:.16em;margin-top:1px}
 .hud.is-collapsed .compact-resources{gap:6px}
 .compact-currency{overflow:hidden}
 .compact-currency.currency-coin,.compact-currency.currency-token{padding-left:6px}
@@ -668,7 +663,8 @@ body.viewing #hud,body.viewing #nodePanel,body.viewing footer,body.viewing #mapT
 .currency-secondary .cache-gain.is-visible{transform:none}
 @media(max-width:400px){.currency-card{min-width:0;height:36px;padding:0 7px 0 38px}.currency-card .currency-symbol{width:30px}.currency-card .balance,.hud:not(.has-coin) .balance{font-size:18px}.currency-card .currency-rate{font-size:11px}}
 @media(max-width:350px){.currency-card{min-width:0;padding-left:34px}.currency-card .currency-symbol{width:26px}.currency-card .balance,.hud:not(.has-coin) .balance{font-size:16px}.currency-card .currency-rate{font-size:10.5px}.currency-secondary .cache-gain{font-size:9px}}
-/* top bar only: the mark carries the map's colour (green on AXIOM, pink on the rebirth map) and the name is white; the settings brand keeps its own colours */
-.hud .topbar .wordmark .logo{color:var(--accent)}
-.hud .topbar .wordmark b{color:#f1f3f5}
-.theme-tween .hud .topbar .wordmark .logo{transition:color .7s ease}
+/* the setting 언브릭 싫어: the name goes, the triangle stays */
+.hud.no-name .topbar .wordmark>div{display:none}
+/* kinds of settings as tabs inside the settings pane, in the type the section labels had */
+.subtabs{padding:0;gap:22px;margin:4px 0 6px}
+.subtabs button{font:11px var(--mono);letter-spacing:.14em;padding:14px 2px 11px}

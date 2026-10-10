@@ -79,7 +79,7 @@ const WEATHER_NOTICES={rain:'날씨 · 비가 내리기 시작합니다.',snow:'
 function syncOpalMotion(){document.body.classList.toggle('effects-paused',document.hidden||suspended);opalMotion?.refresh();weatherFx?.refresh();}
 function applySettings(){
  const reduced=!state.settings.motion||motionPreference.matches;document.body.classList.toggle('reduced-motion',reduced);
- for(const k of ['motion','sea','touch','haptic','purchaseCheat','mapControls','farView'])$(k).checked=state.settings[k];islandView?.setMotion(!reduced&&state.settings.sea);islandView?.setObsMotion(!reduced&&state.settings.motion);$('sea').disabled=reduced;$('format').value=state.settings.format;
+ for(const k of ['motion','sea','touch','haptic','purchaseCheat','mapControls','farView'])$(k).checked=state.settings[k];$('noWordmark').checked=!!state.settings.noWordmark;$('hud').classList.toggle('no-name',!!state.settings.noWordmark);islandView?.setMotion(!reduced&&state.settings.sea);islandView?.setObsMotion(!reduced&&state.settings.motion);$('sea').disabled=reduced;$('format').value=state.settings.format;
  const controls=$('mapTools'),expanded=state.settings.mapControls,changed=controls.dataset.expanded!==String(expanded);
  controls.dataset.expanded=String(expanded);controls.classList.toggle('is-compact',!expanded);
  for(const id of ['fit','viewMode','zoomOut','zoomIn'])$(id).hidden=!expanded;
@@ -519,7 +519,9 @@ $('togglePanel').onclick=()=>{state.settings.panelCollapsed=!state.settings.pane
 $('settings').onclick=()=>{applySettings();renderStats();$('settingsDialog').showModal();};$('closeSettings').onclick=()=>$('settingsDialog').close();
 $('settingsDialog').addEventListener('click',e=>{if(e.target===$('settingsDialog')){const r=e.target.getBoundingClientRect();if(e.clientY<r.top||e.clientX<r.left||e.clientX>r.right)$('settingsDialog').close();}});
 for(const button of document.querySelectorAll('[data-tab]')){button.onclick=()=>{for(const b of document.querySelectorAll('[data-tab]')){const active=b===button;b.setAttribute('aria-selected',String(active));$('pane-'+b.dataset.tab).hidden=!active;}if(button.dataset.tab==='stats')renderStats();};}
-for(const k of ['motion','sea','touch','haptic','mapControls'])$(k).onchange=()=>{state.settings[k]=$(k).checked;applySettings();save();};$('farView').onchange=()=>{state.settings.farView=$('farView').checked;transform();render();save();};
+// the kinds of settings are tabs of their own inside the settings pane
+for(const button of document.querySelectorAll('[data-subtab]')){button.onclick=()=>{for(const b of document.querySelectorAll('[data-subtab]')){const active=b===button;b.setAttribute('aria-selected',String(active));$('sub-'+b.dataset.subtab).hidden=!active;}};}
+for(const k of ['motion','sea','touch','haptic','mapControls'])$(k).onchange=()=>{state.settings[k]=$(k).checked;applySettings();save();};$('farView').onchange=()=>{state.settings.farView=$('farView').checked;transform();render();save();};$('noWordmark').onchange=()=>{state.settings.noWordmark=$('noWordmark').checked;applySettings();save();};
 // view mode: every panel hidden, the map alone; the exit arrow (or a reload) brings them back
 function setViewing(on){document.body.classList.toggle('viewing',on);$('exitView').hidden=!on;requestAnimationFrame(()=>{constrain();transform();});}
 $('viewMode').onclick=()=>setViewing(true);$('exitView').onclick=()=>setViewing(false);$('format').onchange=()=>{state.settings.format=$('format').value;render();save();};
