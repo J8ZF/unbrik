@@ -668,3 +668,6 @@ body.viewing #hud,body.viewing #nodePanel,body.viewing footer,body.viewing #mapT
 /* kinds of settings as tabs inside the settings pane, in the type the section labels had */
 .subtabs{padding:0;gap:22px;margin:4px 0 6px}
 .subtabs button{font:11px var(--mono);letter-spacing:.14em;padding:14px 2px 11px}
+/* the footer's saving mark in red: automatic saving turned off, or the browser would not store the save */
+#saveState.is-off{color:#ff7a7a}
+#saveState.is-off i{background:#ff7a7a}

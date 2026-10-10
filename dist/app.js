@@ -79,7 +79,7 @@ const WEATHER_NOTICES={rain:'날씨 · 비가 내리기 시작합니다.',snow:'
 function syncOpalMotion(){document.body.classList.toggle('effects-paused',document.hidden||suspended);opalMotion?.refresh();weatherFx?.refresh();}
 function applySettings(){
  const reduced=!state.settings.motion||motionPreference.matches;document.body.classList.toggle('reduced-motion',reduced);
- for(const k of ['motion','sea','touch','haptic','purchaseCheat','mapControls','farView'])$(k).checked=state.settings[k];$('noWordmark').checked=!!state.settings.noWordmark;$('hud').classList.toggle('no-name',!!state.settings.noWordmark);islandView?.setMotion(!reduced&&state.settings.sea);islandView?.setObsMotion(!reduced&&state.settings.motion);$('sea').disabled=reduced;$('format').value=state.settings.format;
+ for(const k of ['motion','sea','touch','haptic','purchaseCheat','mapControls','farView'])$(k).checked=state.settings[k];$('noWordmark').checked=!!state.settings.noWordmark;$('autoSave').checked=state.settings.autoSave!==false;$('hud').classList.toggle('no-name',!!state.settings.noWordmark);islandView?.setMotion(!reduced&&state.settings.sea);islandView?.setObsMotion(!reduced&&state.settings.motion);$('sea').disabled=reduced;$('format').value=state.settings.format;
  const controls=$('mapTools'),expanded=state.settings.mapControls,changed=controls.dataset.expanded!==String(expanded);
  controls.dataset.expanded=String(expanded);controls.classList.toggle('is-compact',!expanded);
  for(const id of ['fit','viewMode','zoomOut','zoomIn'])$(id).hidden=!expanded;
@@ -147,12 +147,18 @@ function renderCacheHud(){
   }
  }
 }
-function save(notify=false){
+// Saves happen by themselves (every 10 s, on leaving, after a purchase or a setting) unless the player has turned
+// automatic saving off; then only what the player does by hand is written (manual: 지금 저장, restoring or resetting, and
+// the switch itself, so the choice is kept).
+function save(notify=false,manual=notify){
  state.camera={...camera};state.savedAt=Date.now();if(!suspended)checkpointOffline(state,state.savedAt);
+ if(state.settings.autoSave===false&&!manual){saveMark();return;}
  try{const previous=localStorage.getItem(KEY);if(previous){try{validateSave(JSON.parse(previous));localStorage.setItem(BACKUP,previous);}catch{}}
- localStorage.setItem(KEY,JSON.stringify(state));storageOK=true;$('saveState').innerHTML='<i></i> 자동 저장';if(notify)toast('진행 상황을 저장했습니다.');}
- catch{storageOK=false;setText($('saveState'),'저장 불가 · 설정에서 내보내기');if(notify)toast('브라우저 저장에 실패했습니다. 저장 데이터를 내보내 주세요.');}
+ localStorage.setItem(KEY,JSON.stringify(state));storageOK=true;saveMark();if(notify)toast('진행 상황을 저장했습니다.');}
+ catch{storageOK=false;saveMark();if(notify)toast('브라우저 저장에 실패했습니다. 저장 데이터를 내보내 주세요.');}
 }
+// the footer's word on saving: 자동 저장, or in red 저장 안됨 when automatic saving is off or the browser would not store the save
+function saveMark(){const el=$('saveState'),bad=!storageOK,off=state.settings.autoSave===false;el.className=bad||off?'is-off':'';el.innerHTML=bad?'<i></i> 저장 안됨 · 설정에서 내보내기':off?'<i></i> 저장 안됨':'<i></i> 자동 저장';}
 // An island shows once it is open and its reveal has played (the reveal holds a newly opened island back until the camera is there).
 function sectorUnlocked(chapter){if(pendingReveal.has(chapter))return false;const root=MAP_LAYOUT.sectors[chapter]?.members[0];return !!root&&(level(state,root)>0||unlocked(state,root));}
 // studies bought out of the island's studies, then levels out of all levels: 12/30 (45/120)
@@ -526,13 +532,13 @@ for(const k of ['motion','sea','touch','haptic','mapControls'])$(k).onchange=()=
 function setViewing(on){document.body.classList.toggle('viewing',on);$('exitView').hidden=!on;requestAnimationFrame(()=>{constrain();transform();});}
 $('viewMode').onclick=()=>setViewing(true);$('exitView').onclick=()=>setViewing(false);$('format').onchange=()=>{state.settings.format=$('format').value;render();save();};
 $('purchaseCheat').onchange=()=>{state.settings.purchaseCheat=$('purchaseCheat').checked;render();save();toast(state.settings.purchaseCheat?'테스트 치트 ON · 자금 소모 없이 연구합니다.':'테스트 치트 OFF · 구매 시 정상 차감됩니다.');};
-$('saveNow').onclick=()=>save(true);
+$('saveNow').onclick=()=>save(true);$('autoSave').onchange=()=>{state.settings.autoSave=$('autoSave').checked;save(false,true);};
 function exportText(){save();$('transfer').hidden=false;$('saveText').value=JSON.stringify(state);setText($('transferStatus'),'파일을 저장하거나 위 데이터를 복사해 보관하세요.');return $('saveText').value;}
 $('exportSave').onclick=()=>{const txt=exportText();const blob=new Blob([txt],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='unbrik-save-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 $('importSave').onclick=()=>{$('transfer').hidden=false;$('saveText').value='';setText($('transferStatus'),'현재 진행을 교체할 저장 파일을 선택하거나 데이터를 붙여넣으세요.');$('saveText').focus();};
 $('copySave').onclick=async()=>{try{await navigator.clipboard.writeText($('saveText').value);setText($('transferStatus'),'복사했습니다.');}catch{$('saveText').select();setText($('transferStatus'),'선택한 데이터를 직접 복사해 주세요.');}};
 $('loadFile').onclick=()=>$('saveFile').click();$('saveFile').onchange=async()=>{const f=$('saveFile').files[0];if(!f)return;if(f.size>1000000){setText($('transferStatus'),'저장 파일이 너무 큽니다.');return;}$('saveText').value=await f.text();setText($('transferStatus'),'데이터를 읽었습니다. 아래 복원 버튼을 누르면 적용됩니다.');$('saveFile').value='';};
-function restore(input){cacheReward={money:0,coin:0,until:0};pendingReveal.clear();cutsceneActive=false;document.body.classList.remove('cutscene');cancelSelection();cameraIntent=null;const next=validateSave(input);checkpointOffline(next);state=next;suspended=document.hidden;econ=economy(state);for(const k of Object.keys(selectionByMap))delete selectionByMap[k];selected=defaultSelection();applyMapTheme();camera=state.camera||initialCamera();applySettings();render();transform();lastFrame=performance.now();save();}
+function restore(input){cacheReward={money:0,coin:0,until:0};pendingReveal.clear();cutsceneActive=false;document.body.classList.remove('cutscene');cancelSelection();cameraIntent=null;const next=validateSave(input);checkpointOffline(next);state=next;suspended=document.hidden;econ=economy(state);for(const k of Object.keys(selectionByMap))delete selectionByMap[k];selected=defaultSelection();applyMapTheme();camera=state.camera||initialCamera();applySettings();render();transform();lastFrame=performance.now();save(false,true);}
 $('applySave').onclick=()=>{try{const txt=$('saveText').value;if(txt.length>1000000)throw Error('저장 데이터가 너무 큽니다.');restore(JSON.parse(txt));setText($('transferStatus'),'저장 데이터를 복원했습니다.');toast('저장 데이터를 복원했습니다.');}catch(e){setText($('transferStatus'),e instanceof SyntaxError?'JSON 형식을 확인해 주세요.':e.message);}};
 $('resetButton').onclick=()=>{$('resetConfirm').hidden=!$('resetConfirm').hidden;$('resetInput').value='';$('confirmReset').disabled=true;};$('resetInput').oninput=()=>$('confirmReset').disabled=$('resetInput').value!=='RESET';
 $('confirmReset').onclick=()=>{if($('resetInput').value!=='RESET')return;restore(defaultState());try{localStorage.removeItem(BACKUP);}catch{}sessionSeconds=0;$('resetConfirm').hidden=true;$('transfer').hidden=true;$('saveText').value='';$('settingsDialog').close();toast('새 연구를 시작합니다.',0,'important');focusNode(1);};
@@ -651,7 +657,7 @@ function runPrestige(){
 // prestige map), snow on AXIOM and flowers instead of snow on the prestige map.
 function weatherMode(){const w=worldState(state).weather;if(w==='rain')return onPrestige()?'rain-heavy':'rain-light';if(w==='snow')return onPrestige()?'petals':'snow';return 'none';}
 weatherFx=createWeatherFx($('weatherFx'),()=>state.settings.motion&&!motionPreference.matches&&!document.hidden&&!suspended,weatherMode);
-createGraph();setupOpalMotion();renderUpdates();applyMapTheme();applySettings();render();if(!state.camera)camera=initialCamera();transform();resume();requestAnimationFrame(frame);if(loadNotice)setTimeout(()=>toast(loadNotice,0,'important'),500);if(!storageOK)setText($('saveState'),'저장 불가 · 설정에서 내보내기');
+createGraph();setupOpalMotion();renderUpdates();applyMapTheme();applySettings();render();if(!state.camera)camera=initialCamera();transform();resume();requestAnimationFrame(frame);if(loadNotice)setTimeout(()=>toast(loadNotice,0,'important'),500);saveMark();
 // Optional browser agent tools use exactly the same state and purchase guard as the UI.
 if(document.modelContext?.registerTool){const lifecycle=new AbortController(),json=v=>JSON.parse(JSON.stringify(v));const register=tool=>{try{Promise.resolve(document.modelContext.registerTool(tool,{signal:lifecycle.signal})).catch(()=>{});}catch{}};
  register({name:'read_research_state',title:'연구 상태 읽기',description:'현재 자원, 생산량, 발견한 연구와 구매 조건을 읽습니다.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute(){const e=economy(state);return json({money:state.currencies.money,coin:state.currencies.coin,rate:e.rate,coinRate:e.coinRate,purchased:e.count,nodes:NODES.filter(n=>discovery(n)>1).map(n=>({id:n.id,name:n.name,level:level(state,n),max:n.max,cost:cost(state,n,e),unlocked:unlocked(state,n)}))});}});
