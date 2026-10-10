@@ -45,6 +45,10 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
  // sizes go in style: the game's base CSS gives every svg 24×24 px
  const sheet=el=>{el.setAttribute('viewBox',`${WX0} ${WY0} ${WW} ${WH}`);Object.assign(el.style,{left:WX0+'px',top:WY0+'px',width:WW+'px',height:WH+'px'});};
  for(const el of [decorSvg,buildSvg,mossSvg,overSvg])if(el)sheet(el);
+ // moving parts of buildings (the fountain's rings) live in small HTML elements just above the buildings: animated
+ // inside the world-sized SVG sheet they would repaint the whole sheet every frame
+ const fxEl=document.createElement('div');fxEl.className='fx-layer';fxEl.setAttribute('aria-hidden','true');
+ try{buildSvg.parentNode.insertBefore(fxEl,buildSvg.nextSibling);}catch(e){world.append?.(fxEl);}
  const bbox=pts=>{let a=1e9,b=1e9,c=-1e9,d=-1e9;for(const [x,y] of pts){if(x<a)a=x;if(y<b)b=y;if(x>c)c=x;if(y>d)d=y;}return [a,b,c,d];};
  const mkPath=(pts,close)=>{const p=new Path2D();p.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)p.lineTo(pts[i][0],pts[i][1]);if(close)p.closePath();return p;};
  // ---- pictures: one element per island holding its triangles, coarse copy and tiles ----
@@ -194,7 +198,7 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
  function setObsMotion(on){obsMotion=on;draw(performance.now());queue2();}
  // the deck lights round the eye turn pink while a rebirth is ready
  let obsReady=false;function setReady(on){on=!!on;if(on===obsReady)return;obsReady=on;obs.setReady(on);draw(performance.now());queue2();}
- function setVisible(on){visible=on;bedDirty=true;back.hidden=!on;canvas.hidden=obsUnder.hidden=bed.hidden=!on;for(const el of [decorSvg,beamSvg,buildSvg,mossSvg,overSvg])if(el)el.style.visibility=on?'':'hidden';draw(performance.now());if(on){scheduleTiles();queue2();}}
+ function setVisible(on){visible=on;bedDirty=true;back.hidden=!on;canvas.hidden=obsUnder.hidden=bed.hidden=!on;for(const el of [decorSvg,beamSvg,buildSvg,mossSvg,overSvg,fxEl])if(el)el.style.visibility=on?'':'hidden';draw(performance.now());if(on){scheduleTiles();queue2();}}
 
  // ---- growth: decoration by island progress, buildings at MAX, grass and moss ----
  let growthKey='';
@@ -216,6 +220,7 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
   decorSvg.innerHTML=dec;
   buildSvg.innerHTML=pairs.map(p=>p.q.states[p.st]).join('')+frames.map(f=>f.l.frame.under[f.st]).join('')+built.map(l=>l.svg).join('');
   if(overSvg)overSvg.innerHTML=frames.map(f=>f.l.frame.over[f.st]).join('')+built.map(l=>l.over||'').join('');
+  fxEl.innerHTML=built.flatMap(l=>l.fx||[]).map(([x,y,r,d,dl,w,o])=>`<i class="fx-ring" style="left:${x-r}px;top:${y-r}px;width:${2*r}px;height:${2*r}px;border-width:${w}px;border-color:rgba(232,246,246,${o});animation-duration:${d}s;animation-delay:${dl}s"></i>`).join('');
   beamSvg.style.display=built.some(l=>l.beam)?'':'none';
   let mo='';for(const p of pics){if(!shown.has(p.island))continue;const mine=nodes.filter(n=>n.island===p.island),ownedHere=mine.filter(n=>level(n)>0),rank=new Map(mine.map((n,i)=>[n.id,i]));mo+=ownedHere.filter(n=>!n.tint&&ownedHere.length>=rank.get(n.id)+4).map(moss).join('');}
   mossSvg.innerHTML=mo;}

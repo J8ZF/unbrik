@@ -130,7 +130,7 @@ for(const name of DESIGNS){
  const SK=(GM.sunken||[]).flatMap(b=>b.pts),FX0=Math.min(B.x0,...SK.map(q=>Math.floor(q[0])-40)),FY0=Math.min(B.y0,...SK.map(q=>Math.floor(q[1])-40)),FX1=Math.max(B.x1,...SK.map(q=>Math.ceil(q[0])+40)),FY1=Math.max(B.y1,...SK.map(q=>Math.ceil(q[1])+40)),FW=FX1-FX0,FH=FY1-FY0;
  const back=`<svg xmlns="http://www.w3.org/2000/svg" width="${FW}" height="${FH}" viewBox="${FX0} ${FY0} ${FW} ${FH}">`+sea+picture+`</svg>`;
  // ---- landmark buildings (built when their study reaches MAX) ----
- const built=landmarks.map(l=>{const n=nodeOf(l.node);if(BLD.FRAMES[l.kind])return {node:l.node,kind:l.kind,frame:BLD.FRAMES[l.kind](n),svg:'',over:'',beam:null,box:BLD.FOOTPRINT[l.kind](n)};const f=BLD.KINDS[l.kind];if(!f)throw Error('unknown landmark '+l.kind);return {node:l.node,kind:l.kind,svg:f(n,CW,CH,l,{coast:pieces,rock:T.rock}),over:BLD.OVER[l.kind]?BLD.OVER[l.kind](n,CW,CH):'',beam:l.kind==='lighthouse'?[n.x,n.y]:null,box:BLD.FOOTPRINT[l.kind](n,l)};});
+ const built=landmarks.map(l=>{const n=nodeOf(l.node);if(BLD.FRAMES[l.kind])return {node:l.node,kind:l.kind,frame:BLD.FRAMES[l.kind](n),svg:'',over:'',beam:null,box:BLD.FOOTPRINT[l.kind](n)};const f=BLD.KINDS[l.kind];if(!f)throw Error('unknown landmark '+l.kind);return {node:l.node,kind:l.kind,...(BLD.FX[l.kind]?{fx:BLD.FX[l.kind](n)}:{}),svg:f(n,CW,CH,l,{coast:pieces,rock:T.rock}),over:BLD.OVER[l.kind]?BLD.OVER[l.kind](n,CW,CH):'',beam:l.kind==='lighthouse'?[n.x,n.y]:null,box:BLD.FOOTPRINT[l.kind](n,l)};});
  // decoration keeps clear of the cards and frames, then the final footprints clear what they cover
  const pairArt=D.pairArt&&choice?BLD.PAIR_ART[D.pairArt](nodeOf(choice[0]),nodeOf(choice[1])):null;
  const frames=landmarks.map(l=>{const n=nodeOf(l.node);if(BLD.TINT[l.kind])return BLD.FOOTPRINT[l.kind](n);if(l.oct)return [n.x-l.oct,n.y-l.oct,n.x+l.oct,n.y+l.oct];const [px,py]=l.pad||[90,70];let b=[n.x-CW/2-px,n.y-CH/2-py,n.x+CW/2+px,n.y+CH/2+py];
@@ -178,7 +178,7 @@ for(const name of DESIGNS){
  const last=idOf(gateLocal);
  islands.push({id:D.id,name:D.name,last,first:firstId,label,landmarks:landmarks.map(l=>({node:idOf(l.node),kind:l.kind,...(l.extra?{extra:true}:{})})),...(pairArt?{pairs:[{a:idOf(choice[0]),b:idOf(choice[1]),hub:pairArt.hub}]}:{}),bounds:{minX:B.x0,minY:B.y0,maxX:B.x1,maxY:B.y1},color:T.color,zones:T.zones});
  allNodes.push(...islandNodes);
- pictures.push({island:D.id,bounds:[FX0,FY0,FW,FH],back,tri,fx,decor:cleared.map(d=>({t:d.t,svg:d.svg})),landmarks:built.map(b=>({node:idOf(b.node),kind:b.kind,svg:b.svg,over:b.over||'',beam:b.beam,...(b.frame?{frame:b.frame}:{})})),pairs:pairArt?[{a:idOf(choice[0]),b:idOf(choice[1]),states:pairArt.states}]:[],label});
+ pictures.push({island:D.id,bounds:[FX0,FY0,FW,FH],back,tri,fx,decor:cleared.map(d=>({t:d.t,svg:d.svg})),landmarks:built.map(b=>({node:idOf(b.node),kind:b.kind,svg:b.svg,over:b.over||'',beam:b.beam,...(b.frame?{frame:b.frame}:{}),...(b.fx?{fx:b.fx}:{})})),pairs:pairArt?[{a:idOf(choice[0]),b:idOf(choice[1]),states:pairArt.states}]:[],label});
  firstId=last+1;prevGate=last;
  // ---- the island's satellites: small islands and rock fragments of its own, each a small picture shown with the island ----
  const SAT=SATELLITES[D.id];

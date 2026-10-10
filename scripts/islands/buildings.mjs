@@ -325,6 +325,8 @@ export const KINDS={harbor:(n,CW,CH)=>harbor(n,CW,CH),hall:(n,CW,CH)=>hall(n,CW,
 // frame nodes: drawn round the card from the start, dark until researched, the lamp lit at MAX (island-view picks the state)
 export const FRAMES={frameClock:MAPLE.frameClock,frameLambda:MAPLE.frameLambda};
 export const TINT=MAPLE.TINT,PAIR_ART={diamond:MAPLE.pairDiamond},PAIR_TINT=MAPLE.PAIR_TINT;
+// moving parts of a building, drawn as small HTML elements over it (not inside the SVG sheet): rings on water
+export const FX={fountain:MAPLE.fountainFx};
 // landmarks drawn over the cards too (water over a sunk card)
 export const OVER={pool:poolOver};
 // footprints: what the still decoration clears under a building (world box)

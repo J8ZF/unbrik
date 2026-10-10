@@ -64,7 +64,8 @@ export function frameLambda(n){const at=`translate(${n.x} ${n.y}) rotate(-4) tra
 // ---- 078 INSTRUCTION SET: a small square of grey stone — the card on a white plinth, the fountain to its north-east,
 // three small white buildings with verdigris roofs round it. The ground between is stone: a few darker slabs say so. ----
 // The square fits between the neighbouring cards (083 above, 077 up right, 094 down left, 092 left) and the south shore.
-const ripple=(r,dur,delay,w,op=.85)=>`<circle class="fx-ripple" cx="0" cy="0" r="${r}" fill="none" stroke="#e8f6f6" stroke-opacity="${op}" stroke-width="${w}" vector-effect="non-scaling-stroke" style="animation-duration:${dur}s;animation-delay:${delay}s"/>`;
+// The fountain's rings are not drawn here: animating anything inside the world-sized SVG sheet repaints the sheet every
+// frame (v41 measured: dragging fell from ~45 to ~32 fps). They are small HTML rings of their own (compositor only), see fountainFx.
 export function fountain(n){
  let s=`<g transform="translate(${n.x} ${n.y})">`;
  // the square: an outer band and the paved floor
@@ -92,14 +93,15 @@ export function fountain(n){
   `<rect x="-26" y="-26" width="52" height="52" fill="none" stroke="#18443f" stroke-width="2.4"/><rect x="-5" y="-5" width="10" height="10" fill="#f6f4ee" stroke="#18443f" stroke-width="1.5"/></g>`;
  // the fountain: a stone basin, its water with rings running out, the pedestal, the upper bowl with its own rings, the jet
  s+=`<g transform="translate(158 -100)"><polygon points="${octPts(0,0,66)}" fill="#868d90" ${RIM}/><polygon points="${octPts(0,0,57)}" fill="#2f8f9a"/>`+
-  ripple(54,3.6,0,2.4)+ripple(54,3.6,-1.2,2.4)+ripple(54,3.6,-2.4,2.4)+
   `<polygon points="${octPts(0,0,29)}" fill="#a3aaac" stroke="rgba(4,8,12,0.3)" stroke-width="6" paint-order="stroke"/><polygon points="${octPts(0,0,23)}" fill="#47b3bd"/>`+
-  ripple(21,2.4,0,1.8,.9)+ripple(21,2.4,-1.2,1.8,.9)+
   `<polygon points="${octPts(0,0,11.5)}" fill="#c3c8c9"/><circle cx="0" cy="0" r="5.5" fill="#ffffff"/>`+
   `<polygon points="16,-3.5 21,0 16,3.5" fill="#ffffff" fill-opacity=".8"/><polygon points="-16,-3.5 -21,0 -16,3.5" fill="#ffffff" fill-opacity=".8"/><polygon points="-3.5,16 0,21 3.5,16" fill="#ffffff" fill-opacity=".8"/><polygon points="-3.5,-16 0,-21 3.5,-16" fill="#ffffff" fill-opacity=".8"/></g>`;
  // the card's plinth
  s+=`<rect x="-83" y="-69" width="166" height="138" fill="#e1ded4" ${R8}/><rect x="-78" y="-64" width="156" height="128" fill="#f9f8f4"/>`;
  return s+'</g>';}
+
+// the rings running out over the basin water and in the upper bowl: [x, y, radius, seconds, delay, ring width, opacity]
+export function fountainFx(n){const x=n.x+158,y=n.y-100;return [[x,y,54,3.6,0,2.4,.85],[x,y,54,3.6,-1.2,2.4,.85],[x,y,54,3.6,-2.4,2.4,.85],[x,y,21,2.4,0,1.8,.9],[x,y,21,2.4,-1.2,1.8,.9]];}
 
 // ---- 104 SINGULARITY: the observatory on the rock at the west island's upper-left edge — a white rotunda whose faceted
 // verdigris dome opens on a lens, an annex, a chamfered terrace. Drawn as in the sample and turned round (mirrored) so the
