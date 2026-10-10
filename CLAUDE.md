@@ -7,7 +7,7 @@
 | 무엇 | 링크 | 쓰임 |
 |---|---|---|
 | UNBRIK 4.0 기획서 (Docs) | https://claude.ai/artifact/5ozeH5NWTB9BTQ9nq5yhnY | 모든 결정의 기준. 특히 "섬 비주얼"(표·실루엣·**피할 것**), "디자인 방향"(관측소), "바다와 해안", "디자인 메모: 가라앉은 지형", "확정" 목록 |
-| 4.0 개발 빌드 | https://claude.ai/artifact/LovxWagJxq8hr8qAmcDmKE | 새 빌드는 여기에 올림 (현재 v35) |
+| 4.0 개발 빌드 | https://claude.ai/artifact/LovxWagJxq8hr8qAmcDmKE | 새 빌드는 여기에 올림 (현재 v36) |
 | 3.1 게임 | https://claude.ai/artifact/TuZxhvLHqJ9a3mRM1ypCJg | **건드리지 않음** |
 | 프로젝트 관측소 시안 | https://claude.ai/artifact/PBtEijVXvp1rnQsVn781py | 관측소 레퍼런스 |
 | AXIOM 섬 1 시안 | https://claude.ai/artifact/YNUECihdQqg9SYhExtM9gQ | 섬 표현 레퍼런스 |
@@ -85,5 +85,6 @@ node -e "import('./dist/data.js').then(d=>{const s=d.defaultState();s.settings.p
 - rockZones 옵션: `sunken:n`이면 가장 큰 블록들이 섬 바깥쪽으로 n단계 가라앉음(테마 `sunken` 색·불투명도). 테마 `rockRim:true`면 바위 덩어리에 검정 테두리.
 - 게임: `dist/app.js`(UI), `dist/data.js`(상태·경제·저장), `dist/island-view.js`(섬 그림 타일·바다 캔버스·컷신 공개), `dist/observatory-view.js`, `dist/style.css`, `dist/index.html`. 섬은 이전 섬 마지막 노드를 사면 컷신과 함께 열림.
 - 관측소 중앙(v28, 사용자 덧칠 그림을 픽셀로 재서 맞춤 — 눈대중으로 옮기지 말고 그림을 받으면 재서 확인할 것): 눈은 팔각형 세 단(검정 테 → 남색 단 → 검정 우물)이고 단 경계를 끊긴 링 둘이 반대로 돎(`index.html`의 `hubRingA/B`, `animateHub`가 dash offset을 옮김). 산책로 사이 여덟 칸 한가운데(반지름 300)에 검은 판 하나와 불 하나(그림은 `observatory.mjs`의 `deck()`), 불은 캔버스(`observatory-view.js deckLights`)가 그림 — 평소 하늘색, 환생 가능이면 분홍(`islandView.setReady`), 4.2초 주기로 천천히 깜빡임(애니메이션을 끄면 켜진 채 고정). 분홍 사각형 배지는 없앰. 칸마다 작은 블록·짧은 불을 더 넣었다가 요청에 없던 것이라 뺐음 — 그림에 없는 요소를 덧붙이지 말 것. 상단바 워드마크는 UNBRIK만, 글자 높이를 로고에 맞춤(`1cap` 단위; 설정의 UPGRADE TREE는 그대로).
+- 지도 위 글씨(좌표, RESEARCH NETWORK, CHEAT)는 글자 둘레에 섬과 같은 반투명 검정 띠(`#04080c` .5)를 두름(사용자 요청, v36): `index.html`의 SVG 필터 `#textRim`(글자 모양을 키워 한 번만 칠하므로 글자끼리 겹쳐도 얼룩지지 않음)과 그 옆 인라인 `<style>`. 글자 색·크기는 그대로.
 - 확대 3단: 60% 이상이면 카드 위 이끼가 옅어짐, 9% 아래면 노드·링크를 숨기고 섬 제목을 섬 위/아래에 고정 크기로(설정 "축소 시 섬만 표시"). 자세히 보기(눈 버튼)는 인터페이스를 모두 숨김.
 - 커밋 메시지는 한국어, 끝에 세션이 알려 주는 attribution 줄.
