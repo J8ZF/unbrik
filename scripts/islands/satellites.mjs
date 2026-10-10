@@ -12,9 +12,9 @@
 // sea where there is no islet, the summit of a reef ground (seabed.mjs). Every part of
 // it is a shape cut for its place, never a rectangle: `base` the low rock awash at the
 // waterline (traced like land, so it has a shore), `talus` broken slabs lying on that,
-// `body` the rock proper (a raised layer, so it carries the game's dark rim), `slabs`
-// its lighter layers [points, tone], `cracks` cut into it, and `sunken` the same rock
-// going on under the water [points, step 0 just under the surface … 2 deep].
+// `body` the rock proper, `slabs` its lighter layers [points, tone], and `sunken` the
+// same rock going on under the water [points, step 0 just under the surface … 2 deep].
+// It is drawn in the theme's `cragRock` tones, with no dark rim and no dark cracks.
 export const SATELLITES={
  1:{theme:'meadow',
   land:{
@@ -83,8 +83,8 @@ export const SATELLITES={
   // south-west: no islet. A reef ground lies under the water here (seabed.mjs) and its summit stands out of the
   // sea as one big crag: a slab of basalt tilted up out of the reef. Its cliff faces the open sea (north-west) and
   // every layer ends flush on that edge, the lightest at the top of the cliff; to the south-east the layers step
-  // down, the low rock runs out in two feet, and the steps go on under the water, fainter each time. One crack
-  // runs across it from the cliff to the notch between the feet. Two broken-off rocks keep it company.
+  // down, the low rock runs out in two feet, and the steps go on under the water, fainter each time.
+  // Two broken-off rocks keep it company.
   crags:{sw:{
    base:[[-2489,7146],[-2455,6996],[-2414,6972],[-2346,6852],[-2211,6831],[-2057,6879],[-2006,6961],[-2042,7026],[-2003,7089],[-2057,7143],[-2031,7199],[-2099,7242],[-2164,7182],[-2207,7233],[-2320,7219],[-2357,7264],[-2464,7234]],
    sunken:[
@@ -105,7 +105,6 @@ export const SATELLITES={
     [[[-2386,6962],[-2348,6892],[-2290,6903],[-2305,6963],[-2350,7000]],4],
     [[[-2151,6903],[-2084,6918],[-2072,6978],[-2140,6993]],3],
    ],
-   cracks:[[[-2162,6867],[-2150,6870],[-2161,6940],[-2149,6970],[-2167,7104],[-2177,7101],[-2161,6973],[-2173,6943]]],
   }},
   cragRocks:[
    [[[[-1790,7250],[-1738,7222],[-1712,7262],[-1752,7300]],0],[[[-1772,7254],[-1742,7240],[-1730,7264],[-1754,7282]],2],[[[-1700,7306],[-1676,7296],[-1668,7320],[-1690,7330]],1]],

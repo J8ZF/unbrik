@@ -7,7 +7,7 @@
 | 무엇 | 링크 | 쓰임 |
 |---|---|---|
 | UNBRIK 4.0 기획서 (Docs) | https://claude.ai/artifact/5ozeH5NWTB9BTQ9nq5yhnY | 모든 결정의 기준. 특히 "섬 비주얼"(표·실루엣·**피할 것**), "디자인 방향"(관측소), "바다와 해안", "디자인 메모: 가라앉은 지형", "확정" 목록 |
-| 4.0 개발 빌드 | https://claude.ai/artifact/LovxWagJxq8hr8qAmcDmKE | 새 빌드는 여기에 올림 (현재 v32) |
+| 4.0 개발 빌드 | https://claude.ai/artifact/LovxWagJxq8hr8qAmcDmKE | 새 빌드는 여기에 올림 (현재 v33) |
 | 3.1 게임 | https://claude.ai/artifact/TuZxhvLHqJ9a3mRM1ypCJg | **건드리지 않음** |
 | 프로젝트 관측소 시안 | https://claude.ai/artifact/PBtEijVXvp1rnQsVn781py | 관측소 레퍼런스 |
 | AXIOM 섬 1 시안 | https://claude.ai/artifact/YNUECihdQqg9SYhExtM9gQ | 섬 표현 레퍼런스 |
@@ -49,7 +49,7 @@
 
 ## 4. 남은 일
 
-- **바다·부속 섬**: 섬 1(사용자 확인 "good" — 건드리지 않음)과 섬 2(v32, 검토 대기)까지 됨. 섬마다 등고선 3단 + 부속 섬 + 바위 파편 + 암초. 섬 2는 물길(갈라진 틈)을 청록으로 채우는 `lagoon`이 있고, 남서쪽은 사용자 지시로 섬 대신 넓은 수중 암초 지대 + 물 밖으로 솟은 **큰 바위 하나**(`satellites.mjs`의 `crags.sw`: 북서쪽이 절벽이고 남동쪽으로 층층이 내려가 물속까지 이어지는 기울어진 현무암 판, 검정 테두리·갈라진 틈 하나)로 함. 반달 모양 섬은 "굉장히 마음에 안 듦" — 반달·갈고리 모양 섬은 다시 그리지 말 것. v31에서 암초와 돌을 회전한 직사각형 여러 개로 만들었다가 크게 지적받음("돌이라고 해서 직사각형 붙이지 말고 제발", "물 밖에 나온 건 큰 거 하나 중심") — **새로 그리는 암초·바위·부속 섬의 돌은 직사각형(`R()`)을 붙여 만들지 말고 자리마다 모양을 따로 깎을 것**(본섬 해안 바위의 사각형 겹침은 이미 승인된 별개의 것). 섬 1과 섬 2 나머지 암초에는 직사각형 블록이 아직 남아 있음 — 사용자가 말하기 전에는 건드리지 않음. 섬 3–5도 하나씩 같은 방식으로 손으로 그리고, 섬마다 보여 드린 뒤 다음으로 넘어감. 그 전까지 섬 3–5는 해안의 얕은 물 띠만 있음. 부속 섬은 둥근 덩어리나 윤곽을 줄인 동심원 지형이 되지 않게, 본섬 그림의 기존 작은 암초와 겹치지 않게 놓을 것.
+- **바다·부속 섬**: 섬 1(사용자 확인 "good" — 건드리지 않음)과 섬 2(v33, 검토 대기)까지 됨. 섬마다 등고선 3단 + 부속 섬 + 바위 파편 + 암초. 섬 2는 물길(갈라진 틈)을 청록으로 채우는 `lagoon`이 있고, 남서쪽은 사용자 지시로 섬 대신 넓은 수중 암초 지대 + 물 밖으로 솟은 **큰 바위 하나**(`satellites.mjs`의 `crags.sw`: 북서쪽이 절벽이고 남동쪽으로 층층이 내려가 물속까지 이어지는 기울어진 현무암 판)로 함. v32에서 이 바위에 검정 테두리와 검은 갈라진 틈을 추론으로 넣었다가 "까만줄 빼줘 똥같아, 살짝만 더 회색으로" 지적받아 v33에서 둘 다 빼고 색을 섬 바위보다 조금 회색(테마 `cragRock`)으로 함 — **바다의 바위에 검은 선(테두리·틈)을 다시 넣지 말 것.** 반달 모양 섬은 "굉장히 마음에 안 듦" — 반달·갈고리 모양 섬은 다시 그리지 말 것. v31에서 암초와 돌을 회전한 직사각형 여러 개로 만들었다가 크게 지적받음("돌이라고 해서 직사각형 붙이지 말고 제발", "물 밖에 나온 건 큰 거 하나 중심") — **새로 그리는 암초·바위·부속 섬의 돌은 직사각형(`R()`)을 붙여 만들지 말고 자리마다 모양을 따로 깎을 것**(본섬 해안 바위의 사각형 겹침은 이미 승인된 별개의 것). 섬 1과 섬 2 나머지 암초에는 직사각형 블록이 아직 남아 있음 — 사용자가 말하기 전에는 건드리지 않음. 섬 3–5도 하나씩 같은 방식으로 손으로 그리고, 섬마다 보여 드린 뒤 다음으로 넘어감. 그 전까지 섬 3–5는 해안의 얕은 물 띠만 있음. 부속 섬은 둥근 덩어리나 윤곽을 줄인 동심원 지형이 되지 않게, 본섬 그림의 기존 작은 암초와 겹치지 않게 놓을 것.
 
 - 섬 3 v26 사용자 검토 반영. 이어서 섬 2·4·5를 기획서·하늘섬 기준으로 점검.
 - 선택형(A/B) 노드 UI(쌍을 함께 표시, 고르지 않은 쪽 흐리게), 섬 2 선택형 쌍.
@@ -80,7 +80,7 @@ node -e "import('./dist/data.js').then(d=>{const s=d.defaultState();s.settings.p
 - 파이프라인: `scripts/islands/islandN.mjs`(DESIGN: outline·cracks·scale·origin·rotate·rockZones·sandBands·beach·terrain·tree·landmarks·extras) → `design.mjs loadDesign`(배율, split.py로 조각 자르기, 조각 회전) → `treegen.mjs`(노드 배치, islandN.tree.json 캐시) → `geom.py`(래스터로 모래·바위·해안선·물결·수심·가라앉은 바위, islandN.geom.json) → `themes.mjs`(섬별 팔레트·장식; 장식 항목 7번째 값 `'core'|'edge'`로 조각 중심/가장자리 지정) → `buildings.mjs`(랜드마크 KINDS·FOOTPRINT, 카드 위에 그리는 부분은 OVER) → `build-art.mjs`.
 - 바다 바닥: `scripts/islands/seabed.mjs`(손으로 그린 BASIN·섬별 shelf/reefs/shallow, TONE) → `ISLAND_ART.seabed` → `island-view.js drawBed`(그림 층 아래의 화면 크기 캔버스, 카메라나 열린 섬이 바뀔 때만 다시 그림). 바닥이 그려진 섬은 그림에서 얕은 물 띠를 빼고 그 띠를 바닥 층의 옅은 막으로 그림. 예전 far/mid 띠는 모든 섬 그림에서 뺌(그리드 톤용 depth 데이터는 유지). 떠다니는 삼각형은 불투명 검정 대신 옅은 밝은 막.
 - 부속 섬: `scripts/islands/satellites.mjs`(섬별 land·terrain·rockZones core·sandBands·fragments, 월드 좌표) → geom.py로 따로 추적(`islandN.sat.geom.json`, 입력이 바뀌면 자동으로 다시) → 섬마다 작은 그림 하나씩(`pictures[].sat`), 본섬과 함께 열림. 본섬 그림은 건드리지 않음.
-- 큰 바위(`crags`): `base`(수면에 걸친 낮은 바위, 땅처럼 추적해 파도·얕은 물이 생김) → `talus` → `body`(검정 테두리) → `slabs` → `cracks`, 물속으로 이어지는 `sunken`(테마 `sunken` 색, 0 얕음 … 2 깊음). `build-art.mjs cragSvg`가 그림. 곁의 작은 돌은 `cragRocks`(fragments와 같은 형식).
+- 큰 바위(`crags`): `base`(수면에 걸친 낮은 바위, 땅처럼 추적해 파도·얕은 물이 생김) → `talus` → `body` → `slabs`, 물속으로 이어지는 `sunken`(테마 `sunken` 색, 0 얕음 … 2 깊음). 색은 테마 `cragRock`(없으면 `rock`), 검정 테두리·틈 없음. `build-art.mjs cragSvg`가 그림. 곁의 작은 돌은 `cragRocks`(fragments와 같은 형식, 같은 `cragRock` 색).
 - rockZones 옵션: `sunken:n`이면 가장 큰 블록들이 섬 바깥쪽으로 n단계 가라앉음(테마 `sunken` 색·불투명도). 테마 `rockRim:true`면 바위 덩어리에 검정 테두리.
 - 게임: `dist/app.js`(UI), `dist/data.js`(상태·경제·저장), `dist/island-view.js`(섬 그림 타일·바다 캔버스·컷신 공개), `dist/observatory-view.js`, `dist/style.css`, `dist/index.html`. 섬은 이전 섬 마지막 노드를 사면 컷신과 함께 열림.
 - 관측소 중앙(v28, 사용자 덧칠 그림을 픽셀로 재서 맞춤 — 눈대중으로 옮기지 말고 그림을 받으면 재서 확인할 것): 눈은 팔각형 세 단(검정 테 → 남색 단 → 검정 우물)이고 단 경계를 끊긴 링 둘이 반대로 돎(`index.html`의 `hubRingA/B`, `animateHub`가 dash offset을 옮김). 산책로 사이 여덟 칸 한가운데(반지름 300)에 검은 판 하나와 불 하나(그림은 `observatory.mjs`의 `deck()`), 불은 캔버스(`observatory-view.js deckLights`)가 그림 — 평소 하늘색, 환생 가능이면 분홍(`islandView.setReady`), 4.2초 주기로 천천히 깜빡임(애니메이션을 끄면 켜진 채 고정). 분홍 사각형 배지는 없앰. 칸마다 작은 블록·짧은 불을 더 넣었다가 요청에 없던 것이라 뺐음 — 그림에 없는 요소를 덧붙이지 말 것. 상단바 워드마크는 UNBRIK만, 글자 높이를 로고에 맞춤(`1cap` 단위; 설정의 UPGRADE TREE는 그대로).

@@ -28,12 +28,11 @@ const OBS=buildObservatory(),[OCX,OCY]=OBS.center,OR=OBS.radius+120;
 // take #31–65 and #66–105 in order; islands 4–5 cycle through the catalogue
 // (no second coin unlock), island 5 ending on AXIOM.
 const BORROW={2:Array.from({length:35},(_,i)=>31+i),3:Array.from({length:40},(_,i)=>66+i),4:Array.from({length:60},(_,i)=>31+i),5:[...Array.from({length:21},(_,i)=>1+i),...Array.from({length:66},(_,i)=>23+i),105]};
-// A crag: one big bare rock out of the sea, every part a hand-cut shape (satellites.mjs). From below: the rock
-// under the water (fainter the deeper), the low rock at the waterline, broken slabs on it, then the rock proper
-// with the game's translucent dark rim (it is a raised layer), its lighter layers, and the cracks cut into it.
-const cragSvg=(c,T)=>{const rk=(q,tone)=>poly(q,`fill="${T.rock[tone][0]}" stroke="${T.rock[tone][1]}" stroke-width="2.6" stroke-linejoin="miter"`);
- return (c.sunken||[]).map(([q,step])=>poly(q,`fill="${T.sunken[step][0]}" fill-opacity="${T.sunken[step][1]}"`)).join('')+rk(c.base,0)+(c.talus||[]).map(([q,tone])=>rk(q,tone)).join('')
-  +poly(c.body,'fill="none" stroke="#04080c" stroke-opacity=".5" stroke-width="11" stroke-linejoin="miter"')+rk(c.body,1)+c.slabs.map(([q,tone])=>rk(q,tone)).join('')+(c.cracks||[]).map(q=>poly(q,'fill="#2c2019"')).join('');};
+// A crag: one big bare rock out of the sea, every part a hand-cut shape (satellites.mjs), in the theme's own
+// crag tones. From below: the rock under the water (fainter the deeper), the low rock at the waterline, broken
+// slabs on it, then the rock proper and its lighter layers. No dark rim and no dark cracks: the user had them out.
+const cragSvg=(c,T)=>{const R=T.cragRock||T.rock,rk=(q,tone)=>poly(q,`fill="${R[tone][0]}" stroke="${R[tone][1]}" stroke-width="2.6" stroke-linejoin="miter"`);
+ return (c.sunken||[]).map(([q,step])=>poly(q,`fill="${T.sunken[step][0]}" fill-opacity="${T.sunken[step][1]}"`)).join('')+rk(c.base,0)+(c.talus||[]).map(([q,tone])=>rk(q,tone)).join('')+rk(c.body,1)+c.slabs.map(([q,tone])=>rk(q,tone)).join('');};
 // The ground of a piece of land from its traced geometry, in the island's theme: sunken rock, land, terrain layers, sand, rock.
 function groundSvg(GM,T,pieces){
  let ground='';
@@ -186,7 +185,7 @@ for(const name of DESIGNS){
    const all=[...G2.near,...shards,...(CRAGS[key]?.sunken||[]).map(s=>s[0])].flat(),bx0=Math.floor(Math.min(...all.map(q=>q[0])))-40,by0=Math.floor(Math.min(...all.map(q=>q[1])))-40,bx1=Math.ceil(Math.max(...all.map(q=>q[0])))+40,by1=Math.ceil(Math.max(...all.map(q=>q[1])))+40;
    let sea2='';if(SEABED[D.id])shallows.push(...G2.near);else for(const q of G2.land)sea2+=poly(q,`fill="${ST.sea.near}" stroke="${ST.sea.near}" stroke-width="92" stroke-linejoin="miter" stroke-miterlimit="2"`);if(!SEABED[D.id])for(const q of G2.near)sea2+=poly(q,`fill="${ST.sea.near}"`);
    // a fragment: shards of bare rock breaking the surface, foam round them
-   let fr='';for(const f of frags){for(const [q] of f)fr+=poly(q,'fill="none" stroke="#e8f0f2" stroke-opacity=".42" stroke-width="5" stroke-linejoin="miter"');for(const [q,tone] of f)fr+=poly(q,`fill="${ST.rock[tone][0]}" stroke="${ST.rock[tone][1]}" stroke-width="2" stroke-linejoin="miter"`);}
+   const FR=CRAGS[key]?ST.cragRock||ST.rock:ST.rock;let fr='';for(const f of frags){for(const [q] of f)fr+=poly(q,'fill="none" stroke="#e8f0f2" stroke-opacity=".42" stroke-width="5" stroke-linejoin="miter"');for(const [q,tone] of f)fr+=poly(q,`fill="${FR[tone][0]}" stroke="${FR[tone][1]}" stroke-width="2" stroke-linejoin="miter"`);}
    const sback=`<svg xmlns="http://www.w3.org/2000/svg" width="${bx1-bx0}" height="${by1-by0}" viewBox="${bx0} ${by0} ${bx1-bx0} ${by1-by0}">`+sea2+fr+(CRAGS[key]?cragSvg(CRAGS[key],ST):groundSvg(G2,ST,[SAT.land[key]]))+`</svg>`;
    const sdepth=[...SG.bands.far.filter(mine).map(q=>({c:ST.sea.tones.far,pts:q})),...SG.bands.mid.filter(mine).map(q=>({c:ST.sea.tones.mid,pts:q})),...G2.land.map(q=>({c:ST.sea.tones.near,pts:q})),...G2.near.map(q=>({c:ST.sea.tones.near,pts:q}))];
    pictures.push({island:D.id,sat:key,bounds:[bx0,by0,bx1-bx0,by1-by0],back:sback,tri:[],fx:{surfIn:SG.surf['16'].filter(mine),surfOut:SG.surf['38'].filter(mine),waves:SG.waveRuns.filter(w=>mine(w.pts)),mask:[...G2.land,...shards],coast:G2.land,depth:sdepth},decor:[],landmarks:[],label:null});}
