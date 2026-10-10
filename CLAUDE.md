@@ -11,7 +11,7 @@
 | 3.1 게임 | https://claude.ai/artifact/TuZxhvLHqJ9a3mRM1ypCJg | **건드리지 않음** |
 | 프로젝트 관측소 시안 | https://claude.ai/artifact/PBtEijVXvp1rnQsVn781py | 관측소 레퍼런스 |
 | AXIOM 섬 1 시안 | https://claude.ai/artifact/YNUECihdQqg9SYhExtM9gQ | 섬 표현 레퍼런스 |
-| 저장소 | https://github.com/J8ZF/unbrik, 브랜치 `claude-4.0` | `main`은 건드리지 않음. 커밋하면 푸시 |
+| 저장소 | https://github.com/J8ZF/unbrik, 브랜치 `claude-4.0` | 작업과 커밋·푸시는 `claude-4.0`에서. `main`에는 **사용자가 올리라고 할 때만** `claude-4.0`을 병합해 올림(강제 푸시 금지). 2026-10-10에 v35를 처음 올림 — `main`에만 있는 `UNBRIK_3.0.6.zip`은 그대로 둠 |
 
 관측소 쪽 원문 요청·레퍼런스 이미지·반려 시안은 `docs/observatory-handoff/`(HANDOFF.md, requests/, ref/, rejected/)에 있습니다.
 
