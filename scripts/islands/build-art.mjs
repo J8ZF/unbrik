@@ -119,7 +119,9 @@ for(const name of DESIGNS){
  let extras='';if(T.extras)extras=T.extras({D,o,nodes,GM,land:pieces,rng});
  const picture=SEA.reefsSvg+ground+extras;
  const PW=B.x1-B.x0,PH=B.y1-B.y0;
- const back=`<svg xmlns="http://www.w3.org/2000/svg" width="${PW}" height="${PH}" viewBox="${B.x0} ${B.y0} ${PW} ${PH}">`+sea+picture+`</svg>`;
+ // the picture's frame: the sea bounds, grown where rock goes on under the water past them (it was being cut off straight)
+ const SK=(GM.sunken||[]).flatMap(b=>b.pts),FX0=Math.min(B.x0,...SK.map(q=>Math.floor(q[0])-40)),FY0=Math.min(B.y0,...SK.map(q=>Math.floor(q[1])-40)),FX1=Math.max(B.x1,...SK.map(q=>Math.ceil(q[0])+40)),FY1=Math.max(B.y1,...SK.map(q=>Math.ceil(q[1])+40)),FW=FX1-FX0,FH=FY1-FY0;
+ const back=`<svg xmlns="http://www.w3.org/2000/svg" width="${FW}" height="${FH}" viewBox="${FX0} ${FY0} ${FW} ${FH}">`+sea+picture+`</svg>`;
  // ---- landmark buildings (built when their study reaches MAX) ----
  const built=landmarks.map(l=>{const n=nodeOf(l.node),f=BLD.KINDS[l.kind];if(!f)throw Error('unknown landmark '+l.kind);return {node:l.node,kind:l.kind,svg:f(n,CW,CH,l,{coast:pieces,rock:T.rock}),over:BLD.OVER[l.kind]?BLD.OVER[l.kind](n,CW,CH):'',beam:l.kind==='lighthouse'?[n.x,n.y]:null,box:BLD.FOOTPRINT[l.kind](n,l)};});
  // decoration keeps clear of the cards and frames, then the final footprints clear what they cover
@@ -166,7 +168,7 @@ for(const name of DESIGNS){
  const last=idOf(gateLocal);
  islands.push({id:D.id,name:D.name,last,first:firstId,label,landmarks:landmarks.map(l=>({node:idOf(l.node),kind:l.kind})),bounds:{minX:B.x0,minY:B.y0,maxX:B.x1,maxY:B.y1},color:T.color,zones:T.zones});
  allNodes.push(...islandNodes);
- pictures.push({island:D.id,bounds:[B.x0,B.y0,PW,PH],back,tri,fx,decor:cleared.map(d=>({t:d.t,svg:d.svg})),landmarks:built.map(b=>({node:idOf(b.node),kind:b.kind,svg:b.svg,over:b.over||'',beam:b.beam})),label});
+ pictures.push({island:D.id,bounds:[FX0,FY0,FW,FH],back,tri,fx,decor:cleared.map(d=>({t:d.t,svg:d.svg})),landmarks:built.map(b=>({node:idOf(b.node),kind:b.kind,svg:b.svg,over:b.over||'',beam:b.beam})),label});
  firstId=last+1;prevGate=last;
  // ---- the island's satellites: small islands and rock fragments of its own, each a small picture shown with the island ----
  const SAT=SATELLITES[D.id];
@@ -182,11 +184,12 @@ for(const name of DESIGNS){
   const owner=pts=>{const c=cen(pts);return keys.reduce((b,k)=>Math.hypot(c[0]-centre[k][0],c[1]-centre[k][1])<Math.hypot(c[0]-centre[b][0],c[1]-centre[b][1])?k:b,keys[0]);};
   for(const key of keys){const mine=pts=>owner(pts)===key,frags=[...(SAT.fragments||[]),...(SAT.cragRocks||[])].filter(f=>mine(f[0][0])),shards=frags.flatMap(f=>f.map(s=>s[0]));
    const G2={land:SG.land.filter(mine),rockBase:SG.rockBase.filter(mine),rocks:SG.rocks.filter(r=>mine(r.pts)),sand:SG.sand.filter(mine),wet:SG.wet.filter(mine),dunes:[],layers:SG.layers.map(l=>({c:l.c,polys:l.polys.filter(mine)})),near:SG.near.filter(mine),sunken:(SG.sunken||[]).filter(b=>mine(b.pts))};
-   const all=[...G2.near,...shards,...(CRAGS[key]?.sunken||[]).map(s=>s[0])].flat(),bx0=Math.floor(Math.min(...all.map(q=>q[0])))-40,by0=Math.floor(Math.min(...all.map(q=>q[1])))-40,bx1=Math.ceil(Math.max(...all.map(q=>q[0])))+40,by1=Math.ceil(Math.max(...all.map(q=>q[1])))+40;
+   const SLABS=SAT.slabs?.[key]||[],SUNK=SAT.sunken?.[key]||[],RK=ST.rock;
+   const all=[...G2.land,...G2.near,...shards,...(CRAGS[key]?.sunken||[]).map(s=>s[0]),...SUNK.map(s=>s[0])].flat(),bx0=Math.floor(Math.min(...all.map(q=>q[0])))-40,by0=Math.floor(Math.min(...all.map(q=>q[1])))-40,bx1=Math.ceil(Math.max(...all.map(q=>q[0])))+40,by1=Math.ceil(Math.max(...all.map(q=>q[1])))+40;
    let sea2='';if(SEABED[D.id])shallows.push(...G2.near);else for(const q of G2.land)sea2+=poly(q,`fill="${ST.sea.near}" stroke="${ST.sea.near}" stroke-width="92" stroke-linejoin="miter" stroke-miterlimit="2"`);if(!SEABED[D.id])for(const q of G2.near)sea2+=poly(q,`fill="${ST.sea.near}"`);
    // a fragment: shards of bare rock breaking the surface, foam round them
    const FR=CRAGS[key]?ST.cragRock||ST.rock:ST.rock;let fr='';for(const f of frags){for(const [q] of f)fr+=poly(q,'fill="none" stroke="#e8f0f2" stroke-opacity=".42" stroke-width="5" stroke-linejoin="miter"');for(const [q,tone] of f)fr+=poly(q,`fill="${FR[tone][0]}" stroke="${FR[tone][1]}" stroke-width="2" stroke-linejoin="miter"`);}
-   const sback=`<svg xmlns="http://www.w3.org/2000/svg" width="${bx1-bx0}" height="${by1-by0}" viewBox="${bx0} ${by0} ${bx1-bx0} ${by1-by0}">`+sea2+fr+(CRAGS[key]?cragSvg(CRAGS[key],ST):groundSvg(G2,ST,[SAT.land[key]]))+`</svg>`;
+   const sback=`<svg xmlns="http://www.w3.org/2000/svg" width="${bx1-bx0}" height="${by1-by0}" viewBox="${bx0} ${by0} ${bx1-bx0} ${by1-by0}">`+sea2+fr+(CRAGS[key]?cragSvg(CRAGS[key],ST):[...SUNK].sort((a,c)=>c[1]-a[1]).map(([q,step])=>poly(q,`fill="${ST.sunken[step][0]}" fill-opacity="${ST.sunken[step][1]}"`)).join('')+groundSvg(G2,ST,[SAT.land[key]])+SLABS.map(([q,tone])=>poly(q,`fill="${RK[tone][0]}" stroke="${RK[tone][1]}" stroke-width="2.6" stroke-linejoin="miter"`)).join(''))+`</svg>`;
    const sdepth=[...SG.bands.far.filter(mine).map(q=>({c:ST.sea.tones.far,pts:q})),...SG.bands.mid.filter(mine).map(q=>({c:ST.sea.tones.mid,pts:q})),...G2.land.map(q=>({c:ST.sea.tones.near,pts:q})),...G2.near.map(q=>({c:ST.sea.tones.near,pts:q}))];
    pictures.push({island:D.id,sat:key,bounds:[bx0,by0,bx1-bx0,by1-by0],back:sback,tri:[],fx:{surfIn:SG.surf['16'].filter(mine),surfOut:SG.surf['38'].filter(mine),waves:SG.waveRuns.filter(w=>mine(w.pts)),mask:[...G2.land,...shards],coast:G2.land,depth:sdepth},decor:[],landmarks:[],label:null});}
   console.log(name,'satellites',keys.join('/'),'fragments',(SAT.fragments||[]).length+(SAT.cragRocks||[]).length,'crags',Object.keys(CRAGS).join('/')||'-');
