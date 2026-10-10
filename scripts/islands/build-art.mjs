@@ -84,6 +84,7 @@ for(const name of DESIGNS){
   const hasKids=id=>nodes.some(n=>n.req[0]===id);
   const byParent=new Map();for(const n of nodes){if(!n.req.length||landmarks.some(l=>l.node===n.id)||n.id===tree.gate||hasKids(n.id))continue;const p=n.req[0];if(!byParent.has(p))byParent.set(p,[]);byParent.get(p).push(n.id);}
   for(const [,kids] of byParent)if(kids.length>=2){choice=kids.slice(0,2);break;}
+  for(const e of D.extraLandmarks||[])landmarks.push({...e,extra:true});
   // islands 3+: one study asks for its prerequisite at a level (the prerequisite must have levels)
   if(D.id>=3){const cand=nodes.find(n=>n.req.length&&n.id>3&&!(choice||[]).includes(n.id)&&(MAX_OF.get(borrow[n.req[0]-1])||0)>=5);if(cand)levelReq={id:cand.id,level:3};}
  }
@@ -129,9 +130,10 @@ for(const name of DESIGNS){
  const SK=(GM.sunken||[]).flatMap(b=>b.pts),FX0=Math.min(B.x0,...SK.map(q=>Math.floor(q[0])-40)),FY0=Math.min(B.y0,...SK.map(q=>Math.floor(q[1])-40)),FX1=Math.max(B.x1,...SK.map(q=>Math.ceil(q[0])+40)),FY1=Math.max(B.y1,...SK.map(q=>Math.ceil(q[1])+40)),FW=FX1-FX0,FH=FY1-FY0;
  const back=`<svg xmlns="http://www.w3.org/2000/svg" width="${FW}" height="${FH}" viewBox="${FX0} ${FY0} ${FW} ${FH}">`+sea+picture+`</svg>`;
  // ---- landmark buildings (built when their study reaches MAX) ----
- const built=landmarks.map(l=>{const n=nodeOf(l.node),f=BLD.KINDS[l.kind];if(!f)throw Error('unknown landmark '+l.kind);return {node:l.node,kind:l.kind,svg:f(n,CW,CH,l,{coast:pieces,rock:T.rock}),over:BLD.OVER[l.kind]?BLD.OVER[l.kind](n,CW,CH):'',beam:l.kind==='lighthouse'?[n.x,n.y]:null,box:BLD.FOOTPRINT[l.kind](n,l)};});
+ const built=landmarks.map(l=>{const n=nodeOf(l.node);if(BLD.FRAMES[l.kind])return {node:l.node,kind:l.kind,frame:BLD.FRAMES[l.kind](n),svg:'',over:'',beam:null,box:BLD.FOOTPRINT[l.kind](n)};const f=BLD.KINDS[l.kind];if(!f)throw Error('unknown landmark '+l.kind);return {node:l.node,kind:l.kind,svg:f(n,CW,CH,l,{coast:pieces,rock:T.rock}),over:BLD.OVER[l.kind]?BLD.OVER[l.kind](n,CW,CH):'',beam:l.kind==='lighthouse'?[n.x,n.y]:null,box:BLD.FOOTPRINT[l.kind](n,l)};});
  // decoration keeps clear of the cards and frames, then the final footprints clear what they cover
- const frames=landmarks.map(l=>{const n=nodeOf(l.node);if(l.oct)return [n.x-l.oct,n.y-l.oct,n.x+l.oct,n.y+l.oct];const [px,py]=l.pad||[90,70];let b=[n.x-CW/2-px,n.y-CH/2-py,n.x+CW/2+px,n.y+CH/2+py];
+ const pairArt=D.pairArt&&choice?BLD.PAIR_ART[D.pairArt](nodeOf(choice[0]),nodeOf(choice[1])):null;
+ const frames=landmarks.map(l=>{const n=nodeOf(l.node);if(BLD.TINT[l.kind])return BLD.FOOTPRINT[l.kind](n);if(l.oct)return [n.x-l.oct,n.y-l.oct,n.x+l.oct,n.y+l.oct];const [px,py]=l.pad||[90,70];let b=[n.x-CW/2-px,n.y-CH/2-py,n.x+CW/2+px,n.y+CH/2+py];
   if(l.kind==='harbor')b=[b[0]-110,b[1],b[2],1420];if(l.kind==='hall')b[3]+=40;if(l.kind==='radio'){const [dx,dy,dr]=l.dish;b=[b[0]-90,b[1],Math.max(b[2],n.x+dx+dr),b[3]];}return b;});
  const sandPolys=GM.sand,rockPolys=[...GM.rockBase,...GM.rocks.map(r=>r.pts)];
  const onSand=(x,y)=>sandPolys.some(p=>inside(x,y,p)),onRock=(x,y)=>rockPolys.some(p=>inside(x,y,p));
@@ -156,7 +158,8 @@ for(const name of DESIGNS){
  for(const [kind,count,rad,ground2,draw,seed,where] of T.decor)place(kind,Math.round(count*areaScale),rad,where?(x,y,r2,r3)=>OK[ground2](x,y,r2,r3)&&region(x,y,where):OK[ground2],draw,seed);
  decor.sort((a,b)=>Math.hypot(a.x-root.x,a.y-root.y)-Math.hypot(b.x-root.x,b.y-root.y));
  decor.forEach((d,i)=>d.t=+(.03+.9*i/decor.length).toFixed(3));
- const boxes=built.map(b=>b.box);
+ if(pairArt)frames.push(pairArt.box);
+ const boxes=[...built.map(b=>b.box),...(pairArt?[pairArt.box]:[])];
  const cleared=decor.filter(d=>!boxes.some(b=>d.x>b[0]-24&&d.x<b[2]+24&&d.y>b[1]-24&&d.y<b[3]+24));
  // islands 2+: whole-unit coordinates in the decoration (a tenth of a unit is invisible; the module shrinks by a third)
  const terse=svg=>svg.replace(/ (d|points)="([^"]*)"/g,(m,k,v)=>` ${k}="${v.replace(/-?\d+\.\d+/g,n=>String(Math.round(+n)))}"`).replace(/ (cx|cy|x|y|x1|y1|x2|y2)="(-?\d+)\.\d+"/g,' $1="$2"');
@@ -167,14 +170,15 @@ for(const name of DESIGNS){
  const content=D.nodes?D.content||{}:null;
  const idOf=id=>firstId-1+id;
  const gateLocal=D.nodes?D.last:nodes.at(-1).id;
+ const tintOf=new Map(landmarks.filter(l=>BLD.TINT[l.kind]).map(l=>[l.node,BLD.TINT[l.kind]]));if(pairArt){tintOf.set(choice[0],BLD.PAIR_TINT.a);tintOf.set(choice[1],BLD.PAIR_TINT.b);}
  const islandNodes=nodes.map(n=>({id:idOf(n.id),content:content?(content[n.id]||n.id):borrow[n.id-1],island:D.id,x:n.x,y:n.y,zone:n.zone,
   req:n.req.length?n.req.map(r=>levelReq&&levelReq.id===n.id?{id:idOf(r),level:levelReq.level}:idOf(r)):(prevGate?[prevGate]:[]),
-  ...(choice&&choice.includes(n.id)?{choice:'c'+D.id}:{})}));
+  ...(choice&&choice.includes(n.id)?{choice:'c'+D.id}:{}),...(tintOf.has(n.id)?{tint:tintOf.get(n.id)}:{})}));
  if(islandNodes.some(n=>n.content===undefined))throw Error(name+': content ran out');
  const last=idOf(gateLocal);
- islands.push({id:D.id,name:D.name,last,first:firstId,label,landmarks:landmarks.map(l=>({node:idOf(l.node),kind:l.kind})),bounds:{minX:B.x0,minY:B.y0,maxX:B.x1,maxY:B.y1},color:T.color,zones:T.zones});
+ islands.push({id:D.id,name:D.name,last,first:firstId,label,landmarks:landmarks.map(l=>({node:idOf(l.node),kind:l.kind,...(l.extra?{extra:true}:{})})),...(pairArt?{pairs:[{a:idOf(choice[0]),b:idOf(choice[1]),hub:pairArt.hub}]}:{}),bounds:{minX:B.x0,minY:B.y0,maxX:B.x1,maxY:B.y1},color:T.color,zones:T.zones});
  allNodes.push(...islandNodes);
- pictures.push({island:D.id,bounds:[FX0,FY0,FW,FH],back,tri,fx,decor:cleared.map(d=>({t:d.t,svg:d.svg})),landmarks:built.map(b=>({node:idOf(b.node),kind:b.kind,svg:b.svg,over:b.over||'',beam:b.beam})),label});
+ pictures.push({island:D.id,bounds:[FX0,FY0,FW,FH],back,tri,fx,decor:cleared.map(d=>({t:d.t,svg:d.svg})),landmarks:built.map(b=>({node:idOf(b.node),kind:b.kind,svg:b.svg,over:b.over||'',beam:b.beam,...(b.frame?{frame:b.frame}:{})})),pairs:pairArt?[{a:idOf(choice[0]),b:idOf(choice[1]),states:pairArt.states}]:[],label});
  firstId=last+1;prevGate=last;
  // ---- the island's satellites: small islands and rock fragments of its own, each a small picture shown with the island ----
  const SAT=SATELLITES[D.id];

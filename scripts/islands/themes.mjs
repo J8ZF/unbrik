@@ -28,7 +28,8 @@ const bigleaf=(r,x,y)=>leafFan(r,x,y,52+r()*22,5+Math.floor(r()*2),['#2f8f55','#
 const maple=(r,x,y,R)=>tree(r,x,y,R,['#9c3a52','#c74c68','#e86f86'])+Array.from({length:5},()=>dot(x+(r()-.5)*R*3.2,y+(r()-.5)*R*3.2,2.2+r()*2,['#e86f86','#f29aa8','#c74c68'][Math.floor(r()*3)])).join('');
 const mapleGrove=(r,x,y)=>{let s='';const k=2+Math.floor(r()*3),parts=[];for(let i=0;i<k;i++){const R=30+r()*30;parts.push([x+(r()-.5)*130,y+(r()-.5)*100,R]);}parts.sort((a,b)=>a[1]-b[1]);for(const [px,py,R] of parts)s+=maple(r,px,py,R);return s;};
 // ---- island 3: a fantasy autumn forest. Translucent shapes laid in chains, so the overlaps thicken into dense foliage ----
-const MAPLE_COLS=['#c74c68','#e86f86','#ff8fa3','#b23a56','#f2a0b0','#d95a74'];
+// classic autumn maple red (the user: red, not pink and not orange), light to dark so the overlaps read
+const MAPLE_COLS=['#c42633','#e2475a','#ef6a6f','#a51d2c','#f08a84','#d8343e'];
 const BRUSH_COLS=['#2f6b5c','#48927c','#5fb39a','#3a7f6c','#6fc4a8'];
 const BIRCH_COLS=['#e3c56a','#f0d98a','#cfae55','#f6e3a0'];
 // n blobs of radius about R, each stepping on from the last, colours cycling through cols with a random start

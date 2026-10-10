@@ -671,3 +671,9 @@ body.viewing #hud,body.viewing #nodePanel,body.viewing footer,body.viewing #mapT
 /* the footer's saving mark in red: automatic saving turned off, or the browser would not store the save */
 #saveState.is-off{color:#ff7a7a}
 #saveState.is-off i{background:#ff7a7a}
+/* 섬 3 drawn studies (frame nodes, fountain square, observatory, A/B pair): white icons; the side not chosen dims; the fountain's rings run outward */
+.node.tinted .symbol{color:#f4f2ea}.node.declined{opacity:.8}
+.fx-ripple{transform-box:fill-box;transform-origin:center;animation:fxRipple 3.6s linear infinite;opacity:0}
+@keyframes fxRipple{0%{transform:scale(.56);opacity:0}14%{opacity:.8}100%{transform:scale(1);opacity:0}}
+.sea-still .fx-ripple{animation-play-state:paused}
+@media (prefers-reduced-motion:reduce){.fx-ripple{animation-play-state:paused}}

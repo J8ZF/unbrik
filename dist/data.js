@@ -91,7 +91,7 @@ const RESEARCH_BY_ID=new Map(RESEARCH.map(n=>[n.id,n]));
 export const NODES=ISLAND_NODES.map(p=>{const r=RESEARCH_BY_ID.get(p.content),island=ISLANDS.findIndex(i=>i.id===p.island);
  const costs=PRICES[r.id]||Array.from({length:r.max},()=>Object.fromEntries(r.payment.map(k=>[k,10])));
  return {...r,id:p.id,content:r.id,chapter:island,island:p.island,zone:p.zone,x:p.x,y:p.y,effects:r.effects.map(e=>({...e})),costs,
-  req:p.req.map(id=>typeof id==='number'?{id,level:1}:{id:id.id,level:id.level}),any:r.name==='OR GATE',choice:p.choice||null,
+  req:p.req.map(id=>typeof id==='number'?{id,level:1}:{id:id.id,level:id.level}),any:r.name==='OR GATE',choice:p.choice||null,tint:p.tint||null,
   gate:ISLANDS[island].last===p.id,currency:r.payment.length===1?r.payment[0]:'both',baseCost:costs[0]};});
 export const byId=new Map(NODES.map(n=>[n.id,n]));
 // Map frame: the islands plus the observatory and everything in orbit round it.

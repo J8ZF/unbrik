@@ -34,7 +34,7 @@ function moss(n){if(n.zone==='sand')return '';const r=rng(n.id*13);let s='';cons
  for(let i=0;i<4;i++)s+=`<circle cx="${f1(cx+(r()-.5)*36)}" cy="${f1(cy+(r()-.5)*26)}" r="${f1(1.5+r()*2)}" fill="#b6d886"/>`;return s;}
 const REVEAL_MS=2600;
 
-export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,buildSvg,mossSvg,overSvg=null,nodes,level,islandsDone=()=>[],islandOpen=()=>true}){
+export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,buildSvg,mossSvg,overSvg=null,nodes,level,seen=()=>true,islandsDone=()=>[],islandOpen=()=>true}){
  const obs=createObservatory(),obsUnder=document.createElement('canvas');
  obsUnder.className='obs-canvas';obsUnder.setAttribute('aria-hidden','true');viewport.insertBefore(obsUnder,back);
  const ctxU=obsUnder.getContext('2d');let underLive=false,obsMotion=true;
@@ -56,7 +56,7 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
   return {island:p.island,sat:p.sat||null,art:p,x0,y0,w,h,el,coarse,tilesEl,img:null,ready:false,shown:false,alpha:0,fading:0,tiles:new Map(),
    surfOut:fx.surfOut.map(q=>({p:mkPath(q,true),b:bbox(q)})),surfIn:fx.surfIn.map(q=>({p:mkPath(q,true),b:bbox(q)})),
    waves:fx.waves.map(q=>({i:q.i,p:mkPath(q.pts,false),b:bbox(q.pts)})),mask:fx.mask.map(q=>({p:mkPath(q,true),b:bbox(q)})),coast:fx.coast,depth:fx.depth,
-   landmarks:p.landmarks,decor:p.decor};});
+   landmarks:p.landmarks,pairs:p.pairs||[],decor:p.decor};});
  back.append(...pics.map(p=>p.el));
  const open=p=>p.island===0||(revealing&&revealing.island===p.island)||islandOpen(p.island);
  // the picture bitmap loads when the island first opens; the coarse copy is drawn then
@@ -200,17 +200,24 @@ export function createIslandView({viewport,back,canvas,world,decorSvg,beamSvg,bu
  let growthKey='';
  function render(){syncOpen();obs.setLit(islandsDone());const owned=nodes.filter(n=>level(n)>0);
   const shown=new Set(pics.filter(p=>p.shown&&!p.fading).map(p=>p.island));
-  const built=pics.flatMap(p=>shown.has(p.island)?p.landmarks:[]).filter(l=>{const n=nodes.find(m=>m.id===l.node);return n&&level(n)>=n.max;});
-  const key=owned.map(n=>n.id).join(',')+'|'+built.map(l=>l.node).join(',')+'|'+[...shown].join(',');if(key===growthKey)return;growthKey=key;
+  const lms=pics.flatMap(p=>shown.has(p.island)?p.landmarks:[]),node=id=>nodes.find(m=>m.id===id);
+  const built=lms.filter(l=>{if(l.frame)return false;const n=node(l.node);return n&&level(n)>=n.max;});
+  // frame nodes (섬 3) stand round their card once it is seen: dark until researched, the lamp lit at MAX
+  const frames=lms.filter(l=>l.frame).map(l=>{const n=node(l.node);if(!n||!seen(n))return null;const lv=level(n);return {l,st:lv>=n.max?'max':lv>0?'on':'dormant'};}).filter(Boolean);
+  // an A/B pair drawn together: dark until its prerequisite is researched, then open, then the chosen side
+  const pairs=pics.flatMap(p=>shown.has(p.island)?p.pairs:[]).map(q=>{const a=node(q.a),b=node(q.b);if(!a||!b||(!seen(a)&&!seen(b)))return null;const par=a.req[0]&&node(a.req[0].id);
+   return {q,st:level(a)>0?'a':level(b)>0?'b':par&&level(par)>0?'open':'dormant'};}).filter(Boolean);
+  const key=owned.map(n=>n.id).join(',')+'|'+built.map(l=>l.node).join(',')+'|'+[...shown].join(',')+'|'+frames.map(f=>f.l.node+f.st).join(',')+'|'+pairs.map(p=>p.q.a+p.st).join(',');if(key===growthKey)return;growthKey=key;
   const framed=new Set(built.map(l=>l.node));
   let dec='';
   for(const p of pics){if(!shown.has(p.island)||!p.decor.length)continue;const mine=nodes.filter(n=>n.island===p.island),ownedHere=mine.filter(n=>level(n)>0),q=ownedHere.length/Math.max(1,mine.length),rank=new Map(mine.map((n,i)=>[n.id,i]));
    for(const d of p.decor)if(q>=d.t)dec+=d.svg;
-   for(const n of ownedHere)if(!framed.has(n.id)&&ownedHere.length>=rank.get(n.id)+1)dec+=grassBehind(n);}
+   for(const n of ownedHere)if(!framed.has(n.id)&&!n.tint&&ownedHere.length>=rank.get(n.id)+1)dec+=grassBehind(n);}
   decorSvg.innerHTML=dec;
-  buildSvg.innerHTML=built.map(l=>l.svg).join('');if(overSvg)overSvg.innerHTML=built.map(l=>l.over||'').join('');
+  buildSvg.innerHTML=pairs.map(p=>p.q.states[p.st]).join('')+frames.map(f=>f.l.frame.under[f.st]).join('')+built.map(l=>l.svg).join('');
+  if(overSvg)overSvg.innerHTML=frames.map(f=>f.l.frame.over[f.st]).join('')+built.map(l=>l.over||'').join('');
   beamSvg.style.display=built.some(l=>l.beam)?'':'none';
-  let mo='';for(const p of pics){if(!shown.has(p.island))continue;const mine=nodes.filter(n=>n.island===p.island),ownedHere=mine.filter(n=>level(n)>0),rank=new Map(mine.map((n,i)=>[n.id,i]));mo+=ownedHere.filter(n=>ownedHere.length>=rank.get(n.id)+4).map(moss).join('');}
+  let mo='';for(const p of pics){if(!shown.has(p.island))continue;const mine=nodes.filter(n=>n.island===p.island),ownedHere=mine.filter(n=>level(n)>0),rank=new Map(mine.map((n,i)=>[n.id,i]));mo+=ownedHere.filter(n=>!n.tint&&ownedHere.length>=rank.get(n.id)+4).map(moss).join('');}
   mossSvg.innerHTML=mo;}
 
  size();syncOpen();queue2();

@@ -45,7 +45,11 @@ for(const [id,f] of Object.entries(SBD.islands)){assert(ISLANDS.some(i=>i.id===+
 for(const n of NODES)assert(n.x>WX&&n.x<WX+WW&&n.y>WY&&n.y<WY+WH);assert(CENTER.x>WX&&CENTER.y>WY);
 for(const isl of ISLANDS){const pic=ISLAND_ART.pictures.find(p=>p.island===isl.id&&!p.sat);assert(pic&&pic.back.startsWith('<svg')&&!/NaN|Infinity|undefined/.test(pic.back));
  assert.deepEqual(pic.landmarks.map(l=>l.node).sort((a,b)=>a-b),isl.landmarks.map(l=>l.node).sort((a,b)=>a-b));assert(isl.landmarks.length>=3&&isl.landmarks.length<=5);
- for(const l of pic.landmarks){const n=byId.get(l.node);assert(n&&n.chapter===ISLANDS.indexOf(isl)&&(n.chapter===0||n.max>1),`landmark ${l.kind} frames an upgradeable study`);}
+ // a landmark frames an upgradeable study, unless it is a building placed by hand on a study the tree did not mark (extra)
+ for(const l of pic.landmarks){const n=byId.get(l.node);assert(n&&n.chapter===ISLANDS.indexOf(isl)&&(n.chapter===0||n.max>1||isl.landmarks.find(m=>m.node===l.node)?.extra),`landmark ${l.kind} frames an upgradeable study`);
+  if(l.frame)for(const k of ['dormant','on','max'])assert(typeof l.frame.under[k]==='string'&&l.frame.under[k].length>200&&typeof l.frame.over[k]==='string'&&!/NaN|undefined/.test(l.frame.under[k]+l.frame.over[k]));}
+ // a pair drawn together: both studies are its island's A/B choice, one link goes into its diamond, a drawing per state
+ for(const q of isl.pairs||[]){const a=byId.get(q.a),b=byId.get(q.b);assert(a.choice&&a.choice===b.choice&&a.req[0].id===b.req[0].id);const pp=pic.pairs.find(x=>x.a===q.a&&x.b===q.b);assert(pp&&['dormant','open','a','b'].every(k=>pp.states[k]&&!/NaN|undefined/.test(pp.states[k])));}
  assert(pic.decor.length>50,`island ${isl.id} has decoration`);}
 // Opening: an island opens with the last study of the one before; completion needs every level.
 const state=defaultState();

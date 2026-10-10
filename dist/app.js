@@ -169,14 +169,15 @@ const visibility=new Map();
 function createGraph(){
  const b=MAP_LAYOUT.bounds;for(const id of ['edges','edgeCasings','sectorRegions','spokes']){const svg=$(id);svg.setAttribute('viewBox',`${b.minX} ${b.minY} ${b.maxX-b.minX} ${b.maxY-b.minY}`);svg.style.left=b.minX+'px';svg.style.top=b.minY+'px';svg.style.width=(b.maxX-b.minX)+'px';svg.style.height=(b.maxY-b.minY)+'px';}
  for(const n of NODES){
- const el=document.createElement('button');el.className='node';el.hidden=true;el.id=`node-${n.id}`;el.dataset.id=n.id;el.style.left=n.x+'px';el.style.top=n.y+'px';el.style.setProperty('--node-color',zoneColor(n)||CHAPTERS[n.chapter].color);
+ const el=document.createElement('button');el.className='node';el.hidden=true;el.id=`node-${n.id}`;el.dataset.id=n.id;el.style.left=n.x+'px';el.style.top=n.y+'px';el.style.setProperty('--node-color',n.tint||zoneColor(n)||CHAPTERS[n.chapter].color);
  el.innerHTML='<div class="node-top"><span class="symbol"></span><span class="node-id"></span></div><span class="node-name"></span><span class="node-price"><span></span><span class="node-status"></span></span><i class="level-dots"></i>';
  if(n.chapter===7){const border=document.createElement('span');border.className='opal-border';border.setAttribute('aria-hidden','true');el.append(border);}
  el.addEventListener('click',ev=>handleMapClick(ev,n.id));
  $('nodes').append(el);nodeEls.set(n.id,el);
  // islands: straight white links over a dark casing
- for(const r of n.req){const p=byId.get(r.id);if(p.chapter!==n.chapter)continue;const d=`M${p.x} ${p.y}L${n.x} ${n.y}`,path=document.createElementNS('http://www.w3.org/2000/svg','path'),casing=document.createElementNS('http://www.w3.org/2000/svg','path');
- for(const e of [casing,path]){e.style.display='none';e.setAttribute('d',d);}casing.setAttribute('class','edge-casing');$('edgeCasings').append(casing);$('edges').append(path);edgeEls.push({el:path,casing,from:p,to:n,cross:false});}
+ const pair=ISLANDS[n.chapter]?.pairs?.find(q=>q.a===n.id||q.b===n.id);if(pair&&pair.b===n.id)continue;
+ for(const r of n.req){const p=byId.get(r.id);if(p.chapter!==n.chapter)continue;const d=pair?`M${p.x} ${p.y}L${pair.hub[0]} ${pair.hub[1]}`:`M${p.x} ${p.y}L${n.x} ${n.y}`,path=document.createElementNS('http://www.w3.org/2000/svg','path'),casing=document.createElementNS('http://www.w3.org/2000/svg','path');
+ for(const e of [casing,path]){e.style.display='none';e.setAttribute('d',d);}casing.setAttribute('class','edge-casing');$('edgeCasings').append(casing);$('edges').append(path);edgeEls.push({el:path,casing,from:p,to:n,cross:false,...(pair?{pair:[byId.get(pair.a),byId.get(pair.b)]}:{})});}
  }
  for(const sector of MAP_LAYOUT.sectors){
  // island heading: fixed place outside the coast, number, name and progress
@@ -186,7 +187,7 @@ function createGraph(){
  const region=document.createElementNS('http://www.w3.org/2000/svg','path');region.setAttribute('d',sector.path);region.setAttribute('class','sector-region');region.style.setProperty('--sector-color',c.color);region.style.display='none';$('sectorRegions').append(region);sectorEls.push(region);
  const jump=document.createElement('button');jump.className='sector-jump';jump.hidden=true;jump.style.setProperty('--sector-color',c.color);jump.innerHTML=`<span class="sector-jump-icon">${iconSvg(sector.members[0].icon)}</span><span class="sector-jump-copy"><span class="sector-jump-name">${c.name}</span><span class="sector-jump-progress"></span></span><span class="sector-jump-state" aria-hidden="true"></span>`;jump.onclick=()=>jumpToSector(i);$('sectorMenu').append(jump);
  }
- islandView=createIslandView({viewport,back:$('islandBack'),canvas:$('seaFx'),world,decorSvg:$('islandDecor'),beamSvg:$('islandBeam'),buildSvg:$('islandBuild'),mossSvg:$('islandMoss'),overSvg:$('islandOver'),nodes:NODES,level:n=>level(state,n),islandsDone:()=>CHAPTERS.map((_,i)=>sectorProgress(state,i).complete),islandOpen:id=>{const k=ISLANDS.findIndex(i=>i.id===id);return k>=0&&islandOpen(state,k)&&!pendingReveal.has(k);}});
+ islandView=createIslandView({viewport,back:$('islandBack'),canvas:$('seaFx'),world,decorSvg:$('islandDecor'),beamSvg:$('islandBeam'),buildSvg:$('islandBuild'),mossSvg:$('islandMoss'),overSvg:$('islandOver'),nodes:NODES,level:n=>level(state,n),seen:n=>(visibility.get(n.id)||0)>0,islandsDone:()=>CHAPTERS.map((_,i)=>sectorProgress(state,i).complete),islandOpen:id=>{const k=ISLANDS.findIndex(i=>i.id===id);return k>=0&&islandOpen(state,k)&&!pendingReveal.has(k);}});
  $('centerNode').style.left=CENTER.x+'px';$('centerNode').style.top=CENTER.y+'px';
  $('centerNode').addEventListener('click',ev=>handleMapClick(ev,CENTER_SELECTION));
  createHeader();createPrestigeGraph();
@@ -323,18 +324,18 @@ function mainGraph(){
  const d=discovery(n);visibility.set(n.id,d);const el=nodeEls.get(n.id);el.hidden=!d;if(!d)continue;
  const l=level(state,n),can=unlocked(state,n),p=cost(state,n,econ),afford=can&&affordable(state,n,econ)&&l<n.max;
  const key=[d,l,can,afford,JSON.stringify(p),selected===n.id,state.settings.format].join(':');if(el.dataset.viewKey===key)continue;el.dataset.viewKey=key;
- const cls=`node ${n.chapter===7?'opal ':''}${n.gate?'gate ':''}${l?'bought ':''}${can?'unlocked ':'locked '}${afford?'available ':''}${selected===n.id?'selected ':''}${d===1?'ghost ':''}`;
+ const declined=choiceTaken(state,n),cls=`node ${n.chapter===7?'opal ':''}${n.gate?'gate ':''}${n.tint?'tinted ':''}${declined?'declined ':''}${l?'bought ':''}${can?'unlocked ':'locked '}${afford?'available ':''}${selected===n.id?'selected ':''}${d===1?'ghost ':''}`;
  const popping=el.classList.contains('pop');if(el.className!==cls+(popping?'pop':''))el.className=cls+(popping?'pop':'');
  el.disabled=d===1;el.tabIndex=d>1?0:-1;
  setIcon(el.querySelector('.symbol'),d===1?'LockKeyhole':n.icon);
  el.querySelector('.node-id').textContent=d===1?'???':String(n.id).padStart(3,'0');
  el.querySelector('.node-name').textContent=d===1?'UNEXPLORED':n.name;
- const priceEl=el.querySelector('.node-price>span');el.classList.toggle('dual-cost',n.payment.length>1&&l<n.max&&can);setHtml(priceEl,d===1?'미발견':l>=n.max?'완료':can?priceMarkup(p):'<span class="locked">선행 연구 필요</span>');
+ const priceEl=el.querySelector('.node-price>span');el.classList.toggle('dual-cost',n.payment.length>1&&l<n.max&&can);setHtml(priceEl,d===1?'미발견':l>=n.max?'완료':can?priceMarkup(p):declined?'<span class="locked">잠김</span>':'<span class="locked">선행 연구 필요</span>');
  const status=el.querySelector('.node-status');if(d!==1&&l>=n.max)setIcon(status,'Check');else{status.textContent=d===1?'':n.max>1?`${l}/${n.max}`:'';delete status.dataset.icon;}
  el.querySelector('.level-dots').style.width=(l/n.max*100)+'%';
  el.setAttribute('aria-label',d===1?'미발견 연구':`${n.name}. ${effectText(n)}. ${l>=n.max?'완료':`레벨 ${l}/${n.max}, 비용 ${priceText(p)}, ${can?'구매 조건 충족':'선행 연구 필요'}`}`);
  }
- for(const {el,casing,from,to,cross}of edgeEls){const visible=visibility.get(from.id)>1&&visibility.get(to.id)>1&&(!cross||selected===from.id||selected===to.id);const flash=el.classList.contains('flashing'),kind=level(state,to)?'researched':level(state,from)?'active':'ghost',cls=`edge ${cross?'cross-link ':''}${kind}${flash?' flashing':''}`,key=visible+cls;if(el.dataset.viewKey===key)continue;el.dataset.viewKey=key;el.style.display=casing.style.display=visible?'':'none';if(visible){el.setAttribute('class',cls);casing.setAttribute('class','edge-casing '+kind);}}
+ for(const {el,casing,from,to,cross,pair}of edgeEls){const visible=visibility.get(from.id)>1&&visibility.get(to.id)>1&&(!cross||selected===from.id||selected===to.id);const flash=el.classList.contains('flashing'),kind=(pair?pair.some(m=>level(state,m)):level(state,to))?'researched':level(state,from)?'active':'ghost',cls=`edge ${cross?'cross-link ':''}${kind}${flash?' flashing':''}`,key=visible+cls;if(el.dataset.viewKey===key)continue;el.dataset.viewKey=key;el.style.display=casing.style.display=visible?'':'none';if(visible){el.setAttribute('class',cls);casing.setAttribute('class','edge-casing '+kind);}}
  islandView?.render();
  let finished=0;
  $('centerNode').classList.toggle('selected',selected===CENTER_SELECTION);$('centerNode').setAttribute('aria-pressed',String(selected===CENTER_SELECTION));

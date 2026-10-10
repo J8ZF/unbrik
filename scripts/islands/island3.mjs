@@ -1,5 +1,5 @@
 // Island 3 (단풍): east and west islands either side of a strait (the east one
-// turned a little). Pink-red maples on teal grass, blue-grey rock, dark earth shores. Local coordinates, scaled; the pieces
+// turned a little). Maple-red trees on teal grass, blue-grey rock, dark earth shores. Local coordinates, scaled; the pieces
 // are cut from the outline by split.py.
 export const DESIGN={
  id:3,name:'섬 3',theme:'maple',origin:[-9100,3100],scale:1.45,eps:16,
@@ -9,7 +9,12 @@ export const DESIGN={
  rotate:[{at:[1800,900],ccw:22.5,shift:[230,30]}],
  label:[1900,60],
  tree:{root:[2140,560],gate:[360,1180],marks:[{at:[700,900],free:'side'},{at:[1900,1440],free:'none'},{at:[640,1560],free:'side'}],count:40,seed:9,bridge:820},
- landmarks:[{kind:'scriptorium',max:20},{kind:'watermill',max:10},{kind:'gazebo',max:5}],
+ // the landmark studies (2nd sample round, 2026-10-10): 073 CLOCK and 081 LAMBDA CALCULUS are frame nodes with lamps,
+ // 078 INSTRUCTION SET is the fountain square; 104 SINGULARITY (local 39, on the rock at the upper-left edge) holds the observatory
+ landmarks:[{kind:'frameClock',max:20},{kind:'fountain',max:10},{kind:'frameLambda',max:5}],
+ extraLandmarks:[{kind:'astro',node:39}],
+ // the A/B pair (091 FINITE STATE / 096 INVARIANT) shown together: design 2, stood upright for where the two cards are
+ pairArt:'diamond',
  sandBands:[{from:[620,1860],to:[1120,1700],depths:[0,130,180,120,0],seed:7},{from:[1420,1820],to:[2080,1620],depths:[0,110,170,90,0],seed:8}],
  beach:[[500,1500,1250,2100,30],[1300,1500,2000,2100,26]],
  // the island sits on blue-grey rock: big blocks of clearly different tones make the upper-left coast of each

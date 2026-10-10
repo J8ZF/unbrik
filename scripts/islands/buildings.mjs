@@ -1,6 +1,7 @@
 // Landmark buildings for island 1 v4: top-down, flat, white/grey. Footprints
 // are chamfered (cut corners), with L/T shapes and annexes; glass is dark grey.
 import {f1,P,poly,rectPts} from './art.mjs';
+import * as MAPLE from './maple-nodes.mjs';
 
 export const K={ground:'#c3cace',groundLine:'#9ea8ae',seam:'#b3bcc1',wall:'#d2d8db',wallLine:'#828d95',roof:'#edf0f2',roofSeam:'#dce1e4',
  raised:'#e2e6e9',raisedLine:'#a1abb2',glass:'#3e4449',glassLine:'#596066',glassFrame:'#7f8990',solar:'#454b51',solarLine:'#5f666c',
@@ -319,7 +320,11 @@ export function gazebo(n,CW,CH){const x=n.x,y=n.y;const plat=oct(x,y,190),outer=
  for(const [sx,sy,w,h] of [[x-24,y-190,48,16],[x-24,y+174,48,16],[x-190,y-24,16,48],[x+174,y-24,16,48]])s+=`<rect x="${f1(sx)}" y="${f1(sy)}" width="${w}" height="${h}" fill="${W.stone}" stroke="${W.edge}" stroke-width="1.6"/>`;
  return s;}
 export const KINDS={harbor:(n,CW,CH)=>harbor(n,CW,CH),hall:(n,CW,CH)=>hall(n,CW,CH),radio:(n,CW,CH)=>radio(n,CW,CH),lighthouse:(n,CW,CH,l)=>lighthouse(n,CW,CH,l.oct),
- station,greenhouse,pier,library,mill,pavilion,dig,ziggurat,cistern,tower,plant,stadium,village,pool,boulders,scriptorium,watermill,gazebo};
+ station,greenhouse,pier,library,mill,pavilion,dig,ziggurat,cistern,tower,plant,stadium,village,pool,boulders,scriptorium,watermill,gazebo,
+ fountain:n=>MAPLE.fountain(n),astro:n=>MAPLE.astro(n)};
+// frame nodes: drawn round the card from the start, dark until researched, the lamp lit at MAX (island-view picks the state)
+export const FRAMES={frameClock:MAPLE.frameClock,frameLambda:MAPLE.frameLambda};
+export const TINT=MAPLE.TINT,PAIR_ART={diamond:MAPLE.pairDiamond},PAIR_TINT=MAPLE.PAIR_TINT;
 // landmarks drawn over the cards too (water over a sunk card)
 export const OVER={pool:poolOver};
 // footprints: what the still decoration clears under a building (world box)
@@ -329,4 +334,5 @@ export const FOOTPRINT={harbor:n=>[n.x-296,n.y-122,n.x+156,1278],hall:n=>[n.x-22
  dig:n=>[n.x-134,n.y-154,n.x+334,n.y+144],ziggurat:n=>[n.x-204,n.y-164,n.x+204,n.y+164],cistern:n=>[n.x-116,n.y-100,n.x+308,n.y+108],
  tower:n=>[n.x-174,n.y-134,n.x+174,n.y+134],plant:n=>[n.x-180,n.y-108,n.x+272,n.y+112],stadium:n=>[n.x-114,n.y-100,n.x+392,n.y+100],
  village:n=>[n.x-160,n.y-140,n.x+160,n.y+128],pool:n=>[n.x-157,n.y-125,n.x+157,n.y+125],boulders:n=>[n.x-224,n.y-140,n.x+214,n.y+140],
- scriptorium:n=>[n.x-274,n.y-184,n.x+274,n.y+184],watermill:n=>[n.x-214,n.y-164,n.x+244,n.y+164],gazebo:n=>[n.x-204,n.y-204,n.x+204,n.y+204]};
+ scriptorium:n=>[n.x-274,n.y-184,n.x+274,n.y+184],watermill:n=>[n.x-214,n.y-164,n.x+244,n.y+164],gazebo:n=>[n.x-204,n.y-204,n.x+204,n.y+204],
+ ...Object.fromEntries(Object.entries(MAPLE.BOX).map(([k,[x0,y0,x1,y1]])=>[k,n=>[n.x+x0,n.y+y0,n.x+x1,n.y+y1]]))};
